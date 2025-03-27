@@ -15,8 +15,7 @@ RUN apt-get update && \
         libcurl4-openssl-dev \
         libssl-dev \
         libxml2-dev \
-        libv8-dev \  # <-- AJOUTÉ : Dépendance pour le package R V8
-        # Installer R directement depuis Debian
+        libv8-dev \
         r-base \
         r-base-dev && \
     # Nettoyage
