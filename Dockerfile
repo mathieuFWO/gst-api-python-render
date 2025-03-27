@@ -35,4 +35,3 @@ EXPOSE 8080
 
 # 8. Commande de Démarrage (Utilisation de $PORT fourni par Render)
 CMD ["gunicorn", "--bind", "0.0.0.0:$PORT", "app:app"]
-```
