@@ -8,7 +8,6 @@ from flask_cors import CORS
 # --- Configuration ---
 app = Flask(__name__)
 # Autoriser les requêtes depuis n'importe quelle origine (pour WordPress)
-# Vous pourriez restreindre cela en production si nécessaire
 CORS(app)
 
 # Chemin vers l'exécutable Rscript (suppose qu'il est dans le PATH du conteneur Docker)
@@ -44,62 +43,92 @@ def calculate_boundaries():
     command = [R_EXECUTABLE, R_SCRIPT_PATH, input_json_string]
     print(f"Exécution de la commande: {' '.join(command)}")
 
+    # --- Bloc TRY principal pour l'exécution du subprocess ---
     try:
         # Exécution du script R
         proc = subprocess.run(command,
                               capture_output=True,
                               text=True,
-                              check=False,
+                              check=False, # Important: ne pas lever d'erreur ici pour pouvoir lire stderr
                               timeout=30) # Timeout de 30 secondes
 
         print(f"Script R terminé (code {proc.returncode})")
-        print(f"R stdout (début): {proc.stdout[:500]}...")
+        print(f"R stdout (début): {proc.stdout[:500]}...") # Log tronqué pour lisibilité
         if proc.stderr:
-            print(f"R stderr: {proc.stderr}")
+            print(f"R stderr: {proc.stderr}") # Afficher les erreurs R s'il y en a
 
-        # Gestion des erreurs R
+        # Gestion des erreurs d'exécution du script R
         if proc.returncode != 0:
             error_message = f"Erreur exécution script R (code {proc.returncode})."
-            details = proc.stderr or "Pas de détails stderr."
+            details = proc.stderr or "Pas de détails stderr disponibles."
             print(error_message, details)
+            # Renvoyer une erreur 500 car c'est un problème côté serveur
             return jsonify({"error": True, "message": error_message, "details": details}), 500
 
-                   # Parsing de la sortie R
-            try:
-                result = json.loads(proc.stdout)
+        # --- Bloc TRY interne pour le parsing JSON ---
+        # Ce try est imbriqué car on veut essayer de parser même si l'exécution a réussi
+        try:
+            result = json.loads(proc.stdout)
 
-                # *** CORRECTION DE LA CONDITION D'ERREUR ***
-                # Vérifier si 'error' existe, est une liste/tableau, n'est pas vide,
-                # et si son premier élément est True.
-                error_value = result.get('error')
-                is_r_error = isinstance(error_value, list) and len(error_value) > 0 and error_value[0] is True
+            # Vérification d'erreur applicative retournée par R
+            # Vérifier si 'error' existe, est une liste, n'est pas vide, et si son premier élément est True.
+            error_value = result.get('error')
+            is_r_error = isinstance(error_value, list) and len(error_value) > 0 and error_value[0] is True
 
-                if is_r_error:
-                    r_message = result.get('message', ["Erreur R non spécifiée."])[0] # Prendre le premier message
-                    print(f"Le script R a retourné une erreur interne: {r_message}")
-                    # Retourner l'erreur spécifique telle que fournie par R
-                    return jsonify({"error": True, "message": r_message, "details": result.get('details')}), 400 # ou 500
-                else:
-                    # Assurer que les scalaires sont bien 'déboxés' si nécessaire avant de renvoyer
-                    # (Optionnel, mais peut simplifier le JS)
-                    # On pourrait itérer et simplifier les listes de longueur 1, mais
-                    # laissons le JSON tel quel pour l'instant, le JS devrait pouvoir le gérer.
-                    print("Succès: Renvoi du résultat JSON.")
-                    return jsonify(result) # Renvoi du succès
+            if is_r_error:
+                r_message_list = result.get('message', ["Erreur R non spécifiée."])
+                r_message = r_message_list[0] if isinstance(r_message_list, list) and r_message_list else "Erreur R non spécifiée."
+                print(f"Le script R a retourné une erreur interne: {r_message}")
+                # Retourner l'erreur spécifique, potentiellement 400 si c'est une erreur client (mauvais params R)
+                return jsonify({"error": True, "message": r_message, "details": result.get('details')}), 400
+            else:
+                # Succès, renvoyer le résultat
+                print("Succès: Renvoi du résultat JSON.")
+                return jsonify(result)
 
-            except json.JSONDecodeError as json_err:
-                print(f"Erreur parsing JSON de la sortie R: {json_err}")
-                print(f"Sortie R brute: {proc.stdout}")
-                return jsonify({
-                    "error": True,
-                    "message": "Impossible de parser la sortie JSON du script R.",
-                    "raw_output": proc.stdout,
-                    "parse_error": str(json_err)
-                }), 500
+        # --- EXCEPT pour le parsing JSON (interne) ---
+        except json.JSONDecodeError as json_err:
+            print(f"Erreur parsing JSON de la sortie R: {json_err}")
+            print(f"Sortie R brute: {proc.stdout}")
+            # Erreur serveur car on n'a pas pu interpréter la sortie R correcte
+            return jsonify({
+                "error": True,
+                "message": "Impossible de parser la sortie JSON du script R.",
+                "raw_output": proc.stdout,
+                "parse_error": str(json_err)
+            }), 500
+
+    # --- EXCEPT pour FileNotFoundError (externe) ---
+    except FileNotFoundError:
+         print(f"Erreur critique: '{R_EXECUTABLE}' ou '{R_SCRIPT_PATH}' non trouvé.")
+         return jsonify({
+             "error": True,
+             "message": "Fichier Rscript ou script R introuvable sur le serveur.",
+             "details": f"Tentative d'exécution de '{R_EXECUTABLE}'"
+         }), 500
+    # --- EXCEPT pour TimeoutExpired (externe) ---
+    except subprocess.TimeoutExpired:
+         print("Erreur: Timeout du script R.")
+         return jsonify({
+             "error": True,
+             "message": "Le calcul R a dépassé le délai."
+         }), 500
+    # --- EXCEPT général (externe) ---
+    except Exception as e:
+        # Capturer toute autre erreur inattendue lors de l'appel subprocess etc.
+        print(f"Erreur serveur inattendue: {e}", file=sys.stderr)
+        # Imprimer la traceback pour plus de détails dans les logs Render
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": True, "message": f"Erreur serveur inattendue: {e}"}), 500
 
 # --- Point de terminaison pour vérifier si l'API est en ligne ---
 @app.route('/', methods=['GET'])
 def health_check():
     return jsonify({"status": "API GST en ligne"})
 
-# Note: app.run() n'est pas nécessaire ici car Gunicorn lance l'application
+# Note importante: La ligne ci-dessous est pour les tests locaux SEULEMENT.
+# Gunicorn (utilisé par Render via le Dockerfile CMD) lancera l'application en production.
+# NE PAS décommenter cette partie pour le déploiement sur Render.
+# if __name__ == '__main__':
+#     app.run(host='0.0.0.0', port=5000, debug=True)
