@@ -7,9 +7,9 @@ ENV PYTHONUNBUFFERED=1 \
 
 WORKDIR $APP_HOME
 
-# 3. Installation Dépendances Système + Ajout Repo CRAN + Installation R (UNE SEULE INSTRUCTION RUN)
+# 3. Installation Dépendances Système + Ajout Repo CRAN + Installation R (UNE SEULE INSTRUCTION RUN, ETAPES GPG SEPAREES)
 RUN apt-get update && \
-    # Installer les dépendances initiales pour HTTPS, clés, compilation, R
+    # Installer les dépendances initiales
     apt-get install -y --no-install-recommends \
         gnupg \
         ca-certificates \
@@ -19,17 +19,23 @@ RUN apt-get update && \
         libssl-dev \
         libxml2-dev \
         lsb-release && \
-    # Ajouter la clé GPG CRAN
-    wget -qO- https://cloud.r-project.org/bin/linux/debian/marutter_pubkey.asc | gpg --dearmor > /usr/share/keyrings/cran.gpg && \
-    # Ajouter le dépôt CRAN (utilisation de sh -c pour évaluation de lsb_release)
+    # Étape 1: Télécharger la clé GPG CRAN dans un fichier temporaire
+    wget -qO /tmp/cran-key.asc https://cloud.r-project.org/bin/linux/debian/marutter_pubkey.asc && \
+    # Étape 2: Vérifier si le fichier de clé existe et n'est pas vide avant de continuer
+    test -s /tmp/cran-key.asc && \
+    # Étape 3: Importer la clé depuis le fichier en utilisant gpg --dearmor
+    gpg --dearmor < /tmp/cran-key.asc > /usr/share/keyrings/cran.gpg && \
+    # Étape 4: Nettoyer le fichier temporaire
+    rm /tmp/cran-key.asc && \
+    # Étape 5: Ajouter le dépôt CRAN en référençant la clé importée
     sh -c 'echo "deb [signed-by=/usr/share/keyrings/cran.gpg] https://cloud.r-project.org/bin/linux/debian $(lsb_release -cs)-cran40/" > /etc/apt/sources.list.d/cran.list' && \
-    # Mettre à jour les listes de paquets *après* ajout du dépôt
+    # Étape 6: Mettre à jour la liste des paquets après ajout du dépôt
     apt-get update && \
-    # Installer R base et dev
+    # Étape 7: Installer R base et dev
     apt-get install -y --no-install-recommends \
         r-base \
         r-base-dev && \
-    # Nettoyer pour réduire la taille
+    # Étape 8: Nettoyage final
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
