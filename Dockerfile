@@ -7,9 +7,9 @@ ENV PYTHONUNBUFFERED=1 \
 
 WORKDIR $APP_HOME
 
-# 3. Installation Dépendances Système + Ajout Repo CRAN + Installation R (UNE SEULE INSTRUCTION RUN, ETAPES GPG SEPAREES)
+# 3. Installation Dépendances Système + Ajout Repo CRAN + Installation R (Méthode apt-key contrôlée)
 RUN apt-get update && \
-    # Installer les dépendances initiales
+    # Dépendances
     apt-get install -y --no-install-recommends \
         gnupg \
         ca-certificates \
@@ -19,23 +19,16 @@ RUN apt-get update && \
         libssl-dev \
         libxml2-dev \
         lsb-release && \
-    # Étape 1: Télécharger la clé GPG CRAN dans un fichier temporaire
-    wget -qO /tmp/cran-key.asc https://cloud.r-project.org/bin/linux/debian/marutter_pubkey.asc && \
-    # Étape 2: Vérifier si le fichier de clé existe et n'est pas vide avant de continuer
-    test -s /tmp/cran-key.asc && \
-    # Étape 3: Importer la clé depuis le fichier en utilisant gpg --dearmor
-    gpg --dearmor < /tmp/cran-key.asc > /usr/share/keyrings/cran.gpg && \
-    # Étape 4: Nettoyer le fichier temporaire
-    rm /tmp/cran-key.asc && \
-    # Étape 5: Ajouter le dépôt CRAN en référençant la clé importée
-    sh -c 'echo "deb [signed-by=/usr/share/keyrings/cran.gpg] https://cloud.r-project.org/bin/linux/debian $(lsb_release -cs)-cran40/" > /etc/apt/sources.list.d/cran.list' && \
-    # Étape 6: Mettre à jour la liste des paquets après ajout du dépôt
+    # Ajouter la clé GPG en utilisant apt-key mais en dirigeant vers le bon keyring
+    wget -qO- https://cloud.r-project.org/bin/linux/debian/marutter_pubkey.asc | apt-key --keyring /usr/share/keyrings/cran-archive-keyring.gpg add - && \
+    # Ajouter le dépôt CRAN en référençant le keyring spécifique
+    sh -c 'echo "deb [signed-by=/usr/share/keyrings/cran-archive-keyring.gpg] https://cloud.r-project.org/bin/linux/debian $(lsb_release -cs)-cran40/" > /etc/apt/sources.list.d/cran.list' && \
+    # Update et Install R
     apt-get update && \
-    # Étape 7: Installer R base et dev
     apt-get install -y --no-install-recommends \
         r-base \
         r-base-dev && \
-    # Étape 8: Nettoyage final
+    # Nettoyage
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
