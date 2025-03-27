@@ -29,8 +29,9 @@ params <- tryCatch({
 k <- params$k
 alpha <- params$alpha %||% 0.05
 beta <- params$beta %||% 0.20
-test_type <- params$testType %||% 1
+test_type <- params$testType %||% 1 # Récupérer la valeur envoyée (1 ou 2)
 sfu_name_req <- params$sfu %||% "OF"
+# Pour un test bilatéral, on veut souvent la même fonction pour les deux bornes
 sfl_name_req <- params$sfl %||% sfu_name_req
 if (is.null(k) || !is.numeric(k) || k <= 0) {
   error_response$message <- "Paramètre 'k' manquant ou invalide."
@@ -62,10 +63,13 @@ message(paste("Appel gsDesign: k=", k, "alpha=", alpha, "beta=", beta))
 message(paste("Using sfu:", sfu_info$name, "with param:", sfu_info$param %||% "NULL"))
 message(paste("Using sfl:", sfl_info$name, "with param:", sfl_info$param %||% "NULL"))
 design <- tryCatch({
-  gsDesign(k = k, test.type = test_type, alpha = alpha, beta = beta, timing = timing,
+  gsDesign(k = k,
+           test.type = test_type, # Utiliser la valeur reçue
+           alpha = alpha, beta = beta, timing = timing,
            sfu = sfu_info$func, sfupar = sfu_info$param,
            sfl = sfl_info$func, sflpar = sfl_info$param)
-}, error = function(e) {
+},
+ error = function(e) {
   error_response$message <- paste("Erreur lors de l'appel à gsDesign:", e$message)
   error_response$details <- capture.output(traceback())
   NULL
