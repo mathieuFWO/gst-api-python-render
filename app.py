@@ -1,4 +1,3 @@
-```python
 import os
 import sys
 import subprocess
@@ -69,7 +68,7 @@ def calculate_boundaries():
         try:
             result = json.loads(proc.stdout)
             if isinstance(result, dict) and result.get('error'):
-                print(f"Erreur applicative retournée par R: {result.get('message')}")
+                print(f"Le script R a retourné une erreur interne: {result.get('message')}")
                 return jsonify(result), 400 # Erreur 'client' si R renvoie une erreur
             print("Succès: Renvoi du résultat JSON.")
             return jsonify(result) # Renvoi du succès
@@ -80,11 +79,11 @@ def calculate_boundaries():
             return jsonify({"error": True, "message": "Impossible de parser la sortie JSON du script R.", "raw_output": proc.stdout}), 500
 
     except FileNotFoundError:
-        print(f"Erreur critique: '{R_EXECUTABLE}' ou '{R_SCRIPT_PATH}' non trouvé.")
-        return jsonify({"error": True, "message": "Fichier Rscript ou script R introuvable sur le serveur."}), 500
+         print(f"Erreur critique: '{R_EXECUTABLE}' ou '{R_SCRIPT_PATH}' non trouvé.")
+         return jsonify({"error": True, "message": "Fichier Rscript ou script R introuvable sur le serveur."}), 500
     except subprocess.TimeoutExpired:
-        print("Erreur: Timeout du script R.")
-        return jsonify({"error": True, "message": "Le calcul R a dépassé le délai."}), 500
+         print("Erreur: Timeout du script R.")
+         return jsonify({"error": True, "message": "Le calcul R a dépassé le délai."}), 500
     except Exception as e:
         print(f"Erreur serveur inattendue: {e}", file=sys.stderr)
         return jsonify({"error": True, "message": f"Erreur serveur inattendue: {e}"}), 500
@@ -94,7 +93,4 @@ def calculate_boundaries():
 def health_check():
     return jsonify({"status": "API GST en ligne"})
 
-# --- Démarrage du serveur (pour Render via Gunicorn) ---
-# Gunicorn sera lancé par la commande CMD du Dockerfile
-# Pas besoin de app.run() ici pour la production
-```
+# Note: app.run() n'est pas nécessaire ici car Gunicorn lance l'application
