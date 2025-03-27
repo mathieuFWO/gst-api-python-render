@@ -1,0 +1,15 @@
+# Environnements virtuels
+venv/
+.venv/
+
+# Fichiers Python compilés et caches
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Fichiers OS/IDE
+.DS_Store
+.idea/
+*.vscode/
+*.swp
