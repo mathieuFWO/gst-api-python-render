@@ -1,4 +1,4 @@
-FROM python:3.10-slim # Ou une version appropriée
+FROM python:3.10-slim
 
 ARG R_VERSION=4.2.3
 
