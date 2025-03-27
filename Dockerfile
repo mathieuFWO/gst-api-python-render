@@ -7,32 +7,31 @@ ENV PYTHONUNBUFFERED=1 \
 
 WORKDIR $APP_HOME
 
-# 3. Installation Dépendances Système + Ajout Repo CRAN + Installation R
+# 3. Installation Dépendances Système + Ajout Repo CRAN + Installation R (UNE SEULE INSTRUCTION RUN)
 RUN apt-get update && \
-    # Installation des dépendances système nécessaires pour https, gestion clés, compilation et R
+    # Installer les dépendances initiales pour HTTPS, clés, compilation, R
     apt-get install -y --no-install-recommends \
-    gnupg \
-    ca-certificates \
-    wget \
-    build-essential \
-    libcurl4-openssl-dev \
-    libssl-dev \
-    libxml2-dev \
-    lsb-release \ # Pour détecter la version de Debian (ex: bullseye)
-    && \
-    # Ajout de la clé GPG du dépôt CRAN (méthode actuelle)
+        gnupg \
+        ca-certificates \
+        wget \
+        build-essential \
+        libcurl4-openssl-dev \
+        libssl-dev \
+        libxml2-dev \
+        lsb-release && \
+    # Ajouter la clé GPG CRAN
     wget -qO- https://cloud.r-project.org/bin/linux/debian/marutter_pubkey.asc | gpg --dearmor > /usr/share/keyrings/cran.gpg && \
-    # Ajout du dépôt CRAN à sources.list.d en utilisant la version détectée
-    # Utilise sh -c pour permettre l'évaluation de $(lsb_release -cs)
+    # Ajouter le dépôt CRAN (utilisation de sh -c pour évaluation de lsb_release)
     sh -c 'echo "deb [signed-by=/usr/share/keyrings/cran.gpg] https://cloud.r-project.org/bin/linux/debian $(lsb_release -cs)-cran40/" > /etc/apt/sources.list.d/cran.list' && \
-    # Mise à jour de la liste des paquets après ajout du nouveau dépôt
+    # Mettre à jour les listes de paquets *après* ajout du dépôt
     apt-get update && \
-    # Installation de R base et des outils de développement
+    # Installer R base et dev
     apt-get install -y --no-install-recommends \
-    r-base \
-    r-base-dev \
-    # Nettoyage pour réduire la taille de l'image
-    && apt-get clean && rm -rf /var/lib/apt/lists/*
+        r-base \
+        r-base-dev && \
+    # Nettoyer pour réduire la taille
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
 
 # 4. Installation Packages R
 RUN R -e "options(Ncpus = parallel::detectCores()); install.packages(c('gsDesign', 'jsonlite'), repos='https://cloud.r-project.org/')"
