@@ -64,29 +64,38 @@ def calculate_boundaries():
             print(error_message, details)
             return jsonify({"error": True, "message": error_message, "details": details}), 500
 
-        # Parsing de la sortie R
-        try:
-            result = json.loads(proc.stdout)
-            if isinstance(result, dict) and result.get('error'):
-                print(f"Le script R a retourné une erreur interne: {result.get('message')}")
-                return jsonify(result), 400 # Erreur 'client' si R renvoie une erreur
-            print("Succès: Renvoi du résultat JSON.")
-            return jsonify(result) # Renvoi du succès
+                   # Parsing de la sortie R
+            try:
+                result = json.loads(proc.stdout)
 
-        except json.JSONDecodeError as json_err:
-            print(f"Erreur parsing JSON de la sortie R: {json_err}")
-            print(f"Sortie R brute: {proc.stdout}")
-            return jsonify({"error": True, "message": "Impossible de parser la sortie JSON du script R.", "raw_output": proc.stdout}), 500
+                # *** CORRECTION DE LA CONDITION D'ERREUR ***
+                # Vérifier si 'error' existe, est une liste/tableau, n'est pas vide,
+                # et si son premier élément est True.
+                error_value = result.get('error')
+                is_r_error = isinstance(error_value, list) and len(error_value) > 0 and error_value[0] is True
 
-    except FileNotFoundError:
-         print(f"Erreur critique: '{R_EXECUTABLE}' ou '{R_SCRIPT_PATH}' non trouvé.")
-         return jsonify({"error": True, "message": "Fichier Rscript ou script R introuvable sur le serveur."}), 500
-    except subprocess.TimeoutExpired:
-         print("Erreur: Timeout du script R.")
-         return jsonify({"error": True, "message": "Le calcul R a dépassé le délai."}), 500
-    except Exception as e:
-        print(f"Erreur serveur inattendue: {e}", file=sys.stderr)
-        return jsonify({"error": True, "message": f"Erreur serveur inattendue: {e}"}), 500
+                if is_r_error:
+                    r_message = result.get('message', ["Erreur R non spécifiée."])[0] # Prendre le premier message
+                    print(f"Le script R a retourné une erreur interne: {r_message}")
+                    # Retourner l'erreur spécifique telle que fournie par R
+                    return jsonify({"error": True, "message": r_message, "details": result.get('details')}), 400 # ou 500
+                else:
+                    # Assurer que les scalaires sont bien 'déboxés' si nécessaire avant de renvoyer
+                    # (Optionnel, mais peut simplifier le JS)
+                    # On pourrait itérer et simplifier les listes de longueur 1, mais
+                    # laissons le JSON tel quel pour l'instant, le JS devrait pouvoir le gérer.
+                    print("Succès: Renvoi du résultat JSON.")
+                    return jsonify(result) # Renvoi du succès
+
+            except json.JSONDecodeError as json_err:
+                print(f"Erreur parsing JSON de la sortie R: {json_err}")
+                print(f"Sortie R brute: {proc.stdout}")
+                return jsonify({
+                    "error": True,
+                    "message": "Impossible de parser la sortie JSON du script R.",
+                    "raw_output": proc.stdout,
+                    "parse_error": str(json_err)
+                }), 500
 
 # --- Point de terminaison pour vérifier si l'API est en ligne ---
 @app.route('/', methods=['GET'])
