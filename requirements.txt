@@ -1,1 +1,3 @@
-txt Flask Flask-Cors gunicorn
+Flask
+Flask-Cors
+gunicorn
