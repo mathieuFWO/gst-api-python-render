@@ -5,10 +5,15 @@
 suppressPackageStartupMessages(library(gsDesign))
 suppressPackageStartupMessages(library(jsonlite, warn.conflicts = FALSE))
 
-# --- Récupérer les arguments ... (inchangé) ---
+# --- Récupérer les arguments de la ligne de commande ---
 args <- commandArgs(trailingOnly = TRUE)
 error_response <- list(error = TRUE, message = "Erreur interne dans le script R.")
-if (length(args) != 1) { /* ... gestion erreur ... */ }
+if (length(args) != 1) {
+  error_response$message <- "Usage: Rscript calculate_gs_design.R '<json_input>'"
+  cat(toJSON(error_response, auto_unbox = TRUE, na = "null"))
+  quit(status = 1)
+}
+
 input_json <- args[1]
 
 # --- Parser le JSON ... (inchangé) ---
