@@ -1,8 +1,8 @@
 #!/usr/bin/env Rscript
-# Script pour calculer les bornes GST avec gsDesign (Version 6 - sfHSD pour futility)
+# Script pour calculer les bornes GST avec gsDesign (Version 7 - sfHSD gamma=-4)
 
 # Charger les librairies nécessaires
-# Utiliser tryCatch pour gérer les erreurs de chargement si jamais elles se produisent
+# Utiliser tryCatch pour gérer les erreurs de chargement
 tryCatch({
     suppressPackageStartupMessages(library(gsDesign))
     suppressPackageStartupMessages(library(jsonlite, warn.conflicts = FALSE))
@@ -47,10 +47,11 @@ k <- params$k
 alpha <- params$alpha %||% 0.05
 beta <- params$beta %||% 0.20
 test_type <- params$testType %||% 1 # Défaut Supériorité (1)
-sfu_name_req <- params$sfu %||% "KimDeMets" # Défaut KimDeMets
+sfu_name_req <- params$sfu %||% "KimDeMets" # Défaut KimDeMets pour sfu
+# sfl_name_req n'est plus utilisé, car sfl est forcé ci-dessous pour type 1/3
 
 # Vérifications basiques des paramètres
-if (is.null(k) || !is.numeric(k) || k <= 0 || k > 50) {
+if (is.null(k) || !is.numeric(k) || k <= 0 || k > 50) { # Limiter K
   error_response$message <- "Le paramètre 'k' (1-50) est manquant ou invalide."
   cat(toJSON(error_response, auto_unbox = TRUE, na = "null"))
   quit(status = 1)
@@ -67,8 +68,7 @@ if (is.null(beta) || !is.numeric(beta) || beta <= 0 || beta >= 1) {
 }
 # Vérifier que test_type est bien 1 ou 3 pour cette logique
 if (!(test_type %in% c(1, 3))) {
-    # Si d'autres types étaient permis (ex: 2), il faudrait adapter la logique sfl
-    error_response$message <- "Type de test invalide (doit être 1='Supériorité' ou 3='Non-régression')."
+    error_response$message <- "Type de test invalide (1='Supériorité' ou 3='Non-régression')."
     cat(toJSON(error_response, auto_unbox = TRUE, na = "null"))
     quit(status = 1)
 }
@@ -95,17 +95,18 @@ get_spending_info_sfu <- function(name) {
 sfu_info <- get_spending_info_sfu(sfu_name_req)
 
 # --- Définir fonction/paramètre pour SFL (Futilité/Inf) ---
-# Utilisation de sfHSD avec gamma = -2 pour les types 1 et 3
-sfl_info <- list(func = gsDesign::sfHSD, param = -2, name = "HSD(-2)")
+# Utilisation de sfHSD avec gamma = -4 pour les types 1 et 3
+sfl_gamma <- -4 # *** PARAMETRE GAMMA MODIFIÉ ICI ***
+sfl_info <- list(func = gsDesign::sfHSD, param = sfl_gamma, name = paste0("HSD(", sfl_gamma, ")"))
 
-# Timing
+# Timing (inchangé)
 timing <- (1:k) / k
 
 # --- Appel à gsDesign ---
 # Ajouter des logs pour débogage dans Render
 message(paste("Appel gsDesign: k=", k, ", alpha=", alpha, ", beta=", beta, ", test.type=", test_type))
 message(paste("Using sfu:", sfu_info$name, "with param:", sfu_info$param %||% "NULL"))
-message(paste("Using sfl:", sfl_info$name, "with param:", sfl_info$param %||% "NULL"))
+message(paste("Using sfl:", sfl_info$name, "with param:", sfl_info$param %||% "NULL")) # Affichera HSD(-4)
 
 design <- tryCatch({
   gsDesign(
@@ -117,7 +118,7 @@ design <- tryCatch({
     sfu = sfu_info$func,
     sfupar = sfu_info$param,
     sfl = sfl_info$func,
-    sflpar = sfl_info$param
+    sflpar = sfl_info$param # Utilise sfHSD et param gamma modifié
   )
 }, error = function(e) {
   # En cas d'erreur DANS gsDesign
@@ -134,7 +135,7 @@ if (is.null(design)) {
 
 # --- Préparer la sortie JSON ---
 results <- list(
-  error = FALSE, # Sera [false] sans auto_unbox
+  error = FALSE, # Sera [false]
   message = "Calcul des bornes réussi.", # Sera ["Calcul..."]
   parameters = list(
       k = k, alpha = alpha, beta = beta, testType = test_type, timing = timing,
@@ -145,10 +146,11 @@ results <- list(
 
 # Fonction helper pour obtenir une valeur numérique ou NA
 get_numeric_or_na <- function(value) {
+  # Vérifie si c'est un nombre unique, fini, et pas NULL
   if (!is.null(value) && is.numeric(value) && length(value) == 1 && is.finite(value)) {
     return(value)
   } else {
-    return(NA)
+    return(NA) # Utiliser NA
   }
 }
 
@@ -171,7 +173,7 @@ for (i in seq_len(k)) {
 }
 
 # --- Imprimer le JSON sur stdout ---
-# Forcer na = "null" et retirer auto_unbox pour le résultat principal
+# Forcer na = "null"
 cat(toJSON(results, pretty = FALSE, na = "null"))
 
 quit(status = 0) # Succès
