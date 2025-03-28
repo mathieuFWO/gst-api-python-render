@@ -96,7 +96,7 @@ sfu_info <- get_spending_info_sfu(sfu_name_req)
 
 # --- Définir fonction/paramètre pour SFL (Futilité/Inf) ---
 # Utilisation de sfHSD avec gamma = -4 pour les types 1 et 3
-sfl_gamma <- -4 # *** PARAMETRE GAMMA MODIFIÉ ICI ***
+sfl_gamma <- -1
 sfl_info <- list(func = gsDesign::sfHSD, param = sfl_gamma, name = paste0("HSD(", sfl_gamma, ")"))
 
 # Timing (inchangé)
