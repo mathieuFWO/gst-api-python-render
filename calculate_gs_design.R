@@ -1,6 +1,7 @@
 #!/usr/bin/env Rscript
 # Script pour calculer les bornes GST avec gsDesign ET le Z-score observé
 # (Version intégrant Z-score observé - sfHSD gamma=-2 pour futilité par défaut)
+# (AUCUN CHANGEMENT DANS CE FICHIER POUR CORRIGER LE PROBLEME D'AFFICHAGE Z-SCORE JS)
 
 # --- Configuration initiale ---
 # Désactiver la notation scientifique pour une meilleure lisibilité des messages
@@ -134,6 +135,17 @@ if (test_type %in% c(3, 4, 5, 6)) {
         sfl_func <- gsDesign::sfLinear
         sfl_param_val <- 1 # Pente de 1 pour dépense linéaire
         sfl_standard_name <- "Linear"
+     } else if (sfl_name_req == "pocock") { # Pocock pour futilité
+         sfl_func <- gsDesign::sfPocock
+         sfl_standard_name <- "Pocock"
+     } else if (sfl_name_req == "of" || sfl_name_req == "obrienfleming") { # OF pour futilité
+          sfl_func <- gsDesign::sfLDOF
+          sfl_standard_name <- "OF"
+     } else if (sfl_name_req == "kimdemets") { # KimDeMets pour futilité
+          sfl_func <- gsDesign::sfPower
+          sfl_param_val <- params$sflpar %||% 3 # Gamma=3 par défaut si KimDeMets
+          if(!is.numeric(sfl_param_val)) { exit_with_error("Paramètre 'sflpar' pour KimDeMets (futilité) doit être numérique.")}
+          sfl_standard_name <- paste0("KimDeMets(", sfl_param_val, ")")
     } else {
          warning(paste("Fonction SFL '", sfl_name_req, "' non reconnue ou non applicable, utilisation de HSD(-2)."))
          sfl_func <- gsDesign::sfHSD
