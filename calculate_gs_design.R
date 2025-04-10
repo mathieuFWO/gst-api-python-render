@@ -1,6 +1,6 @@
 #!/usr/bin/env Rscript
 # Script pour calculer les bornes GST avec gsDesign ET le Z-score observé
-# ET les bornes ajustées pour le guardrail (v37.18 - Tentative Fix Guardrail sfu)
+# ET les bornes ajustées pour le guardrail (v37.19 - Simplification Bloc Z)
 
 # --- Configuration initiale ---
 options(scipen = 999)
@@ -47,41 +47,70 @@ sfl_guardrail_name <- "OF (Guardrail)"
 message(paste("Calcul Bornes Guardrail: k=", k, ", alpha_guardrail=", alpha_guardrail, " (mappé à beta)"))
 message(paste("Using sfl (Guardrail):", sfl_guardrail_name))
 design_guardrail <- NULL; guardrail_error <- NULL;
-# ** MODIFIED: Provide a minimal valid sfu (sfLinear with 0 spending) to potentially avoid the warning **
-design_guardrail <- tryCatch({
-     gsDesign(k = k,
-             test.type = 4,
-             alpha = 0.5, # Set alpha to non-zero but effectively ignore upper bound
-             beta = alpha_guardrail,
-             timing = timing,
-             sfu = gsDesign::sfLinear, # Provide a valid SFU
-             sfupar = c(0, 0),        # Parameters for sfLinear (no spending)
-             sfl = sfl_guardrail_func,
-             sflpar = NULL)
-}, error = function(e) { guardrail_error <<- e$message; NULL })
-
+design_guardrail <- tryCatch({ gsDesign(k=k, test.type=4, alpha=0.5, beta=alpha_guardrail, timing=timing, sfu=gsDesign::sfLinear, sfupar=c(0,0), sfl=sfl_guardrail_func, sflpar=NULL) }, error = function(e) { guardrail_error <<- e$message; NULL }) # Kept sfLinear fix attempt
 guardrail_boundaries_z <- NA
 if (is.null(design_guardrail)) { warning(paste("Erreur calcul bornes guardrail:", guardrail_error)); guardrail_boundaries_z <- rep(NA_real_, k) }
 else { if (!is.null(design_guardrail$lower) && length(design_guardrail$lower$bound) == k) { guardrail_boundaries_z <- design_guardrail$lower$bound; message("Bornes Guardrail calculées.") } else { warning("Structure inattendue retournée par gsDesign pour bornes guardrail."); guardrail_boundaries_z <- rep(NA_real_, k) } }
 
-# --- Calcul Z-score Observé Principal ---
-observed_z <- NA_real_ ; observed_z_message <- "Données A/B primaires non fournies ou invalides."
+# --- Calcul Z-score Observé Principal (Structure Simplifiée) ---
+observed_z <- NA_real_
+observed_z_message <- "Données A/B primaires non fournies ou invalides."
 required_data_keys <- c("visitors_a", "conversions_a", "visitors_b", "conversions_b")
+
 if (all(required_data_keys %in% names(params))) {
-    visitors_a <- get_numeric_or_na(params$visitors_a); conversions_a <- get_numeric_or_na(params$conversions_a); visitors_b <- get_numeric_or_na(params$visitors_b); conversions_b <- get_numeric_or_na(params$conversions_b)
-    if (anyNA(c(visitors_a, conversions_a, visitors_b, conversions_b))) { observed_z_message <- "Données A/B primaires non numériques ou manquantes." }
-    else if (visitors_a <= 0 || visitors_b <= 0) { observed_z_message <- "Visiteurs primaires (A et B) doivent être > 0." }
-    else if (conversions_a < 0 || conversions_b < 0 || conversions_a > visitors_a || conversions_b > visitors_b) { observed_z_message <- "Conversions primaires invalides (>= 0 et <= visiteurs)." }
-    else {
-        tryCatch({ p1 <- conversions_a / visitors_a; p2 <- conversions_b / visitors_b; n1 <- visitors_a; n2 <- visitors_b; p_pooled <- (conversions_a + conversions_b) / (n1 + n2);
-            if (p_pooled <= 0 || p_pooled >= 1) { if (abs(p1 - p2) < .Machine$double.eps) { observed_z <- 0.0; observed_z_message <- "Z primaire calculé (p_pooled 0 ou 1, p1=p2)." } else { observed_z <- NA_real_; observed_z_message <- "Z primaire non calculé (p_pooled 0 ou 1, variance nulle)." } }
-            else { se_pooled <- sqrt(p_pooled * (1 - p_pooled) * (1/n1 + 1/n2)); if (se_pooled < .Machine$double.eps * 100) { observed_z <- NA_real_; observed_z_message <- "Z primaire non calculé (SE pooled quasi-nulle)." } else { observed_z <- (p2 - p1) / se_pooled; observed_z_message <- paste("Z primaire calculé:", round(observed_z, 5)) } }
-        }, error = function(e) { observed_z <<- NA_real_; observed_z_message <<- paste("Erreur calcul Z primaire:", e$message) })
+    # Validate first
+    visitors_a <- get_numeric_or_na(params$visitors_a)
+    conversions_a <- get_numeric_or_na(params$conversions_a)
+    visitors_b <- get_numeric_or_na(params$visitors_b)
+    conversions_b <- get_numeric_or_na(params$conversions_b)
+
+    valid_data <- TRUE
+    if (anyNA(c(visitors_a, conversions_a, visitors_b, conversions_b))) {
+        observed_z_message <- "Données A/B primaires non numériques ou manquantes."
+        valid_data <- FALSE
+    } else if (visitors_a <= 0 || visitors_b <= 0) {
+        observed_z_message <- "Visiteurs primaires (A et B) doivent être > 0."
+        valid_data <- FALSE
+    } else if (conversions_a < 0 || conversions_b < 0 || conversions_a > visitors_a || conversions_b > visitors_b) {
+        observed_z_message <- "Conversions primaires invalides (>= 0 et <= visiteurs)."
+        valid_data <- FALSE
     }
-} else {
-     observed_z_message <- "Données A/B primaires non fournies ou invalides."
-}
-# *** VERIFIED AGAIN: NO DANGLING ELSE HERE ***
+
+    # If data is valid, try to calculate Z
+    if(valid_data) {
+        tryCatch({
+            p1 <- conversions_a / visitors_a
+            p2 <- conversions_b / visitors_b
+            n1 <- visitors_a
+            n2 <- visitors_b
+            p_pooled <- (conversions_a + conversions_b) / (n1 + n2)
+
+            if (p_pooled <= 0 || p_pooled >= 1) {
+                if (abs(p1 - p2) < .Machine$double.eps) {
+                    observed_z <- 0.0
+                    observed_z_message <- "Z primaire calculé (p_pooled 0 ou 1, p1=p2)."
+                } else {
+                    observed_z <- NA_real_
+                    observed_z_message <- "Z primaire non calculé (p_pooled 0 ou 1, variance nulle)."
+                }
+            } else {
+                se_pooled <- sqrt(p_pooled * (1 - p_pooled) * (1/n1 + 1/n2))
+                if (se_pooled < .Machine$double.eps * 100) {
+                    observed_z <- NA_real_
+                    observed_z_message <- "Z primaire non calculé (SE pooled quasi-nulle)."
+                } else {
+                    observed_z <- (p2 - p1) / se_pooled
+                    observed_z_message <- paste("Z primaire calculé:", round(observed_z, 5))
+                }
+            }
+        }, error = function(e) {
+            observed_z <<- NA_real_ # Assign back to the outer scope variable
+            observed_z_message <<- paste("Erreur calcul Z primaire:", e$message)
+        })
+    } # End if(valid_data)
+} # End if (all required_data_keys...)
+
+# No 'else' here - message is already set if keys were missing or data invalid
 
 message(observed_z_message)
 
