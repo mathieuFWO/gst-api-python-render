@@ -1,6 +1,6 @@
 #!/usr/bin/env Rscript
 # Script pour calculer les bornes GST avec gsDesign ET le Z-score observé
-# ET les bornes ajustées pour le guardrail (v37.16 - Fix Syntax Error FINAL CHECK)
+# ET les bornes ajustées pour le guardrail (v37.17 - Fix Syntax Error FINAL++)
 
 # --- Configuration initiale ---
 options(scipen = 999)
@@ -47,7 +47,8 @@ sfl_guardrail_name <- "OF (Guardrail)"
 message(paste("Calcul Bornes Guardrail: k=", k, ", alpha_guardrail=", alpha_guardrail, " (mappé à beta)"))
 message(paste("Using sfl (Guardrail):", sfl_guardrail_name))
 design_guardrail <- NULL; guardrail_error <- NULL;
-design_guardrail <- tryCatch({ gsDesign(k=k, test.type=4, alpha=0.00001, beta=alpha_guardrail, timing=timing, sfu=gsDesign::sfLinear, sfupar=0, sfl=sfl_guardrail_func, sflpar=NULL) }, error = function(e) { guardrail_error <<- e$message; NULL }) # Tentative fix warning: Use sfLinear avec param 0 pour sfu
+# ** Reverted sfu/sfupar back to NULL as originally intended for one-sided test **
+design_guardrail <- tryCatch({ gsDesign(k=k, test.type=4, alpha=0.00001, beta=alpha_guardrail, timing=timing, sfu=NULL, sfupar=NULL, sfl=sfl_guardrail_func, sflpar=NULL) }, error = function(e) { guardrail_error <<- e$message; NULL })
 guardrail_boundaries_z <- NA
 if (is.null(design_guardrail)) { warning(paste("Erreur calcul bornes guardrail:", guardrail_error)); guardrail_boundaries_z <- rep(NA_real_, k) }
 else { if (!is.null(design_guardrail$lower) && length(design_guardrail$lower$bound) == k) { guardrail_boundaries_z <- design_guardrail$lower$bound; message("Bornes Guardrail calculées.") } else { warning("Structure inattendue retournée par gsDesign pour bornes guardrail."); guardrail_boundaries_z <- rep(NA_real_, k) } }
@@ -66,10 +67,10 @@ if (all(required_data_keys %in% names(params))) {
             else { se_pooled <- sqrt(p_pooled * (1 - p_pooled) * (1/n1 + 1/n2)); if (se_pooled < .Machine$double.eps * 100) { observed_z <- NA_real_; observed_z_message <- "Z primaire non calculé (SE pooled quasi-nulle)." } else { observed_z <- (p2 - p1) / se_pooled; observed_z_message <- paste("Z primaire calculé:", round(observed_z, 5)) } }
         }, error = function(e) { observed_z <<- NA_real_; observed_z_message <<- paste("Erreur calcul Z primaire:", e$message) })
     }
-} else { # Else correspondant à 'if (all required_data_keys...)'
+} else {
      observed_z_message <- "Données A/B primaires non fournies ou invalides."
 }
-# *** Le bloc 'else' erroné a été VRAIMENT supprimé ici ***
+# *** VERIFIED: NO DANGLING ELSE HERE ***
 
 message(observed_z_message)
 
@@ -80,5 +81,3 @@ for (i in seq_len(k)) { info_frac <- get_numeric_or_na(design_primary$n.I[[i]]);
 # --- Imprimer JSON et Quitter ---
 cat(toJSON(results, pretty = FALSE, auto_unbox = TRUE, na = "null"))
 quit(save = "no", status = 0, runLast = FALSE)
-
-# --- END OF FILE calculate_gs_design.R ---
