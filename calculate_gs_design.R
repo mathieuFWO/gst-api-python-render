@@ -1,6 +1,6 @@
 #!/usr/bin/env Rscript
 # Script pour calculer les bornes GST avec gsDesign ET le Z-score observé
-# ET les bornes ajustées pour le guardrail (v37.15 - Fix Syntax Error)
+# ET les bornes ajustées pour le guardrail (v37.16 - Fix Syntax Error FINAL)
 
 # --- Configuration initiale ---
 options(scipen = 999)
@@ -47,7 +47,7 @@ sfl_guardrail_name <- "OF (Guardrail)"
 message(paste("Calcul Bornes Guardrail: k=", k, ", alpha_guardrail=", alpha_guardrail, " (mappé à beta)"))
 message(paste("Using sfl (Guardrail):", sfl_guardrail_name))
 design_guardrail <- NULL; guardrail_error <- NULL;
-design_guardrail <- tryCatch({ gsDesign(k=k, test.type=4, alpha=0.00001, beta=alpha_guardrail, timing=timing, sfu=NULL, sfupar=NULL, sfl=sfl_guardrail_func, sflpar=NULL) }, error = function(e) { guardrail_error <<- e$message; NULL }) # Added sfupar/sflpar=NULL explicitly
+design_guardrail <- tryCatch({ gsDesign(k=k, test.type=4, alpha=0.00001, beta=alpha_guardrail, timing=timing, sfu=NULL, sfupar=NULL, sfl=sfl_guardrail_func, sflpar=NULL) }, error = function(e) { guardrail_error <<- e$message; NULL })
 guardrail_boundaries_z <- NA
 if (is.null(design_guardrail)) { warning(paste("Erreur calcul bornes guardrail:", guardrail_error)); guardrail_boundaries_z <- rep(NA_real_, k) }
 else { if (!is.null(design_guardrail$lower) && length(design_guardrail$lower$bound) == k) { guardrail_boundaries_z <- design_guardrail$lower$bound; message("Bornes Guardrail calculées.") } else { warning("Structure inattendue retournée par gsDesign pour bornes guardrail."); guardrail_boundaries_z <- rep(NA_real_, k) } }
@@ -66,11 +66,12 @@ if (all(required_data_keys %in% names(params))) {
             else { se_pooled <- sqrt(p_pooled * (1 - p_pooled) * (1/n1 + 1/n2)); if (se_pooled < .Machine$double.eps * 100) { observed_z <- NA_real_; observed_z_message <- "Z primaire non calculé (SE pooled quasi-nulle)." } else { observed_z <- (p2 - p1) / se_pooled; observed_z_message <- paste("Z primaire calculé:", round(observed_z, 5)) } }
         }, error = function(e) { observed_z <<- NA_real_; observed_z_message <<- paste("Erreur calcul Z primaire:", e$message) })
     }
-} else { # Else for 'if (all required_data_keys...)'
+} else { # Else correspondant à 'if (all required_data_keys...)'
      observed_z_message <- "Données A/B primaires non fournies ou invalides."
-} # *** Corrected: Removed the extra dangling 'else' block that was here ***
+}
+# *** Bloc 'else' ERRONE et SUPPRIME ***
 
-message(observed_z_message)
+message(observed_z_message) # Affiche le statut final du calcul Z
 
 # --- Préparation Sortie JSON ---
 results <- list( error = FALSE, message = "Calcul terminé.", observedZ = ifelse(is.na(observed_z), NA, round(observed_z, 5)), observedZMessage = observed_z_message, parameters = list( k = k, alpha = alpha, beta = beta, power = power, testType = test_type, timing = timing, sfu = sfu_standard_name, sfuParam = sfu_param_val, sfl = sfl_standard_name, sflParam = sfl_param_val, alphaGuardrail = alpha_guardrail, sflGuardrail = sfl_guardrail_name ), boundaries = list(), guardrailBoundariesZ = if(all(is.na(guardrail_boundaries_z))) NA else round(guardrail_boundaries_z, 3) )
