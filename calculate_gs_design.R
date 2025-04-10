@@ -1,6 +1,6 @@
 #!/usr/bin/env Rscript
 # Script pour calculer les bornes GST avec gsDesign ET le Z-score observé
-# ET les bornes ajustées pour le guardrail (v37.17 - Fix Syntax Error FINAL++)
+# ET les bornes ajustées pour le guardrail (v37.18 - Tentative Fix Guardrail sfu)
 
 # --- Configuration initiale ---
 options(scipen = 999)
@@ -47,7 +47,19 @@ sfl_guardrail_name <- "OF (Guardrail)"
 message(paste("Calcul Bornes Guardrail: k=", k, ", alpha_guardrail=", alpha_guardrail, " (mappé à beta)"))
 message(paste("Using sfl (Guardrail):", sfl_guardrail_name))
 design_guardrail <- NULL; guardrail_error <- NULL;
-design_guardrail <- tryCatch({ gsDesign(k=k, test.type=4, alpha=0.00001, beta=alpha_guardrail, timing=timing, sfu=NULL, sfupar=NULL, sfl=sfl_guardrail_func, sflpar=NULL) }, error = function(e) { guardrail_error <<- e$message; NULL })
+# ** MODIFIED: Provide a minimal valid sfu (sfLinear with 0 spending) to potentially avoid the warning **
+design_guardrail <- tryCatch({
+     gsDesign(k = k,
+             test.type = 4,
+             alpha = 0.5, # Set alpha to non-zero but effectively ignore upper bound
+             beta = alpha_guardrail,
+             timing = timing,
+             sfu = gsDesign::sfLinear, # Provide a valid SFU
+             sfupar = c(0, 0),        # Parameters for sfLinear (no spending)
+             sfl = sfl_guardrail_func,
+             sflpar = NULL)
+}, error = function(e) { guardrail_error <<- e$message; NULL })
+
 guardrail_boundaries_z <- NA
 if (is.null(design_guardrail)) { warning(paste("Erreur calcul bornes guardrail:", guardrail_error)); guardrail_boundaries_z <- rep(NA_real_, k) }
 else { if (!is.null(design_guardrail$lower) && length(design_guardrail$lower$bound) == k) { guardrail_boundaries_z <- design_guardrail$lower$bound; message("Bornes Guardrail calculées.") } else { warning("Structure inattendue retournée par gsDesign pour bornes guardrail."); guardrail_boundaries_z <- rep(NA_real_, k) } }
@@ -69,7 +81,7 @@ if (all(required_data_keys %in% names(params))) {
 } else {
      observed_z_message <- "Données A/B primaires non fournies ou invalides."
 }
-# *** NO DANGLING ELSE HERE ***
+# *** VERIFIED AGAIN: NO DANGLING ELSE HERE ***
 
 message(observed_z_message)
 
