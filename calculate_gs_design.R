@@ -47,7 +47,6 @@ sfl_guardrail_name <- "OF (Guardrail)"
 message(paste("Calcul Bornes Guardrail: k=", k, ", alpha_guardrail=", alpha_guardrail, " (mappé à beta)"))
 message(paste("Using sfl (Guardrail):", sfl_guardrail_name))
 design_guardrail <- NULL; guardrail_error <- NULL;
-# ** Reverted sfu/sfupar back to NULL as originally intended for one-sided test **
 design_guardrail <- tryCatch({ gsDesign(k=k, test.type=4, alpha=0.00001, beta=alpha_guardrail, timing=timing, sfu=NULL, sfupar=NULL, sfl=sfl_guardrail_func, sflpar=NULL) }, error = function(e) { guardrail_error <<- e$message; NULL })
 guardrail_boundaries_z <- NA
 if (is.null(design_guardrail)) { warning(paste("Erreur calcul bornes guardrail:", guardrail_error)); guardrail_boundaries_z <- rep(NA_real_, k) }
@@ -70,7 +69,7 @@ if (all(required_data_keys %in% names(params))) {
 } else {
      observed_z_message <- "Données A/B primaires non fournies ou invalides."
 }
-# *** VERIFIED: NO DANGLING ELSE HERE ***
+# *** NO DANGLING ELSE HERE ***
 
 message(observed_z_message)
 
