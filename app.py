@@ -48,8 +48,11 @@ def calculate_boundaries():
         return jsonify({"error": True, "message": f"Erreur lors de la sérialisation JSON: {e}"}), 500
 
     # Préparation de la commande R
+    # Tentative: Mettre explicitement des quotes autour de l'argument JSON
+    # command = [R_EXECUTABLE, R_SCRIPT_PATH, f"'{input_json_string}'"] # <--- ESSAYER CECI ? Moins standard
+    # Revenir à la version standard qui est plus fiable normalement:
     command = [R_EXECUTABLE, R_SCRIPT_PATH, input_json_string]
-    print(f"Exécution de la commande: {' '.join(command)}") # Log la commande
+    print(f"Exécution de la commande: {' '.join(command)}")
 
     # --- Bloc TRY principal pour l'exécution du subprocess ---
     try:
