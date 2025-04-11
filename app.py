@@ -1,5 +1,3 @@
-# --- START OF FILE app.py ---
-
 import os
 import sys
 import subprocess
@@ -31,11 +29,9 @@ def calculate_boundaries():
         return jsonify({"error": True, "message": "Requête doit être au format JSON"}), 400
 
     params = request.get_json()
-    print(f"Paramètres reçus: {params}") # Log les paramètres bruts
+    print(f"Paramètres reçus: {params}")
 
-    # Validation basique des paramètres du design
-    # Note: Les données cumulées (visitors_a, etc.) sont optionnelles ici,
-    #       le script R gère leur absence pour le calcul Z.
+    # Validation basique
     if not params or not isinstance(params.get('k'), int) or params['k'] <= 0:
         print("Erreur: Paramètre 'k' invalide")
         return jsonify({"error": True, "message": "Paramètre 'k' (nombre d'étapes) manquant ou invalide."}), 400
@@ -49,84 +45,74 @@ def calculate_boundaries():
 
     # Préparation de la commande R
     command = [R_EXECUTABLE, R_SCRIPT_PATH, input_json_string]
-    print(f"Exécution de la commande: {' '.join(command)}") # Log la commande
+    print(f"Exécution de la commande: {' '.join(command)}")
 
     # --- Bloc TRY principal pour l'exécution du subprocess ---
     try:
         # Exécution du script R
         proc = subprocess.run(command,
                               capture_output=True,
-                              text=True, # Pour obtenir stdout/stderr en texte
+                              text=True,
                               check=False, # Ne pas lever d'erreur ici pour lire stderr
-                              timeout=30) # Timeout de 30 secondes
+                              timeout=30) # Timeout
 
         print(f"Script R terminé (code {proc.returncode})")
-        # Log tronqué pour éviter les logs trop longs
         print(f"R stdout (début): {proc.stdout[:500]}...")
         if proc.stderr:
-            # Log complet de stderr car souvent informatif
             print(f"R stderr: {proc.stderr}")
 
-        # Gestion des erreurs d'exécution du script R lui-même
+        # Gestion des erreurs d'exécution du script R
         if proc.returncode != 0:
             error_message = f"Erreur exécution script R (code {proc.returncode})."
-            # Essayer de récupérer le message d'erreur de R stderr s'il existe
             details = proc.stderr or "Pas de détails stderr disponibles."
-            print(error_message, details) # Log l'erreur
+            print(error_message, details)
             return jsonify({"error": True, "message": error_message, "details": details}), 500
 
-        # --- Bloc TRY interne pour le parsing JSON de la sortie R ---
+        # --- Bloc TRY interne pour le parsing JSON ---
         try:
-            # Essayer de parser la sortie standard du script R comme JSON
             result = json.loads(proc.stdout)
 
-            # Vérification d'une erreur applicative retournée par le script R lui-même
-            # (ex: validation de paramètre interne à R, erreur de calcul gsDesign)
-            if isinstance(result, dict) and result.get('error') is True:
-                 r_message = result.get('message', "Erreur interne retournée par le script R.")
-                 r_details = result.get('details') # Optionnel
-                 print(f"Le script R a retourné une erreur applicative: {r_message} Details: {r_details}")
-                 return jsonify({"error": True, "message": r_message, "details": r_details}), 400 # Bad request si erreur logique R
+            # Vérification d'erreur applicative retournée par R
+            error_value = result.get('error')
+            is_r_error = isinstance(error_value, list) and len(error_value) > 0 and error_value[0] is True
+
+            if is_r_error:
+                r_message_list = result.get('message', ["Erreur R non spécifiée."])
+                r_message = r_message_list[0] if isinstance(r_message_list, list) and r_message_list else "Erreur R non spécifiée."
+                print(f"Le script R a retourné une erreur interne: {r_message}")
+                return jsonify({"error": True, "message": r_message, "details": result.get('details')}), 400
             else:
-                # Si tout va bien (pas d'erreur d'exécution et pas d'erreur applicative R)
-                print("Succès: Renvoi du résultat JSON du script R.")
-                # On retourne le JSON complet tel que reçu de R
+                print("Succès: Renvoi du résultat JSON.")
                 return jsonify(result)
 
         except json.JSONDecodeError as json_err:
-            # Gérer le cas où la sortie R n'est pas un JSON valide
             print(f"Erreur parsing JSON de la sortie R: {json_err}")
-            print(f"Sortie R brute (stdout): {proc.stdout}") # Log la sortie brute qui a échoué
+            print(f"Sortie R brute: {proc.stdout}")
             return jsonify({
                 "error": True,
                 "message": "Impossible de parser la sortie JSON du script R.",
-                "raw_output": proc.stdout, # Inclure la sortie brute peut aider au débogage
+                "raw_output": proc.stdout,
                 "parse_error": str(json_err)
             }), 500
 
-    # --- EXCEPT pour FileNotFoundError (Rscript ou .R introuvable) ---
+    # --- EXCEPT pour FileNotFoundError (externe) ---
     except FileNotFoundError:
          print(f"Erreur critique: '{R_EXECUTABLE}' ou '{R_SCRIPT_PATH}' non trouvé.")
          return jsonify({"error": True, "message": "Fichier Rscript ou script R introuvable sur le serveur."}), 500
-    # --- EXCEPT pour TimeoutExpired ---
+    # --- EXCEPT pour TimeoutExpired (externe) ---
     except subprocess.TimeoutExpired:
          print("Erreur: Timeout du script R.")
-         return jsonify({"error": True, "message": "Le calcul R a dépassé le délai imparti."}), 500
-    # --- EXCEPT général pour autres erreurs inattendues ---
+         return jsonify({"error": True, "message": "Le calcul R a dépassé le délai."}), 500
+    # --- EXCEPT général (externe) ---
     except Exception as e:
-        # Log l'erreur complète côté serveur
-        print(f"Erreur serveur inattendue lors de l'exécution du script R: {e}", file=sys.stderr)
+        print(f"Erreur serveur inattendue: {e}", file=sys.stderr)
         import traceback
-        traceback.print_exc() # Imprime la trace complète dans les logs serveur
-        # Retourne un message d'erreur générique au client
-        return jsonify({"error": True, "message": f"Erreur serveur inattendue."}), 500
+        traceback.print_exc()
+        return jsonify({"error": True, "message": f"Erreur serveur inattendue: {e}"}), 500
 
 # --- Point de terminaison pour vérifier si l'API est en ligne ---
 @app.route('/', methods=['GET'])
 def health_check():
     return jsonify({"status": "API GST en ligne"})
 
-# Pas de app.run() nécessaire pour Gunicorn en production
-# Gunicorn est lancé via le Procfile ou la commande de démarrage Render
-
-# --- END OF FILE app.py ---
+# Pas de app.run() pour la production avec Gunicorn
