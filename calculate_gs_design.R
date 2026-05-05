@@ -289,8 +289,8 @@ for (i in seq_len(k)) {
     alpha_cum <- NA_real_
     beta_cum <- NA_real_
 
-    # Extraire les valeurs si elles existent dans l'objet design
-    info_frac <- get_numeric_or_na(design$n.I[[i]]) # Fraction d'information cumulée
+    # Fraction d'information normalisée (0–1) : i/k, cohérent avec timing = (1:k)/k
+    info_frac <- timing[i]
 
     if (!is.null(design$upper) && length(design$upper$bound) >= i) {
         eff_z <- get_numeric_or_na(design$upper$bound[[i]]) # Borne Z d'efficacité
