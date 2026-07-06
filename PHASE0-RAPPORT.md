@@ -55,11 +55,21 @@ séquentielle / taille à horizon fixe), typiquement **1.00–1.15**. Donc
 `n.I[i]/n.I[k] = timing[i] = i/k`. → La dernière valeur `n.I[k]` **est** le facteur
 d'inflation. C'est exactement l'hypothèse H1.
 
-### Recommandation (à trancher en V0 — voir Décision D0 ci-dessous)
-**Revenir à `info_frac <- design$n.I[[i]]` sur la branche** (rétablir le comportement de
-`main`), puis laisser la Phase 3b faire la normalisation + l'affichage `×√IF` **côté
-front**, comme le brief le prévoit. C'est l'option la plus alignée, additive et testable.
-Ne PAS agir tant que Mat n'a pas validé (G1).
+### RÉSOLUTION V0 (décidée par Mat, appliquée sur la branche)
+On **ne parie plus sur H1** ; l'information est rendue explicite :
+1. `infoFraction` **reverté** à `design$n.I[[i]]` → strictement identique à la production
+   (G5/G6 ; les canoniques de référence se capturent sur la prod, pas sur la branche).
+2. Deux champs **additifs** ajoutés à la réponse R :
+   - `boundaries[i].timing = i/k` (vraie fraction, dernière = 1.0) ;
+   - `inflationFactor` (top-level) = `design$n.I[[k]]` (scalaire ;
+     **critère d'acceptation canonique A : ∈ [1.00 ; 1.30], sinon STOP**).
+3. La Phase 3b consomme `inflationFactor` + `timing` explicitement ; H1 devient une simple
+   observation à consigner depuis la sortie prod.
+4. **G6 précisé** : après tout déploiement API, les champs *existants* des canoniques
+   doivent rester identiques ; les champs *additifs* sont exclus du diff.
+
+⚠️ **Ordre de capture** : générer les canoniques de référence sur la **prod actuelle**
+AVANT tout déploiement de ce revert (condition posée par Mat).
 
 ---
 
@@ -116,8 +126,10 @@ Inventaire exact des dépendances externes du front (relevé du code source) :
 
 - **Versions résolues + hashes SRI** : `[À RELEVER]` → `reference/cdn-versions.txt`.
 - **Joignabilité `maxcdn.bootstrapcdn.com`** : `[À RELEVER]` (testée par le script).
-- Note : `jstat` n'est **pas réellement utilisé** dans le calcul (le Z observé vient de l'API
-  et de `computeObservedZ` local). À confirmer en Phase 6 → candidat à suppression pure.
+- **CORRECTION (constat initial erroné)** : `jStat` **EST utilisé** — `jStat.normal.inv`
+  est appelé 3× dans `calculateAndDisplayMDEForecast()` (lignes 908–910 : `zBeta`,
+  `zAlpha_principal`, `zAlpha_secondary`). Tout le tableau MDE de l'Étape 1 en dépend.
+  → **Aucune suppression.** Action Phase 6 : épingler la version + SRI uniquement.
 
 ## 6. Plan Render
 
@@ -148,19 +160,19 @@ Le free tier confirme le besoin du **ping de préchauffage** (Phase 6 §9.3).
 
 ---
 
-## Décisions attendues de Mat (gate V0)
+## Décisions tranchées par Mat (gate V0) — ARRÊTÉES
 
-- **D0 (NOUVEAU, bloquant Phase 3b)** — Conflit `infoFraction` : rétablir
-  `design$n.I[[i]]` sur la branche (recommandé, aligne avec Phase 3b) / garder `timing[i]`
-  et basculer Phase 3b en plan B (exporter `inflationFactor` séparément côté R) / hybride
-  (retourner les deux champs).
-- **D1** (Phase 1) — Marge de non-régression guardrail : champ modifiable (défaut 1.0 %) ou
-  constante ? Valeur ?
-- **D2** (Phase 4) — Seuil SRM : `10.828` (p<0.001, proposé + MAJ FAQ) ou `6.635` (p<0.01) ?
-- **D3** (Phase 1/planif) — `testType=1` sans futilité : conserver + tooltip (proposé) ou
-  basculer `testType=4` ?
-- **D4** (Phase 6) — jQuery/Bootstrap/Popper : mettre à jour maintenant (+V6) ou seulement
-  épingler + SRI ?
+- **D0** — Revert `infoFraction` → `design$n.I[[i]]` (identique prod) + champs additifs
+  `timing` (i/k) et `inflationFactor` (`n.I[k]`, ∈ [1.00 ; 1.30] sinon STOP). ✅ **APPLIQUÉ**
+  sur la branche (non déployé).
+- **D1** — Marge de non-régression guardrail : **champ de planification, défaut 1,0 %
+  relatif**, modifiable. → Phase 1.
+- **D2** — Seuil SRM : **0,001 (χ² > 10,828)**, FAQ de la page à aligner. → Phase 4.
+- **D3** — `testType=1` : **conservé tel quel + tooltip** « pas d'arrêt anticipé pour
+  futilité dans ce mode ». → Phase 1.
+- **D4** — Front : **épinglage + SRI uniquement** dans ce lot. Upgrade
+  jQuery/Bootstrap/Popper → **micro-lot séparé après V6** (la page bouge déjà avec la
+  refonte éditoriale, pas de staging, on ne cumule pas les risques). → Phase 6.
 
 ## Prochain pas proposé
 

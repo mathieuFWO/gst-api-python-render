@@ -28,12 +28,30 @@ Ce dossier contient les **sorties canoniques de référence** de l'API GST. Elle
 | canonique-B | idem A + `visitors_a:40000, conversions_a:2000, visitors_b:40000, conversions_b:2120` |
 | h2-rci (H2) | `{"k":8,"alpha":0.025,"power":0.80,"sfu":"KimDeMets","testType":2}` |
 
-## ⚠️ Point de vigilance : champ `infoFraction`
+## ⚠️ Point de vigilance : champ `infoFraction` (D0 — RÉSOLU)
 
-Le script R de la branche `claude/check-git-access-vzJy6` a modifié `infoFraction`
-(`design$n.I[[i]]` → `timing[i] = i/k`). Cela **change la sortie du champ `infoFraction`**
-par rapport à `main` et à la production actuelle. Voir `PHASE0-RAPPORT.md` §3 (H1) :
-cette modification doit être **tranchée par Mat** avant de figer les références, car elle
-interagit avec la Phase 3b (facteur d'inflation). Générer les références **contre la
-production actuelle** (branche `main` déployée), pas contre cette branche, tant que
-la décision n'est pas prise.
+Décision V0 appliquée : `infoFraction` **reste `design$n.I[[i]]`** (identique à la prod),
+et deux champs **additifs** sont ajoutés à la réponse R : `boundaries[i].timing` (= i/k)
+et `inflationFactor` (= `n.I[k]`).
+
+**Ordre impératif** (condition posée par Mat) :
+1. **Capturer les canoniques sur la PROD actuelle** (`main` déployée), via
+   `phase0-collect.sh`, **AVANT** tout déploiement du revert D0.
+2. Après déploiement de l'API augmentée : le diff de non-régression porte **uniquement sur
+   les champs existants** (`observedZ`, `boundaries[].efficacyZ/futilityZ/infoFraction/…`,
+   `parameters`). Ils doivent être **identiques** à la référence prod.
+3. Les champs **additifs** (`timing`, `inflationFactor`) sont **exclus du diff** (G6).
+
+Commande de diff filtré (exclut les champs additifs) :
+```bash
+python3 - <<'PY'
+import json
+ref  = json.load(open("canonique-A.json"))          # capturé sur prod
+new  = json.load(open("canonique-A.after.json"))     # après déploiement API augmentée
+def strip(d):
+    d = json.loads(json.dumps(d)); d.pop("inflationFactor", None)
+    for b in d.get("boundaries", []): b.pop("timing", None)
+    return d
+print("IDENTIQUE" if strip(ref) == strip(new) else "⚠️ RÉGRESSION sur champ existant")
+PY
+```

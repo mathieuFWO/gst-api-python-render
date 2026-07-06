@@ -27,21 +27,33 @@ say() { printf '\n\033[1m%s\033[0m\n' "$*"; }
 # --- petit extracteur JSON via python3 (pas de dépendance jq obligatoire) ---
 jget() { python3 -c "import json,sys;d=json.load(open(sys.argv[1]));print(eval(sys.argv[2]))" "$1" "$2" 2>/dev/null; }
 
+# --- POST avec retry (cold start Render : 1er appel jusqu'à ~1 min) ---
+# usage : post_retry <payload> <fichier_sortie>
+post_retry() {
+  local payload="$1" out="$2" attempt code
+  for attempt in 1 2 3 4; do
+    code=$(curl -s -m 120 -X POST "$API" -H "Content-Type: application/json" \
+                -d "$payload" -o "$out" -w '%{http_code}')
+    if [ "$code" = "200" ] && python3 -m json.tool "$out" >/dev/null 2>&1; then
+      echo "   HTTP 200 (tentative $attempt) -> $(basename "$out")"; return 0
+    fi
+    echo "   tentative $attempt : HTTP $code (cold start ? nouvel essai dans 15 s…)"
+    sleep 15
+  done
+  echo "   ⚠️ échec après 4 tentatives (dernier code HTTP $code) — inspecter $out"
+  return 1
+}
+
 say "0. Réveil de l'API (cold start Render possible, jusqu'à 60 s)…"
 curl -s -m 90 -o /dev/null -w "   health GET / -> HTTP %{http_code}\n" "$HEALTH"
 
 # --- 1. Canonique A ---------------------------------------------------------
 say "1. Canonique A (design seul)"
-curl -s -m 90 -X POST "$API" -H "Content-Type: application/json" \
-  -d '{"k":8,"alpha":0.05,"power":0.80,"sfu":"KimDeMets","sfl":"HSD","testType":3}' \
-  -o "$DIR/canonique-A.json" -w "   HTTP %{http_code}\n"
-python3 -m json.tool "$DIR/canonique-A.json" >/dev/null 2>&1 && echo "   JSON valide -> reference/canonique-A.json" || echo "   ⚠️ réponse non-JSON, inspecter le fichier"
+post_retry '{"k":8,"alpha":0.05,"power":0.80,"sfu":"KimDeMets","sfl":"HSD","testType":3}' "$DIR/canonique-A.json"
 
 # --- 2. Canonique B ---------------------------------------------------------
 say "2. Canonique B (design + données semaine intermédiaire)"
-curl -s -m 90 -X POST "$API" -H "Content-Type: application/json" \
-  -d '{"k":8,"alpha":0.05,"power":0.80,"sfu":"KimDeMets","sfl":"HSD","testType":3,"visitors_a":40000,"conversions_a":2000,"visitors_b":40000,"conversions_b":2120}' \
-  -o "$DIR/canonique-B.json" -w "   HTTP %{http_code}\n"
+post_retry '{"k":8,"alpha":0.05,"power":0.80,"sfu":"KimDeMets","sfl":"HSD","testType":3,"visitors_a":40000,"conversions_a":2000,"visitors_b":40000,"conversions_b":2120}' "$DIR/canonique-B.json"
 echo "   observedZ = $(jget "$DIR/canonique-B.json" "d['observedZ']")"
 
 # --- 3. H1 : infoFraction porte-t-il le facteur d'inflation ? ---------------
@@ -61,9 +73,7 @@ PY
 
 # --- 4. H2 : bornes RCI (testType=2, alpha=0.025) ---------------------------
 say "4. H2 — bornes RCI (superiority two-sided proxy, alpha=0.025)"
-curl -s -m 90 -X POST "$API" -H "Content-Type: application/json" \
-  -d '{"k":8,"alpha":0.025,"power":0.80,"sfu":"KimDeMets","testType":2}' \
-  -o "$DIR/h2-rci.json" -w "   HTTP %{http_code}\n"
+post_retry '{"k":8,"alpha":0.025,"power":0.80,"sfu":"KimDeMets","testType":2}' "$DIR/h2-rci.json"
 python3 - "$DIR/h2-rci.json" <<'PY'
 import json,sys
 d=json.load(open(sys.argv[1]))
