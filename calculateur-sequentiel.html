@@ -1,7 +1,7 @@
-<!-- v38.22 - Bugfix graphique Z-score + améliorations audit -->
+<!-- v39.0 - Sémantique de décision corrigée (nocivité miroir + non-infériorité à marge) -->
 <head>
   <meta charset="UTF-8">
-  <title>Calculateur Test A/B – Analyse séquentielle (v38.22)</title>
+  <title>Calculateur Test A/B – Analyse séquentielle (v39.0)</title>
   <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -310,6 +310,11 @@ button#mdeAccordionButton {background: #fff;color: #333;font-weight: 600;font-si
                           <input type="number" class="form-control" id="baselineTotalConversionsSecondary" placeholder="ex: 1000" min="0">
                           <small id="baselineTotalConversionsSecondaryInfo" class="form-text text-info-custom" style="display: none;"></small>
                       </div>
+                      <div class="form-group" id="niMarginGroup" style="display:none;">
+                          <label for="niMarginRel">Marge de non-régression tolérée (%)</label>
+                          <span class="tooltip-icon" data-tooltip="Perte relative maximale jugée acceptable sur l'objectif de sécurité. La 'sécurité démontrée' signifie : la perte réelle est statistiquement inférieure à cette marge.">?</span>
+                          <input type="number" class="form-control" id="niMarginRel" value="1.0" min="0.1" max="20" step="0.1">
+                      </div>
                       <hr class="custom-separator">
                       <h4>Options : statistiques</h4>
                        <div class="form-group">
@@ -532,10 +537,11 @@ button#mdeAccordionButton {background: #fff;color: #333;font-weight: 600;font-si
                        <a href="#" id="toggleSecondaryDetailsLink" class="btn-link details-toggle-link">Voir plus de détails</a>
                        <div id="secondaryDetailsContainer" style="display: none;">
                            <p><label>Z-score Cumulé:</label> <span id="zScoreSecondary">N/A</span></p>
+                           <p><label>Z(NI) Cumulé:</label> <span id="zNiSecondaryDisplay">N/A</span></p>
                            <p class="bounds-info">
                                <label>Bornes Z:</label>
-                               Non-Rég.: <span id="effBoundaryDisplaySecondary">N/A</span> |
-                               Régression: <span id="futBoundaryDisplaySecondary">N/A</span>
+                               Sécurité démontrée si Z(NI) ≥ <span id="effBoundaryDisplaySecondary">N/A</span> |
+                               Régression démontrée si Z ≤ <span id="regBoundaryDisplaySecondary">N/A</span>
                            </p>
                        </div>
                   </div>
@@ -591,7 +597,9 @@ button#mdeAccordionButton {background: #fff;color: #333;font-weight: 600;font-si
         const baselineTrafficInput = document.getElementById('baselineTraffic');
         const baselineTotalConversionsInput = document.getElementById('baselineTotalConversions');
         const baselineTotalConversionsSecondaryInput = document.getElementById('baselineTotalConversionsSecondary');
-        const baselineSecondaryKpiGroup = document.getElementById('baselineSecondaryKpiGroup'); 
+        const baselineSecondaryKpiGroup = document.getElementById('baselineSecondaryKpiGroup');
+        const niMarginGroup = document.getElementById('niMarginGroup');
+        const niMarginRelInput = document.getElementById('niMarginRel');
         const toggleBaselineSecondaryKpiLink = document.getElementById('toggleBaselineSecondaryKpi'); 
         const testStartDateInput = document.getElementById('testStartDate'); // AJOUT
         const mdeConfidenceSelect = document.getElementById('mdeConfidence');
@@ -696,9 +704,10 @@ button#mdeAccordionButton {background: #fff;color: #333;font-weight: 600;font-si
         let chartInstance = null; 
         let liftChartInstances = {};
         let progressGaugeInstance = null;
-        let observedZDataPrincipal = []; 
-        let observedZDataSecondary = []; 
-        let isSecondaryKpiPlanned = false; 
+        let observedZDataPrincipal = [];
+        let observedZDataSecondary = [];
+        let observedZNiSecondary = []; // Z de non-infériorité (guardrail), par étape — Phase 1
+        let isSecondaryKpiPlanned = false;
 
         // --- Constantes ---
         const TEST_TYPE_SECONDARY_DEFAULT = 3; 
@@ -801,6 +810,7 @@ button#mdeAccordionButton {background: #fff;color: #333;font-weight: 600;font-si
             event.preventDefault();
             const isHidden = baselineSecondaryKpiGroup.style.display === 'none';
             baselineSecondaryKpiGroup.style.display = isHidden ? 'block' : 'none';
+            if (niMarginGroup) niMarginGroup.style.display = isHidden ? 'block' : 'none';
             toggleBaselineSecondaryKpiLink.textContent = isHidden ? 'Retirer le KPI de sécurité (planification)' : 'Ajouter un KPI de sécurité (planification)';
             isSecondaryKpiPlanned = isHidden; 
             
@@ -1003,10 +1013,11 @@ button#mdeAccordionButton {background: #fff;color: #333;font-weight: 600;font-si
                     applyKHighlight(currentDesignParams.k); 
                     checkIfStartAnalysisCanBeEnabled(); return; 
                 } 
-                weeklyEnteredData = []; 
-                resultsDiv.style.display = 'none'; 
-                observedZDataPrincipal = []; 
+                weeklyEnteredData = [];
+                resultsDiv.style.display = 'none';
+                observedZDataPrincipal = [];
                 observedZDataSecondary = [];
+                observedZNiSecondary = [];
             }
             
             startAnalysisButton.disabled = true; loadingDiv.style.display = 'block'; errorDivGen.textContent = ''; errorDivGen.style.display = 'none';
@@ -1042,6 +1053,7 @@ button#mdeAccordionButton {background: #fff;color: #333;font-weight: 600;font-si
 
                 currentBoundariesApiResultSecondary = null; 
                 observedZDataSecondary = new Array(currentDesignParams.k).fill(null);
+                observedZNiSecondary = new Array(currentDesignParams.k).fill(null);
                 
                 displayBoundariesTableAndChart(); 
                 displayApiResults(); 
@@ -1193,6 +1205,7 @@ button#mdeAccordionButton {background: #fff;color: #333;font-weight: 600;font-si
                 
                 observedZDataPrincipal = new Array(currentDesignParams.k).fill(null);
                 observedZDataSecondary = new Array(currentDesignParams.k).fill(null);
+                observedZNiSecondary = new Array(currentDesignParams.k).fill(null);
                 
                 if (currentBoundariesApiResultPrincipal && currentBoundariesApiResultPrincipal.boundaries) {
                     renderOrUpdateChart(0, currentBoundariesApiResultPrincipal, null, false); 
@@ -1271,74 +1284,90 @@ button#mdeAccordionButton {background: #fff;color: #333;font-weight: 600;font-si
                     console.warn(`Bornes (Secondaire) étape ${currentStage} non trouvées.`);
                     effB_secondary = NaN; futB_secondary = NaN; 
                 }
-                if (currentStage > 0 && currentStage <= currentDesignParams.k) observedZDataSecondary[currentStage - 1] = zSecondaryIsValid ? parseFloat(z_secondary_from_api.toFixed(4)) : null;
+                if (currentStage > 0 && currentStage <= currentDesignParams.k) {
+                    observedZDataSecondary[currentStage - 1] = zSecondaryIsValid ? parseFloat(z_secondary_from_api.toFixed(4)) : null;
+                    // Z de non-infériorité (guardrail) : marge relative depuis le champ de planification
+                    const zNi = computeObservedZNi(cumVA, cumCA_S, cumVB, cumCB_S, getNiMarginRelFraction());
+                    observedZNiSecondary[currentStage - 1] = (zNi !== null) ? parseFloat(zNi.toFixed(4)) : null;
+                }
                 secondaryMetricResultsDiv.style.display = 'block';
             } else {
                 secondaryMetricResultsDiv.style.display = 'none';
-                if (currentStage > 0 && currentStage <= currentDesignParams.k) observedZDataSecondary[currentStage - 1] = null;
+                if (currentStage > 0 && currentStage <= currentDesignParams.k) {
+                    observedZDataSecondary[currentStage - 1] = null;
+                    observedZNiSecondary[currentStage - 1] = null;
+                }
             }
 
-            // MODIFICATION START: Logique de décision révisée selon les scénarios
-            let decisionText = ""; 
-            let decisionClass = "decision-continue"; 
-            const tTypePrincipal = currentDesignParams.testTypePrincipal;
+            // MODIFICATION START: Logique de décision v39 (nocivité miroir + non-infériorité à marge)
+            let decisionText = "";
+            let decisionClass = "decision-continue";
+            const K_TOTAL = currentDesignParams.k;
+            const marginPct = (getNiMarginRelFraction() * 100).toFixed(1);
 
-            let principalStateEval = INDICATOR_STATE.NEUTRAL;
+            // --- Objectif principal ---
+            // Ordre IMPORTANT : nocivité (miroir -effB) avant futilité (à la dernière étape, futB == effB).
+            let principalState = 'NEUTRE'; // NEUTRE | POSITIF | NEGATIF_DEMONTRE | FUTILE
             if (zPrincipalIsValid && isFinite(effB_principal) && z_principal_from_api >= effB_principal) {
-                principalStateEval = INDICATOR_STATE.POSITIVE;
+                principalState = 'POSITIF';
+            } else if (zPrincipalIsValid && isFinite(effB_principal) && z_principal_from_api <= -effB_principal) {
+                principalState = 'NEGATIF_DEMONTRE';
             } else if (zPrincipalIsValid && isFinite(futB_principal) && z_principal_from_api <= futB_principal) {
-                principalStateEval = INDICATOR_STATE.NEGATIVE;
+                principalState = 'FUTILE';
             }
 
-            let secondaryStateEval = INDICATOR_STATE.NEUTRAL; // Par défaut pour "pas de KPI de sécurité" ou "OK/Neutre"
-            if (isSecondaryKpiPlanned) {
-                if (zSecondaryIsValid && isFinite(futB_secondary) && z_secondary_from_api <= futB_secondary) {
-                    secondaryStateEval = INDICATOR_STATE.NEGATIVE; // Régression claire
-                } else if (zSecondaryIsValid && isFinite(effB_secondary) && z_secondary_from_api >= effB_secondary) {
-                    secondaryStateEval = INDICATOR_STATE.POSITIVE; // Non-régression claire (donc OK)
-                } else if (zSecondaryIsValid && isFinite(effB_secondary) && z_secondary_from_api < effB_secondary && (!isFinite(futB_secondary) || z_secondary_from_api > futB_secondary)) {
-                    secondaryStateEval = INDICATOR_STATE.RISK_NEGATIVE; // Dans la zone d'incertitude, risque de régression
-                }
-                 // Si zSecondaryIsValid est false, ou bornes non finies, reste NEUTRAL (non concluant)
-            }
-
-            if (principalStateEval === INDICATOR_STATE.POSITIVE) {
-                if (!isSecondaryKpiPlanned || secondaryStateEval === INDICATOR_STATE.POSITIVE || secondaryStateEval === INDICATOR_STATE.NEUTRAL) {
-                    decisionClass = "decision-stop-win"; // Scénario 1
-                    decisionText = `<strong>ARRÊTER - DÉPLOIEMENT RECOMMANDÉ :</strong><br>L'objectif principal est positif. ${isSecondaryKpiPlanned ? "L'objectif de sécurité est neutre ou positif." : ""}`;
-                } else if (secondaryStateEval === INDICATOR_STATE.RISK_NEGATIVE) {
-                    decisionClass = "decision-discuss"; // Scénario 2
-                    decisionText = `<strong>ARRÊTER - DISCUSSION REQUISE :</strong><br>L'objectif principal est positif, mais l'objectif de sécurité présente un risque de régression.`;
-                } else if (secondaryStateEval === INDICATOR_STATE.NEGATIVE) {
-                    decisionClass = "decision-stop-critical"; // Scénario 3
-                    decisionText = `<strong>ARRÊTER - NE PAS DÉPLOYER :</strong><br>L'objectif principal est positif, MAIS l'objectif de sécurité est négatif.`;
-                }
-            } else if (principalStateEval === INDICATOR_STATE.NEUTRAL) {
-                if (isSecondaryKpiPlanned && secondaryStateEval === INDICATOR_STATE.NEGATIVE) {
-                    decisionClass = "decision-stop-critical"; // Scénario 4
-                    decisionText = `<strong>ARRÊTER - NE PAS DÉPLOYER :</strong><br>L'objectif principal est neutre, et l'objectif de sécurité est négatif.`;
-                } else if (currentStage === currentDesignParams.k) {
-                    decisionClass = "decision-stop-futility";
-                    decisionText = `<strong>ARRÊTER - TEST TERMINÉ, NON CONCLUANT :</strong><br>L'objectif principal est neutre après ${currentDesignParams.k} semaines.`;
-                    if (isSecondaryKpiPlanned && secondaryStateEval === INDICATOR_STATE.POSITIVE) decisionText += " L'objectif de sécurité est OK.";
-                     else if (isSecondaryKpiPlanned) decisionText += " L'objectif de sécurité est neutre ou à risque.";
+            // --- Objectif sécurité (guardrail) ---
+            // La borne de futilité du design secondaire n'est PLUS lue (lecture erronée en v38).
+            let guardState = 'NON_APPLICABLE'; // NON_APPLICABLE | SECURITE_DEMONTREE | REGRESSION_DEMONTREE | AUCUN_SIGNAL
+            if (isSecondaryKpiPlanned && zSecondaryIsValid && isFinite(effB_secondary)) {
+                const zNi = observedZNiSecondary[currentStage - 1];
+                if (z_secondary_from_api <= -effB_secondary) {
+                    guardState = 'REGRESSION_DEMONTREE';
+                } else if (typeof zNi === 'number' && isFinite(zNi) && zNi >= effB_secondary) {
+                    guardState = 'SECURITE_DEMONTREE';
                 } else {
-                    decisionClass = "decision-continue";
-                    decisionText = `<strong>CONTINUER :</strong><br>Analyse pour semaine ${currentStage + 1} nécessaire. Objectif principal neutre.`;
-                     if (isSecondaryKpiPlanned && secondaryStateEval === INDICATOR_STATE.POSITIVE) decisionText += " Objectif de sécurité OK.";
-                     else if (isSecondaryKpiPlanned && secondaryStateEval === INDICATOR_STATE.RISK_NEGATIVE) decisionText += " Objectif de sécurité à risque.";
+                    guardState = 'AUCUN_SIGNAL';
                 }
-            } else if (principalStateEval === INDICATOR_STATE.NEGATIVE) {
-                 decisionClass = "decision-stop-futility"; // Scénario 5
-                 decisionText = `<strong>ARRÊTER - NE PAS DÉPLOYER :</strong><br>L'objectif principal est négatif.`;
-                 if (isSecondaryKpiPlanned && secondaryStateEval === INDICATOR_STATE.NEGATIVE) decisionText += " L'objectif de sécurité est également négatif.";
-                 else if (isSecondaryKpiPlanned) decisionText += ` L'objectif de sécurité est ${secondaryStateEval === INDICATOR_STATE.POSITIVE ? "positif" : "neutre ou à risque"}.`;
             }
 
-            // Gestion de la fin du test si toujours en "continuer"
-            if (decisionClass === "decision-continue" && currentStage === currentDesignParams.k) {
-                decisionClass = "decision-stop-futility";
-                decisionText = `<strong>ARRÊTER - TEST TERMINÉ, NON CONCLUANT :</strong><br>Aucun résultat significatif clair après ${currentDesignParams.k} semaines.`;
+            // Compléments (une phrase, ajoutés quand un guardrail est planifié)
+            const complGuardMap = {
+                'SECURITE_DEMONTREE': ` Objectif de sécurité : non-régression démontrée (marge ${marginPct} %).`,
+                'AUCUN_SIGNAL': ` Objectif de sécurité : aucune régression détectée, non-régression non démontrée.`,
+                'REGRESSION_DEMONTREE': ` L'objectif de sécurité est également en régression démontrée.`,
+                'NON_APPLICABLE': ''
+            };
+            const complGuard = isSecondaryKpiPlanned ? (complGuardMap[guardState] || '') : '';
+            const complPrincipal = principalState === 'POSITIF' ? ' Objectif principal : gain démontré.'
+                                 : principalState === 'NEGATIF_DEMONTRE' ? ' Objectif principal : effet négatif démontré.'
+                                 : ' Objectif principal : non conclusif.';
+
+            // --- Matrice de décision (priorité 1 : régression démontrée écrase tout) ---
+            if (guardState === 'REGRESSION_DEMONTREE') { // #1
+                decisionClass = 'decision-stop-critical';
+                decisionText = `<strong>ARRÊTER — NE PAS DÉPLOYER :</strong><br>Régression démontrée sur l'objectif de sécurité (z ≤ −borne d'efficacité).` + complPrincipal;
+            } else if (principalState === 'POSITIF') {
+                if (guardState === 'NON_APPLICABLE' || guardState === 'SECURITE_DEMONTREE') { // #2
+                    decisionClass = 'decision-stop-win';
+                    decisionText = `<strong>ARRÊTER — DÉPLOIEMENT RECOMMANDÉ :</strong><br>Gain démontré sur l'objectif principal.` + (guardState === 'SECURITE_DEMONTREE' ? ` La non-régression de l'objectif de sécurité est démontrée (marge ${marginPct} %).` : '');
+                } else { // guardState === 'AUCUN_SIGNAL' -> #3
+                    decisionClass = 'decision-discuss';
+                    decisionText = `<strong>ARRÊTER — DISCUSSION REQUISE :</strong><br>Gain démontré sur l'objectif principal, mais la non-régression de l'objectif de sécurité n'est pas démontrée (aucune régression détectée non plus).`;
+                }
+            } else if (principalState === 'NEGATIF_DEMONTRE') { // #4
+                decisionClass = 'decision-stop-futility';
+                decisionText = `<strong>ARRÊTER — NE PAS DÉPLOYER :</strong><br>Effet négatif démontré sur l'objectif principal.` + complGuard;
+            } else if (principalState === 'FUTILE') { // #5
+                decisionClass = 'decision-stop-futility';
+                decisionText = `<strong>ARRÊTER — NON CONCLUANT :</strong><br>Borne de futilité franchie : l'effet recherché ne sera pas démontré sur ce test. L'effet observé n'est pas pour autant démontré négatif.` + complGuard;
+            } else { // principalState === 'NEUTRE'
+                if (currentStage < K_TOTAL) { // #6
+                    decisionClass = 'decision-continue';
+                    decisionText = `<strong>CONTINUER :</strong><br>Analyse pour la semaine ${currentStage + 1} nécessaire. Objectif principal non conclusif à ce stade.` + complGuard;
+                } else { // #7 (étape = K, uniquement testType=1 sans futilité)
+                    decisionClass = 'decision-stop-futility';
+                    decisionText = `<strong>ARRÊTER — TEST TERMINÉ, NON CONCLUANT :</strong><br>Aucun résultat démontré après ${K_TOTAL} semaines.` + complGuard;
+                }
             }
             // MODIFICATION END
             
@@ -1414,8 +1443,12 @@ button#mdeAccordionButton {background: #fff;color: #333;font-weight: 600;font-si
                 
                 if(liftValueSecondaryElement) liftValueSecondaryElement.textContent = isFinite(lift_s) ? formatNumberForDisplay(lift_s, 2) + '%' : lift_s > 0 ? '+∞%' : 'N/A'; 
                 if(zScoreSecondaryDisplay) zScoreSecondaryDisplay.textContent = zValid_s ? formatNumberForDisplay(z_s, 3) : 'N/A'; 
-                if(effBoundaryDisplaySecondary) effBoundaryDisplaySecondary.textContent = formatNumberForDisplay(effB_s, 3); 
-                if(futBoundaryDisplaySecondary) futBoundaryDisplaySecondary.textContent = formatNumberForDisplay(futB_s, 3); 
+                if(effBoundaryDisplaySecondary) effBoundaryDisplaySecondary.textContent = formatNumberForDisplay(effB_s, 3);
+                // v39 : régression démontrée = miroir -effB_s ; Z(NI) cumulé affiché
+                const regSecEl = document.getElementById('regBoundaryDisplaySecondary');
+                if (regSecEl) regSecEl.textContent = isFinite(effB_s) ? formatNumberForDisplay(-effB_s, 3) : 'N/A';
+                const zNiSecEl = document.getElementById('zNiSecondaryDisplay');
+                if (zNiSecEl) { const zni = observedZNiSecondary[stage - 1]; zNiSecEl.textContent = (typeof zni === 'number' && isFinite(zni)) ? formatNumberForDisplay(zni, 3) : 'N/A'; } 
 
                 if (liftValueSecondaryElement) { 
                     liftValueSecondaryElement.className = 'liftValueItem';
@@ -1473,7 +1506,7 @@ button#mdeAccordionButton {background: #fff;color: #333;font-weight: 600;font-si
             highlightBoundaryTableRow(0);
         }
 
-        function updateBoundaryLabelSpans(testType, indicatorSuffix) { const effSpan = document.getElementById(`upperBoundType${indicatorSuffix}`); const futSpan = document.getElementById(`lowerBoundType${indicatorSuffix}`); if (testType === 1) { if (effSpan) effSpan.textContent = "Supériorité"; if (futSpan) futSpan.textContent = "Futilité"; } else if (testType === 3) { if (effSpan) effSpan.textContent = "Non-Rég."; if (futSpan) futSpan.textContent = "Régression"; } else { if (effSpan) effSpan.textContent = "B > A"; if (futSpan) futSpan.textContent = "A > B"; } }
+        function updateBoundaryLabelSpans(testType, indicatorSuffix) { const effSpan = document.getElementById(`upperBoundType${indicatorSuffix}`); const futSpan = document.getElementById(`lowerBoundType${indicatorSuffix}`); if (testType === 1) { if (effSpan) effSpan.textContent = "Supériorité"; if (futSpan) futSpan.textContent = "Futilité"; } else if (testType === 3) { if (effSpan) effSpan.textContent = "Efficacité"; if (futSpan) futSpan.textContent = "Futilité"; } else { if (effSpan) effSpan.textContent = "B > A"; if (futSpan) futSpan.textContent = "A > B"; } }
         function updateBoundaryTableHeaders(testType) { if (testType === 1) { upperBoundLabelPrincipalTableTh.textContent = "Z Borne Sup (Supériorité)"; lowerBoundLabelPrincipalTableTh.textContent = "Z Borne Inf (Futilité)"; } else if (testType === 3) { upperBoundLabelPrincipalTableTh.textContent = "Z Borne Sup (Non-Rég.)"; lowerBoundLabelPrincipalTableTh.textContent = "Z Borne Inf (Régression)"; } else { upperBoundLabelPrincipalTableTh.textContent = "Z Borne Sup (B > A)"; lowerBoundLabelPrincipalTableTh.textContent = "Z Borne Inf (A > B)"; } }
 
         const formatNumberForDisplay = (v, p = 3) => { if (typeof v === 'number' && isFinite(v)) { return v.toFixed(p); } else if (v === Infinity) { return "+∞"; } else if (v === -Infinity) { return "-∞"; } else { return 'N/A'; } };
@@ -1512,14 +1545,18 @@ button#mdeAccordionButton {background: #fff;color: #333;font-weight: 600;font-si
                         const bounds = currentBoundariesApiResultPrincipal.boundaries?.find(b => b.stage === (currentStageDataIdx + 1));
                         if (bounds && typeof z_val === 'number' && isFinite(z_val)){
                             if (z_val >= bounds.efficacyZ) indicatorIsPositive = true;
-                            if (z_val <= bounds.futilityZ) indicatorIsNegative = true;
+                            // v39 : nocivité = miroir de la borne d'efficacité (PLUS la futilité)
+                            if (z_val <= -bounds.efficacyZ) indicatorIsNegative = true;
                         }
                     } else if (data.name === "Sécurité" && currentBoundariesApiResultSecondary && currentStageDataIdx >=0) {
                          const z_val_sec = observedZDataSecondary[currentStageDataIdx];
+                         const z_ni_sec = observedZNiSecondary[currentStageDataIdx];
                          const bounds_sec = currentBoundariesApiResultSecondary.boundaries?.find(b => b.stage === (currentStageDataIdx + 1));
-                         if (bounds_sec && typeof z_val_sec === 'number' && isFinite(z_val_sec)) {
-                            if (z_val_sec >= bounds_sec.efficacyZ) indicatorIsPositive = true; // Non-régression = positif pour la sécurité
-                            if (z_val_sec <= bounds_sec.futilityZ) indicatorIsNegative = true; // Régression = négatif pour la sécurité
+                         if (bounds_sec && isFinite(bounds_sec.efficacyZ)) {
+                            // Sécurité démontrée (positif) = franchissement de la borne par le Z de NON-INFÉRIORITÉ
+                            if (typeof z_ni_sec === 'number' && isFinite(z_ni_sec) && z_ni_sec >= bounds_sec.efficacyZ) indicatorIsPositive = true;
+                            // Régression démontrée (négatif) = miroir de la borne d'efficacité par le Z brut
+                            if (typeof z_val_sec === 'number' && isFinite(z_val_sec) && z_val_sec <= -bounds_sec.efficacyZ) indicatorIsNegative = true;
                          }
                     }
                     
@@ -1578,6 +1615,27 @@ button#mdeAccordionButton {background: #fff;color: #333;font-weight: 600;font-si
             const se = Math.sqrt(pPooled * (1 - pPooled) * (1 / vA + 1 / vB));
             if (se < 1e-15) return null;
             return (p2 - p1) / se;
+        }
+
+        /**
+         * Z de non-infériorité (Wald, SE pooled — même SE que computeObservedZ).
+         * H0 : (p2 - p1) <= -marginRel * p1  vs  H1 : > -marginRel * p1
+         * marginRel = marge relative en fraction (ex. 0.01 pour 1 %).
+         */
+        function computeObservedZNi(vA, cA, vB, cB, marginRel) {
+            if (!vA || !vB || vA <= 0 || vB <= 0 || cA < 0 || cB < 0 || cA > vA || cB > vB) return null;
+            const p1 = cA / vA, p2 = cB / vB;
+            const pPooled = (cA + cB) / (vA + vB);
+            if (pPooled <= 0 || pPooled >= 1) return null;
+            const se = Math.sqrt(pPooled * (1 - pPooled) * (1 / vA + 1 / vB));
+            if (se < 1e-15) return null;
+            return ((p2 - p1) + marginRel * p1) / se;
+        }
+
+        /** Marge de non-régression relative en fraction (défaut 1,0 % = 0.01). */
+        function getNiMarginRelFraction() {
+            const v = parseFloat(niMarginRelInput && niMarginRelInput.value);
+            return (isFinite(v) && v > 0) ? v / 100 : 0.01;
         }
 
         function renderOrUpdateChart(currentStage, boundariesApiResultForChart, currentZScore, isZScoreValid) {
@@ -1652,9 +1710,9 @@ button#mdeAccordionButton {background: #fff;color: #333;font-weight: 600;font-si
             dataForm.reset(); 
             
             currentDesignParams = null; currentBoundariesApiResultPrincipal = null; currentBoundariesApiResultSecondary = null;
-            weeklyEnteredData = []; observedZDataPrincipal = []; observedZDataSecondary = [];
+            weeklyEnteredData = []; observedZDataPrincipal = []; observedZDataSecondary = []; observedZNiSecondary = [];
             
-            baselineSecondaryKpiGroup.style.display = 'none'; 
+            baselineSecondaryKpiGroup.style.display = 'none'; if (niMarginGroup) niMarginGroup.style.display = 'none'; if (niMarginRelInput) niMarginRelInput.value = '1.0';
             toggleBaselineSecondaryKpiLink.textContent = 'Ajouter un KPI de sécurité (planification)';
             mdeTableSecondaryColHeader.style.display = 'none'; 
             isSecondaryKpiPlanned = false;
@@ -1804,9 +1862,10 @@ button#mdeAccordionButton {background: #fff;color: #333;font-weight: 600;font-si
 
         window.deleteWeeklyCumulativeData = function(idxToDelete) { 
             if (confirm(`Supprimer les données de la semaine ${weeklyEnteredData[idxToDelete].week} et toutes les semaines suivantes ?`)) { 
-                weeklyEnteredData.splice(idxToDelete); 
-                observedZDataPrincipal.splice(idxToDelete); 
-                observedZDataSecondary.splice(idxToDelete); 
+                weeklyEnteredData.splice(idxToDelete);
+                observedZDataPrincipal.splice(idxToDelete);
+                observedZDataSecondary.splice(idxToDelete);
+                observedZNiSecondary.splice(idxToDelete);
                 
                 if (weeklyEnteredData.length === 0) {
                     resultsDiv.style.display = 'none';
@@ -1823,8 +1882,9 @@ button#mdeAccordionButton {background: #fff;color: #333;font-weight: 600;font-si
             addDataButton.disabled = true; 
             if (weeklyEnteredData.length === 0) { 
                 if (currentDesignParams) { 
-                    observedZDataPrincipal = new Array(currentDesignParams.k).fill(null); 
-                    observedZDataSecondary = new Array(currentDesignParams.k).fill(null); 
+                    observedZDataPrincipal = new Array(currentDesignParams.k).fill(null);
+                    observedZDataSecondary = new Array(currentDesignParams.k).fill(null);
+                    observedZNiSecondary = new Array(currentDesignParams.k).fill(null);
                     currentBoundariesApiResultPrincipal = await (await fetch(apiUrlInput.value, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ k: currentDesignParams.k, alpha: currentDesignParams.alpha, power: currentDesignParams.power, sfu: currentDesignParams.sfu, sfl: currentDesignParams.sfl, testType: currentDesignParams.testTypePrincipal }) })).json();
                     if (isSecondaryKpiPlanned) {
                          currentBoundariesApiResultSecondary = await (await fetch(apiUrlInput.value, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ k: currentDesignParams.k, alpha: currentDesignParams.alpha, power: currentDesignParams.power, sfu: currentDesignParams.sfu, sfl: currentDesignParams.sfl, testType: TEST_TYPE_SECONDARY_DEFAULT }) })).json();
@@ -1851,8 +1911,8 @@ button#mdeAccordionButton {background: #fff;color: #333;font-weight: 600;font-si
             addDataButton.disabled = false; 
         } 
         
-        function saveCurrentTestState() { if (!testNameTopInput.value) { alert("Veuillez nommer le test."); return; } const testState = { name: testNameTopInput.value, timestamp: new Date().toISOString(), baselineTraffic: baselineTrafficInput.value, baselineTotalConversions: baselineTotalConversionsInput.value, baselineTotalConversionsSecondary: baselineTotalConversionsSecondaryInput.value, isSecondaryKpiPlanned, testStartDate: testStartDateInput.value, mdeConfidence: mdeConfidenceSelect.value, mdePower: mdePowerSelect.value, mdeTestType: mdeTestTypeSelect.value, designSpendingFunction: designSpendingFunctionSelect.value, designSpendingFunctionLower: designSpendingFunctionLowerSelect.value, designK: designKInput.value, currentDesignParams, currentBoundariesApiResultPrincipal, currentBoundariesApiResultSecondary, weeklyEnteredData, observedZDataPrincipal, observedZDataSecondary, apiUrl: apiUrlInput.value }; try { localStorage.setItem(STORAGE_PREFIX + testNameTopInput.value, JSON.stringify(testState)); alert(`Test "${testNameTopInput.value}" sauvegardé.`); updateSavedTestsList(); } catch (e) { if (e.name === 'QuotaExceededError') { alert("Erreur de sauvegarde : Quota de stockage local dépassé. Veuillez supprimer d'anciens tests."); } else { alert("Erreur de sauvegarde : " + e.message); } } }
-        async function loadSelectedTestState() { const testNameToLoad = savedTestsListTop.value; if (!testNameToLoad) { alert("Sélectionnez un test à charger."); return; } const savedStateJSON = localStorage.getItem(STORAGE_PREFIX + testNameToLoad); if (!savedStateJSON) { alert("Test non trouvé."); return; } resetFullAnalysis(false); try { const savedState = JSON.parse(savedStateJSON); testNameTopInput.value = savedState.name || ''; baselineTrafficInput.value = savedState.baselineTraffic || ''; baselineTotalConversionsInput.value = savedState.baselineTotalConversions || ''; baselineTotalConversionsSecondaryInput.value = savedState.baselineTotalConversionsSecondary || ''; isSecondaryKpiPlanned = savedState.isSecondaryKpiPlanned === true; baselineSecondaryKpiGroup.style.display = isSecondaryKpiPlanned ? 'block' : 'none'; toggleBaselineSecondaryKpiLink.textContent = isSecondaryKpiPlanned ? 'Retirer le KPI de sécurité (planification)' : 'Ajouter un KPI de sécurité (planification)'; testStartDateInput.value = savedState.testStartDate || new Date().toISOString().split('T')[0];  mdeConfidenceSelect.value = savedState.mdeConfidence || '0.05'; mdePowerSelect.value = savedState.mdePower || '0.80'; mdeTestTypeSelect.value = savedState.mdeTestType || '3'; designSpendingFunctionSelect.value = savedState.designSpendingFunction || 'KimDeMets'; designSpendingFunctionLowerSelect.value = savedState.designSpendingFunctionLower || 'HSD'; designKInput.value = savedState.designK || ''; apiUrlInput.value = savedState.apiUrl || "https://my-gst-api.onrender.com/api/calculate-boundaries"; if (baselineTrafficInput.value && baselineTotalConversionsInput.value) { calculateAndDisplayMDEForecast(); } if (savedState.designK) { applyKHighlight(savedState.designK); checkIfStartAnalysisCanBeEnabled(); } if (savedState.currentDesignParams) { currentDesignParams = savedState.currentDesignParams; currentBoundariesApiResultPrincipal = savedState.currentBoundariesApiResultPrincipal; currentBoundariesApiResultSecondary = savedState.currentBoundariesApiResultSecondary; observedZDataPrincipal = savedState.observedZDataPrincipal || []; observedZDataSecondary = savedState.observedZDataSecondary || []; weeklyEnteredData = savedState.weeklyEnteredData || []; weeklyEnteredData.forEach((data, i) => { if (observedZDataPrincipal[i] == null) { const z = computeObservedZ(data.visitorsACumul, data.conversionsACumul_P, data.visitorsBCumul, data.conversionsBCumul_P); if (z !== null) observedZDataPrincipal[i] = parseFloat(z.toFixed(4)); } }); if (weeklyEnteredData.length > 0) { resultsDiv.style.display = 'block'; } dataEntrySection.style.display = 'block'; updateDataEntryTitle();  secondaryMetricInputsA.style.display = isSecondaryKpiPlanned ? 'block' : 'none'; secondaryMetricInputsB.style.display = isSecondaryKpiPlanned ? 'block' : 'none'; historyTableSecondaryHeaderGroup.style.display = isSecondaryKpiPlanned ? 'table-cell' : 'none'; historyTableSecondaryConvHeader.style.display = isSecondaryKpiPlanned ? 'table-cell' : 'none'; historyTableSecondaryRateHeader.style.display = isSecondaryKpiPlanned ? 'table-cell' : 'none'; displayBoundariesTableAndChart(); displayApiResults(); checkIfDataEntryShouldBeEnabled(); const lastData = weeklyEnteredData.length > 0 ? weeklyEnteredData[weeklyEnteredData.length - 1] : null; if (lastData) { controlVisitorsInput.value = lastData.visitorsACumul; controlConversionsInput.value = lastData.conversionsACumul_P; variantVisitorsInput.value = lastData.visitorsBCumul; variantConversionsInput.value = lastData.conversionsBCumul_P; if (isSecondaryKpiPlanned) { controlConversionsSecondaryInput.value = lastData.conversionsASecondaryCumul !== undefined ? lastData.conversionsASecondaryCumul : ''; variantConversionsSecondaryInput.value = lastData.conversionsBSecondaryCumul !== undefined ? lastData.conversionsBSecondaryCumul : ''; } } } alert(`Test "${testNameToLoad}" chargé.`); } catch (e) { alert("Erreur chargement test: " + e.message); resetFullAnalysis(false); } }
+        function saveCurrentTestState() { if (!testNameTopInput.value) { alert("Veuillez nommer le test."); return; } const testState = { name: testNameTopInput.value, timestamp: new Date().toISOString(), baselineTraffic: baselineTrafficInput.value, baselineTotalConversions: baselineTotalConversionsInput.value, baselineTotalConversionsSecondary: baselineTotalConversionsSecondaryInput.value, isSecondaryKpiPlanned, testStartDate: testStartDateInput.value, mdeConfidence: mdeConfidenceSelect.value, mdePower: mdePowerSelect.value, mdeTestType: mdeTestTypeSelect.value, designSpendingFunction: designSpendingFunctionSelect.value, designSpendingFunctionLower: designSpendingFunctionLowerSelect.value, designK: designKInput.value, currentDesignParams, currentBoundariesApiResultPrincipal, currentBoundariesApiResultSecondary, weeklyEnteredData, observedZDataPrincipal, observedZDataSecondary, observedZNiSecondary, niMarginRel: (niMarginRelInput ? niMarginRelInput.value : '1.0'), apiUrl: apiUrlInput.value }; try { localStorage.setItem(STORAGE_PREFIX + testNameTopInput.value, JSON.stringify(testState)); alert(`Test "${testNameTopInput.value}" sauvegardé.`); updateSavedTestsList(); } catch (e) { if (e.name === 'QuotaExceededError') { alert("Erreur de sauvegarde : Quota de stockage local dépassé. Veuillez supprimer d'anciens tests."); } else { alert("Erreur de sauvegarde : " + e.message); } } }
+        async function loadSelectedTestState() { const testNameToLoad = savedTestsListTop.value; if (!testNameToLoad) { alert("Sélectionnez un test à charger."); return; } const savedStateJSON = localStorage.getItem(STORAGE_PREFIX + testNameToLoad); if (!savedStateJSON) { alert("Test non trouvé."); return; } resetFullAnalysis(false); try { const savedState = JSON.parse(savedStateJSON); testNameTopInput.value = savedState.name || ''; baselineTrafficInput.value = savedState.baselineTraffic || ''; baselineTotalConversionsInput.value = savedState.baselineTotalConversions || ''; baselineTotalConversionsSecondaryInput.value = savedState.baselineTotalConversionsSecondary || ''; isSecondaryKpiPlanned = savedState.isSecondaryKpiPlanned === true; baselineSecondaryKpiGroup.style.display = isSecondaryKpiPlanned ? 'block' : 'none'; if (niMarginGroup) niMarginGroup.style.display = isSecondaryKpiPlanned ? 'block' : 'none'; if (niMarginRelInput) niMarginRelInput.value = savedState.niMarginRel || '1.0'; toggleBaselineSecondaryKpiLink.textContent = isSecondaryKpiPlanned ? 'Retirer le KPI de sécurité (planification)' : 'Ajouter un KPI de sécurité (planification)'; testStartDateInput.value = savedState.testStartDate || new Date().toISOString().split('T')[0];  mdeConfidenceSelect.value = savedState.mdeConfidence || '0.05'; mdePowerSelect.value = savedState.mdePower || '0.80'; mdeTestTypeSelect.value = savedState.mdeTestType || '3'; designSpendingFunctionSelect.value = savedState.designSpendingFunction || 'KimDeMets'; designSpendingFunctionLowerSelect.value = savedState.designSpendingFunctionLower || 'HSD'; designKInput.value = savedState.designK || ''; apiUrlInput.value = savedState.apiUrl || "https://my-gst-api.onrender.com/api/calculate-boundaries"; if (baselineTrafficInput.value && baselineTotalConversionsInput.value) { calculateAndDisplayMDEForecast(); } if (savedState.designK) { applyKHighlight(savedState.designK); checkIfStartAnalysisCanBeEnabled(); } if (savedState.currentDesignParams) { currentDesignParams = savedState.currentDesignParams; currentBoundariesApiResultPrincipal = savedState.currentBoundariesApiResultPrincipal; currentBoundariesApiResultSecondary = savedState.currentBoundariesApiResultSecondary; observedZDataPrincipal = savedState.observedZDataPrincipal || []; observedZDataSecondary = savedState.observedZDataSecondary || []; observedZNiSecondary = savedState.observedZNiSecondary || []; weeklyEnteredData = savedState.weeklyEnteredData || []; weeklyEnteredData.forEach((data, i) => { if (observedZDataPrincipal[i] == null) { const z = computeObservedZ(data.visitorsACumul, data.conversionsACumul_P, data.visitorsBCumul, data.conversionsBCumul_P); if (z !== null) observedZDataPrincipal[i] = parseFloat(z.toFixed(4)); } if (isSecondaryKpiPlanned && observedZNiSecondary[i] == null && data.conversionsASecondaryCumul !== undefined && data.conversionsBSecondaryCumul !== undefined) { const zni = computeObservedZNi(data.visitorsACumul, data.conversionsASecondaryCumul, data.visitorsBCumul, data.conversionsBSecondaryCumul, getNiMarginRelFraction()); if (zni !== null) observedZNiSecondary[i] = parseFloat(zni.toFixed(4)); } }); if (weeklyEnteredData.length > 0) { resultsDiv.style.display = 'block'; } dataEntrySection.style.display = 'block'; updateDataEntryTitle();  secondaryMetricInputsA.style.display = isSecondaryKpiPlanned ? 'block' : 'none'; secondaryMetricInputsB.style.display = isSecondaryKpiPlanned ? 'block' : 'none'; historyTableSecondaryHeaderGroup.style.display = isSecondaryKpiPlanned ? 'table-cell' : 'none'; historyTableSecondaryConvHeader.style.display = isSecondaryKpiPlanned ? 'table-cell' : 'none'; historyTableSecondaryRateHeader.style.display = isSecondaryKpiPlanned ? 'table-cell' : 'none'; displayBoundariesTableAndChart(); displayApiResults(); checkIfDataEntryShouldBeEnabled(); const lastData = weeklyEnteredData.length > 0 ? weeklyEnteredData[weeklyEnteredData.length - 1] : null; if (lastData) { controlVisitorsInput.value = lastData.visitorsACumul; controlConversionsInput.value = lastData.conversionsACumul_P; variantVisitorsInput.value = lastData.visitorsBCumul; variantConversionsInput.value = lastData.conversionsBCumul_P; if (isSecondaryKpiPlanned) { controlConversionsSecondaryInput.value = lastData.conversionsASecondaryCumul !== undefined ? lastData.conversionsASecondaryCumul : ''; variantConversionsSecondaryInput.value = lastData.conversionsBSecondaryCumul !== undefined ? lastData.conversionsBSecondaryCumul : ''; } } } alert(`Test "${testNameToLoad}" chargé.`); } catch (e) { alert("Erreur chargement test: " + e.message); resetFullAnalysis(false); } }
         function deleteSelectedTestState() { const testNameToDelete = savedTestsListTop.value; if (!testNameToDelete) { alert("Sélectionnez un test à supprimer."); return; } if (confirm(`Supprimer le test "${testNameToDelete}" ?`)) { localStorage.removeItem(STORAGE_PREFIX + testNameToDelete); alert(`Test "${testNameToDelete}" supprimé.`); updateSavedTestsList(); } }
         function updateSavedTestsList() { savedTestsListTop.innerHTML = '<option value="">-- Charger un test --</option>'; for (let i = 0; i < localStorage.length; i++) { const key = localStorage.key(i); if (key.startsWith(STORAGE_PREFIX)) { const testName = key.substring(STORAGE_PREFIX.length); const option = document.createElement('option'); option.value = testName; option.textContent = testName; savedTestsListTop.appendChild(option); } } }
 
