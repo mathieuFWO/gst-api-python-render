@@ -1,4 +1,4 @@
-<!-- v41.0 - Passe design validée sur maquette ; bornes d'efficacité seule pour les garde-fous, Bonferroni pour les secondaires -->
+<!-- v41.1 - Vérification indépendante : secondaires à alpha/(2m), variance de la non-infériorité corrigée. v41.0 - Passe design validée sur maquette ; bornes d'efficacité seule pour les garde-fous, Bonferroni pour les secondaires -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Raleway:ital,wght@0,600;0,700;1,600&family=Open+Sans:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
@@ -163,7 +163,7 @@
 (function(){
 'use strict';
 var API='https://my-gst-api.onrender.com/api/calculate-boundaries';
-var NEW_PREFIX='gstSeq_v40_',OLD_PREFIX='gstSequentialAnalysis_v321_',MAX_METRICS=15,VERSION='v41.0';
+var NEW_PREFIX='gstSeq_v40_',OLD_PREFIX='gstSequentialAnalysis_v321_',MAX_METRICS=15,VERSION='v41.1';
 var root=document.getElementById('gst-app');
 var EXEMPLE="Semaine;Date de début;Date de fin;Variation;Visiteurs;Visiteurs avec achat;Visiteurs avec rebond;Visiteurs avec ajout panier;Visiteurs fiche produit vue;Visiteurs inscrits newsletter;Visiteurs contact service client;CA (€) [somme];CA (€) [somme carrés]\n1;2026-10-05;2026-10-11;A - Contrôle;9862;495;3937;1212;5483;179;152;28604,98;2238859,44\n1;2026-10-05;2026-10-11;B - Variante;10197;517;4125;1264;5661;215;156;29274,97;2288280,78\n2;2026-10-05;2026-10-18;A - Contrôle;20124;1041;8019;2457;11114;383;302;60597,00;4878927,63\n2;2026-10-05;2026-10-18;B - Variante;20139;1082;8105;2514;11189;402;299;61509,76;4751805,20\n3;2026-10-05;2026-10-25;A - Contrôle;30011;1542;11992;3619;16555;577;473;89955,78;7285282,51\n3;2026-10-05;2026-10-25;B - Variante;29969;1610;11976;3750;16641;601;445;92128,15;7124589,83\n4;2026-10-05;2026-11-01;A - Contrôle;39984;2049;15857;4822;22041;773;611;118445,83;9399245,52\n4;2026-10-05;2026-11-01;B - Variante;39881;2136;15989;5044;22217;808;593;122493,11;9423902,14\n5;2026-10-05;2026-11-08;A - Contrôle;50089;2498;19872;6047;27648;987;741;144548,18;11467542,98\n5;2026-10-05;2026-11-08;B - Variante;49909;2688;19982;6268;27837;1016;733;153297,46;11698785,47\n6;2026-10-05;2026-11-15;A - Contrôle;60132;2962;23896;7259;33249;1176;891;171483,57;13527391,46\n6;2026-10-05;2026-11-15;B - Variante;60016;3240;24013;7544;33469;1230;872;185493,03;14310408,44\n";
 
@@ -188,13 +188,13 @@ function autosave(){if(state.name){try{localStorage.setItem(NEW_PREFIX+state.nam
 /* ---------- statistiques ---------- */
 function stat(m,a,b,crit){
   if(!a||!b||!(a.n>0)||!(b.n>0))return null;var va=a.m[m.id],vb=b.m[m.id];if(!va||!vb)return null;
-  var mA,mB,seP,seU;
-  if(m.type==='continue'){mA=va.s/a.n;mB=vb.s/b.n;var sA=(va.ss-va.s*va.s/a.n)/(a.n-1),sB=(vb.ss-vb.s*vb.s/b.n)/(b.n-1);if(!(sA>=0)||!(sB>=0))return null;seU=Math.sqrt(sA/a.n+sB/b.n);seP=seU;}
-  else{mA=va.c/a.n;mB=vb.c/b.n;var pp=(va.c+vb.c)/(a.n+b.n);seP=Math.sqrt(pp*(1-pp)*(1/a.n+1/b.n));seU=Math.sqrt(mA*(1-mA)/a.n+mB*(1-mB)/b.n);}
+  var mA,mB,seP,seU,vA,vB;
+  if(m.type==='continue'){mA=va.s/a.n;mB=vb.s/b.n;var sA=(va.ss-va.s*va.s/a.n)/(a.n-1),sB=(vb.ss-vb.s*vb.s/b.n)/(b.n-1);if(!(sA>=0)||!(sB>=0))return null;seU=Math.sqrt(sA/a.n+sB/b.n);seP=seU;vA=sA;vB=sB;}
+  else{mA=va.c/a.n;mB=vb.c/b.n;var pp=(va.c+vb.c)/(a.n+b.n);seP=Math.sqrt(pp*(1-pp)*(1/a.n+1/b.n));seU=Math.sqrt(mA*(1-mA)/a.n+mB*(1-mB)/b.n);vA=mA*(1-mA);vB=mB*(1-mB);}
   var d=mB-mA,sg=m.sens==='baisse'?-1:1,ok=seP>1e-15;
   var z=ok?d/seP:(Math.abs(d)<1e-15?0:null);
-  var marge=(isFinite(m.marge)&&m.marge>0?m.marge:1)/100;
-  var r={mA:mA,mB:mB,d:d,se:seP,z:z,zAdj:z==null?null:sg*z,zNi:ok?(sg*d+marge*Math.abs(mA))/seP:null,lift:mA!==0?d/Math.abs(mA):null,lo:null,hi:null};
+  var marge=(isFinite(m.marge)&&m.marge>0?m.marge:1)/100,seNi=Math.sqrt(vB/b.n+Math.pow(1-sg*marge,2)*vA/a.n);/* non-inferiorite a marge relative : variance de mB-(1-sg*marge)*mA, non poolee */
+  var r={mA:mA,mB:mB,d:d,se:seP,z:z,zAdj:z==null?null:sg*z,zNi:seNi>1e-15?(sg*d+marge*Math.abs(mA))/seNi:null,lift:mA!==0?d/Math.abs(mA):null,lo:null,hi:null};
   if(isFinite(crit)&&seU>0&&mA!==0){r.lo=(d-crit*seU)/Math.abs(mA);r.hi=(d+crit*seU)/Math.abs(mA);}
   return r;
 }
@@ -206,7 +206,7 @@ function statusOf(m,st,eff,fut){
 }
 var STATUS={POSITIF:['Gain démontré','sg'],NEGATIF:['Effet négatif démontré','sc'],FUTILE:['Futilité',''],NEUTRE:['Non conclusif',''],REGRESSION:['Régression démontrée','sc'],SECURITE:['Non-régression démontrée','sg'],WATCH:['À surveiller','w'],AUCUN_SIGNAL:['Non conclusif',''],SIGNAL_POS:['Signal positif','sg'],SIGNAL_NEG:['Signal négatif','sc'],NA:['En attente','']};
 var TONE={POSITIF:'g',SECURITE:'g',SIGNAL_POS:'g',NEGATIF:'c',REGRESSION:'c',SIGNAL_NEG:'c',WATCH:'w'};
-/* Bornes par rôle : plan (principale) ; efficacité seule à alpha (garde-fous) ; efficacité seule à alpha/m (m secondaires, Bonferroni). */
+/* Bornes par rôle : plan (principale) ; efficacité seule à alpha (garde-fous) ; efficacité seule à alpha/(2m) (m secondaires lues dans les deux sens, Bonferroni : 5 % de faux signaux pour toute la famille). */
 function effFor(role,i){var b=role==='principale'?state.bounds:role==='garde-fou'?(state.boundsG||state.bounds):(state.boundsS||state.boundsG||state.bounds);return b&&b.eff[i]!=null?b.eff[i]:NaN;}
 function names(rows){return rows.map(function(r){return '« '+r.metric.name+' »';}).join(', ');}
 function decide(i,rows){
@@ -248,8 +248,8 @@ function ensureBounds(){
   var p=state.plan,key=planKey(p),ng=nRole('garde-fou'),ns=nRole('secondaire'),ak=key+'|'+ng+'|'+ns;
   if(state.bounds&&state.boundsKey===key&&state.auxKey===ak)return Promise.resolve();
   ui.busy=true;ui.error='';render();
-  var p1=Object.assign({},p,{testType:1}),needG=(ng>0||ns>0)&&p.testType!==1;
-  return Promise.all([fetchBounds(p),needG?fetchBounds(p1):null,ns>1?fetchBounds(Object.assign({},p1,{alpha:p.alpha/ns})):null]).then(function(r){
+  var p1=Object.assign({},p,{testType:1}),needG=ng>0&&p.testType!==1;
+  return Promise.all([fetchBounds(p),needG?fetchBounds(p1):null,ns>0?fetchBounds(Object.assign({},p1,{alpha:p.alpha/(2*ns)})):null]).then(function(r){
     state.bounds=r[0];state.boundsKey=key;state.boundsG=r[1]||(p.testType===1?r[0]:null);state.boundsS=r[2]||state.boundsG;state.auxKey=ak;ui.ifc[key]=r[0].IF;
   }).catch(function(e){state.bounds=null;state.boundsKey='';state.auxKey='';ui.error='Calcul des bornes impossible : '+e.message+' Réessayez dans un instant (le serveur de calcul peut mettre jusqu\'à une minute à démarrer).';}).then(function(){ui.busy=false;autosave();render();});
 }
