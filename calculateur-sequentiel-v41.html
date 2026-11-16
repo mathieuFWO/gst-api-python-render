@@ -1,0 +1,690 @@
+<!-- v41.0 - Passe design validée sur maquette ; bornes d'efficacité seule pour les garde-fous, Bonferroni pour les secondaires -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Raleway:ital,wght@0,600;0,700;1,600&family=Open+Sans:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+#gst-app{--green:#028D6A;--green2:#019875;--ink:#1A1D1F;--charcoal:#464849;--gray:#9FA1A1;--blue:#0082C3;--coral:#E46454;--amber:#D79A2A;--card:#FFFFFF;--bg:#F8FBFA;--border:#D9D9D9;--line:#ECEEEE;--tg:#E6F4F0;--tb:#E6F2F9;--tc:#F2D4D0;--wash:#ECF7F4;--ft:'Raleway','Segoe UI',Arial,sans-serif;--fb:'Open Sans','Segoe UI',Arial,sans-serif;
+  color-scheme:light;font-family:var(--fb);color:var(--ink);background:var(--bg);font-size:14px;line-height:1.45;padding:16px;border-radius:6px;box-sizing:border-box;width:100%;text-align:left}
+#gst-app *,#gst-app *::before,#gst-app *::after{box-sizing:border-box}
+#gst-app h2,#gst-app h3,#gst-app h4{font-family:var(--ft);font-weight:600;color:var(--ink);margin:0;line-height:1.25}
+#gst-app h2{font-size:20px}#gst-app h3{font-size:16px}#gst-app h4{font-size:14px}
+#gst-app p{margin:0}
+#gst-app button,#gst-app button:hover,#gst-app button:focus{font-family:var(--fb);font-size:14px;line-height:1.2;border-radius:6px;cursor:pointer;margin:0;text-transform:none;letter-spacing:0;box-shadow:none;text-decoration:none;font-weight:600;padding:9px 14px;min-height:38px;border:1px solid var(--border);background:var(--card);color:var(--ink)}
+#gst-app button:hover{border-color:var(--charcoal)}
+#gst-app button:focus-visible,#gst-app input:focus-visible,#gst-app select:focus-visible,#gst-app [tabindex]:focus-visible{outline:2px solid var(--blue);outline-offset:1px}
+#gst-app button.pri,#gst-app button.pri:focus{background:var(--green);border-color:var(--green);color:#fff}
+#gst-app button.pri:hover{background:var(--green2);border-color:var(--green2);color:#fff}
+#gst-app button.link,#gst-app button.link:hover,#gst-app button.link:focus{border:0;background:none;color:var(--green);padding:4px 2px;min-height:0;text-decoration:underline;font-weight:600}
+#gst-app button.danger,#gst-app button.danger:focus{color:var(--coral)}
+#gst-app button:disabled{opacity:.5;cursor:not-allowed}
+#gst-app input,#gst-app select{font-family:var(--fb);font-size:14px;color:var(--ink);background:#fff;border:1px solid var(--border);border-radius:6px;padding:8px 10px;min-height:38px;width:100%;max-width:100%;margin:0;box-shadow:none}
+#gst-app input[type=checkbox]{width:18px;min-height:18px;height:18px;padding:0;accent-color:var(--green)}
+#gst-app label{font-size:12px;color:var(--charcoal);font-weight:600;display:block;margin:0 0 4px}
+#gst-app .num{font-variant-numeric:tabular-nums}
+#gst-app .muted{color:var(--charcoal)}#gst-app .hint{color:var(--charcoal);font-size:12px}
+#gst-app .kicker{font-family:var(--ft);font-weight:600;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--charcoal)}
+#gst-app .card{background:var(--card);border:1px solid var(--border);border-radius:6px;padding:16px;margin-top:12px}
+#gst-app .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+#gst-app .grow{flex:1 1 180px;min-width:0}
+#gst-app .head{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+#gst-app .head input.name{font-family:var(--ft);font-weight:700;font-size:18px;flex:1 1 220px;min-width:0}
+#gst-app .head select{flex:0 1 220px;width:auto}
+#gst-app .tabs{display:flex;gap:4px;border-bottom:1px solid var(--border);margin-top:14px;overflow-x:auto}
+#gst-app .tabs button,#gst-app .tabs button:hover,#gst-app .tabs button:focus{border:0;border-bottom:3px solid transparent;border-radius:0;background:none;color:var(--charcoal);padding:10px 14px;white-space:nowrap}
+#gst-app .tabs button.on{color:var(--green);border-bottom-color:var(--green)}
+#gst-app .pill{display:inline-block;font-size:12px;font-weight:600;padding:3px 9px;border-radius:999px;border:1px solid var(--border);background:#fff;color:var(--charcoal);white-space:nowrap}
+#gst-app .pill.g{background:var(--tg);border-color:var(--green);color:#015c45}
+#gst-app .pill.c{background:var(--tc);border-color:var(--coral);color:#8f2c20}
+#gst-app .pill.a{background:#FBF1DC;border-color:var(--amber);color:#7a5410}
+#gst-app .pill.b{background:var(--tb);border-color:var(--blue);color:#005a88}
+#gst-app .banner{border:1px solid var(--border);border-left:5px solid var(--gray);background:#fff;border-radius:6px;padding:14px 16px;margin-top:12px}
+#gst-app .banner.win{border-left-color:var(--green);background:var(--wash)}
+#gst-app .banner.critical,#gst-app .banner.stop{border-left-color:var(--coral)}
+#gst-app .banner.critical{background:#FCF1EF}
+#gst-app .banner.discuss,#gst-app .banner.continue{border-left-color:var(--amber)}
+#gst-app .banner h3{font-size:17px;margin-bottom:4px}
+#gst-app .kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:12px}
+#gst-app .kpi{background:#fff;border:1px solid var(--border);border-radius:6px;padding:10px 12px;min-width:0}
+#gst-app .kpi b{font-family:var(--ft);font-size:18px;font-weight:700;display:block;overflow-wrap:anywhere}
+#gst-app .bar{height:6px;background:var(--line);border-radius:3px;overflow:hidden;margin-top:6px}
+#gst-app .bar i{display:block;height:100%;background:var(--green)}
+#gst-app .weeks{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px;align-items:center}
+#gst-app .weeks button,#gst-app .weeks button:focus{padding:6px 10px;min-height:32px;font-size:13px}
+#gst-app .weeks button.on{background:var(--ink);border-color:var(--ink);color:#fff}
+#gst-app .weeks button.dec{border-color:var(--green)}
+#gst-app .sc{margin-top:12px;background:#fff;border:1px solid var(--border);border-radius:6px;overflow:hidden}
+#gst-app .sc .grp{background:var(--bg);padding:8px 14px;border-top:1px solid var(--border)}
+
+#gst-app .sc .hd,#gst-app .sc .mr{display:grid;grid-template-columns:minmax(0,2.3fr) minmax(0,1fr) minmax(0,1fr) minmax(0,.9fr) minmax(0,2fr) minmax(0,.8fr) minmax(0,1.7fr);gap:10px;align-items:center;padding:10px 14px}
+#gst-app .sc .hd{font-size:11px;font-weight:600;color:var(--charcoal);text-transform:uppercase;letter-spacing:.04em;padding-top:10px;padding-bottom:10px}
+#gst-app .sc .mr{border-top:1px solid var(--line);cursor:pointer}
+#gst-app .sc .mr:hover{background:var(--bg)}
+#gst-app .sc .mr.sel{background:var(--wash);box-shadow:inset 3px 0 0 var(--green)}
+#gst-app .sc .mn{font-weight:600;overflow-wrap:anywhere}
+#gst-app .sc .lift{font-family:var(--ft);font-weight:700;font-size:15px}
+#gst-app .pos{color:#017a5b}#gst-app .neg{color:#c9402f}
+#gst-app .sc .lbl{display:none;font-size:11px;color:var(--charcoal)}
+#gst-app .sc svg{display:block;width:100%;height:26px}
+#gst-app .detail svg{display:block;width:100%;height:auto;background:#fff}
+#gst-app table{border-collapse:collapse;width:100%;font-size:13px;background:#fff;margin:0;border:0}
+#gst-app th,#gst-app td{border:0;border-bottom:1px solid var(--line);padding:7px 10px;text-align:right;white-space:nowrap;background:#fff;color:var(--ink)}
+#gst-app th{font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--charcoal);font-weight:600;border-bottom:1px solid var(--border)}
+#gst-app th:first-child,#gst-app td:first-child,#gst-app th.l,#gst-app td.l{text-align:left}
+#gst-app .scroll{overflow-x:auto;max-width:100%}
+#gst-app .drop{border:2px dashed var(--green);background:var(--wash);border-radius:6px;padding:26px 16px;text-align:center;cursor:pointer}
+#gst-app .drop.over{background:var(--tg)}
+#gst-app .drop h3{margin-bottom:6px}
+#gst-app .form{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:12px}
+#gst-app .mrow{display:grid;grid-template-columns:22px minmax(0,2.2fr) minmax(0,1.3fr) minmax(0,1.3fr) minmax(0,.9fr) auto;gap:8px;align-items:center;padding:8px 0;border-top:1px solid var(--line)}
+#gst-app .err{background:#FCF1EF;border:1px solid var(--coral);color:#8f2c20;border-radius:6px;padding:10px 12px;margin-top:12px}
+#gst-app .ok{background:var(--wash);border:1px solid var(--green);color:#015c45;border-radius:6px;padding:10px 12px;margin-top:12px}
+#gst-app .foot{display:flex;justify-content:space-between;gap:10px;margin-top:14px;font-size:12px;color:var(--charcoal);flex-wrap:wrap}
+#gst-app .logo{font-family:var(--ft);color:var(--green2)}#gst-app .logo b{color:var(--green);font-weight:700}
+#gst-app .steps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:12px}
+#gst-app .steps .n{font-family:var(--ft);font-weight:700;font-size:26px;color:var(--green)}
+#gst-app tr.pick{cursor:pointer}#gst-app tr.pick:hover td{background:var(--bg)}#gst-app tr.on td{background:var(--wash);font-weight:600}
+@media (max-width:760px){
+  #gst-app{padding:12px}
+  #gst-app .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+  #gst-app .form{grid-template-columns:repeat(2,minmax(0,1fr))}
+  #gst-app .steps{grid-template-columns:1fr}
+  #gst-app .sc .hd{display:none}
+  #gst-app .sc .mr{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:6px 10px}
+  #gst-app .sc .mr .c-name{grid-column:1/-1}
+  #gst-app .sc .mr .c-ci{grid-column:1/-1}
+  #gst-app .sc .mr .c-ci{order:1}
+  #gst-app .sc .mr .c-st{grid-column:1/-1;order:2}
+  #gst-app .sc .lbl{display:block}
+  #gst-app .mrow{grid-template-columns:22px minmax(0,1fr) minmax(0,1fr);}
+  #gst-app .mrow .mname{grid-column:2/-1}
+  #gst-app .head select{flex:1 1 100%}
+}
+#gst-app .pill{font-weight:700;padding:5px 12px;font-size:13px}
+#gst-app .pill.sg{background:#017a5b;border-color:#017a5b;color:#fff}#gst-app .pill.sc{background:#c9402f;border-color:#c9402f;color:#fff}#gst-app .pill.w{background:#fff;border:1.5px solid #c9402f;color:#8f2c20}
+#gst-app .verdict{display:flex;flex-wrap:wrap;background:#fff;border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-top:14px}
+#gst-app .v-main{flex:999 1 480px;min-width:0;padding:22px 24px;display:flex;gap:16px;align-items:flex-start}
+#gst-app .v-main.t-a{background:#FBF4E4}#gst-app .v-main.t-g{background:var(--wash)}#gst-app .v-main.t-c{background:#FCF1EF}
+#gst-app .v-main h3{font-size:26px;font-weight:700;margin:4px 0;line-height:1.2}#gst-app .v-main p{font-size:15px;max-width:62ch}
+#gst-app .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+#gst-app .v-side{flex:1 1 320px;min-width:0;padding:18px 22px;display:flex;flex-direction:column;gap:8px;border-left:1px solid var(--line)}
+#gst-app .big{font-family:var(--ft);font-size:16px}
+#gst-app .segs,#gst-app .seglab{display:grid;gap:4px}#gst-app .segs span{height:10px;border-radius:5px}#gst-app .segs .done{background:var(--green)}#gst-app .segs .todo{background:var(--line);border:1px solid var(--border)}#gst-app .segs .dec{outline:3px solid var(--amber);outline-offset:1px}
+#gst-app .seglab{text-align:center;font-size:11px;color:var(--charcoal)}
+#gst-app .chk{display:flex;gap:10px;align-items:flex-start;margin-top:8px}
+#gst-app .tools{display:flex;flex-wrap:wrap;gap:10px;justify-content:space-between;align-items:center;margin-top:14px}
+#gst-app .tools button{display:inline-flex;align-items:center;gap:8px;min-height:44px}
+#gst-app .hist{display:inline-flex;align-items:center;gap:8px;margin:0;font-size:13px}#gst-app .hist select{width:auto;min-height:44px}
+#gst-app .legend>div{margin-top:8px}#gst-app .legend>div:first-child{margin-top:0}
+#gst-app .grp{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px;margin-top:22px}#gst-app .grp h3{font-size:17px;font-weight:700}
+#gst-app .ml{background:#fff;border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-top:8px}
+#gst-app .ml.prim{border-width:1.5px}#gst-app .ml.prim:has(.t-g){border-color:var(--green)}#gst-app .ml.prim:has(.t-c){border-color:#c9402f}
+#gst-app .mrw{display:grid;grid-template-columns:26px minmax(0,2.2fr) minmax(0,1.5fr) minmax(0,3fr) minmax(0,.9fr) minmax(150px,auto);gap:10px 20px;align-items:center;padding:12px 18px;border-top:1px solid var(--line);cursor:pointer}
+#gst-app .mrw:first-child{border-top:0}#gst-app .mrw .ic{width:26px;height:26px;display:block}
+#gst-app .mrw.big{padding:18px 20px;grid-template-columns:32px minmax(0,2.2fr) minmax(0,1.5fr) minmax(0,3fr) minmax(0,.9fr) minmax(150px,auto)}#gst-app .mrw.big .ic{width:32px;height:32px}
+#gst-app .mrw.t-g{background:var(--tg)}#gst-app .mrw.t-c{background:#F7DAD5}#gst-app .mrw.t-w{background:#FCF1EF}
+#gst-app .mrw.sel{box-shadow:inset 4px 0 0 var(--blue)}
+#gst-app .mn{font-weight:700;overflow-wrap:anywhere}#gst-app .mrw.big .mn{font-size:16px}
+#gst-app .lift{font-family:var(--ft);font-weight:700;font-size:20px}#gst-app .mrw.big .lift{font-size:30px;line-height:1.05}
+#gst-app .t-g .lift{color:#015c45}#gst-app .t-c .lift,#gst-app .t-w .lift{color:#8f2c20}
+#gst-app .int{font-size:13px}#gst-app .ci{display:block;width:100%;height:30px}
+#gst-app .scale{display:flex;justify-content:space-between;font-size:11px;color:var(--charcoal)}
+#gst-app .c-z{font-size:13px}#gst-app .c-st{justify-self:end}
+#gst-app .toggle{display:inline-flex;border:1px solid var(--border);border-radius:8px;overflow:hidden}
+#gst-app .toggle button,#gst-app .toggle button:hover,#gst-app .toggle button:focus{border:0;border-radius:0;min-height:40px}#gst-app .toggle button.on{background:var(--ink);color:#fff}
+#gst-app .hero{padding:14px 0 0}#gst-app .hero h2{font-size:32px;font-weight:700;max-width:24ch;line-height:1.15;margin-top:6px}#gst-app .lead{font-size:16px;color:var(--charcoal);max-width:68ch;margin-top:8px}
+#gst-app .steps{gap:16px;margin-top:18px}#gst-app .steps .card{margin-top:0;border-radius:12px}#gst-app .sh{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}#gst-app .sh .n{font-size:30px}#gst-app .steps h4{font-size:17px;font-weight:700;margin-bottom:4px}
+#gst-app .mini{display:flex;flex-direction:column;gap:4px;width:132px}#gst-app .mini span{padding:3px 10px;border-radius:999px;border:1px solid var(--border);font-size:11px;font-weight:600;text-align:center;color:var(--charcoal)}#gst-app .mini .on{background:#017a5b;border-color:#017a5b;color:#fff;font-size:12px}
+#gst-app .two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-top:16px}
+#gst-app .drop{border-radius:12px}#gst-app .drop.big{padding:32px 20px}#gst-app .drop h3{font-size:20px;font-weight:700;margin:8px 0 4px}#gst-app .drop p{margin-top:10px}
+#gst-app button.sec,#gst-app button.sec:focus{display:inline-flex;gap:8px;align-items:center;border-color:var(--green);color:#015c45}
+#gst-app .privacy{display:flex;gap:10px;align-items:flex-start;margin-top:10px;padding:12px 14px;background:#fff;border:1px solid var(--border);border-radius:10px}
+#gst-app .stp{display:flex;gap:12px;margin-top:12px;align-items:flex-start}#gst-app .nb{flex:none;width:28px;height:28px;border-radius:50%;background:#017a5b;color:#fff;font-weight:700;display:inline-flex;align-items:center;justify-content:center}
+#gst-app code{background:var(--bg);border:1px solid var(--line);border-radius:4px;padding:1px 5px;font-size:13px;color:var(--ink)}
+#gst-app .pcard{padding:0 0 16px;overflow:hidden;border-radius:12px}#gst-app .phead{display:flex;gap:14px;align-items:center;padding:16px 20px;border-bottom:1px solid var(--line)}#gst-app .phead .n{font-family:var(--ft);font-weight:700;font-size:26px;color:var(--green)}#gst-app .phead h3{font-size:18px;font-weight:700}
+#gst-app .psplit{display:flex;flex-wrap:wrap;margin-bottom:-16px}#gst-app .pform{flex:1 1 400px;min-width:0;padding:18px 20px;display:flex;flex-direction:column;gap:14px}#gst-app .pmde{flex:1 1 400px;min-width:0;padding:18px 20px;background:var(--wash);display:flex;flex-direction:column;gap:12px}
+#gst-app .form2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+#gst-app label.opt{display:flex;gap:12px;align-items:flex-start;padding:12px 14px;border:1px solid var(--border);border-radius:10px;background:#fff;margin:8px 0 0;font-weight:400;font-size:14px;color:var(--ink);cursor:pointer}#gst-app label.opt.on{border:1.5px solid var(--green);background:var(--tg)}
+#gst-app input[type=radio]{width:18px;min-height:18px;height:18px;margin-top:3px;padding:0;accent-color:#017a5b;flex:none}
+#gst-app .mdebig{display:flex;flex-wrap:wrap;gap:8px 18px;align-items:flex-end}#gst-app .mdebig .num{font-family:var(--ft);font-weight:700;font-size:52px;line-height:1;color:#015c45}
+#gst-app .mdetab{background:#fff;border:1px solid var(--border);border-radius:10px;overflow:hidden}#gst-app .mh{padding:10px 14px;font-weight:600;font-size:13px;color:var(--charcoal)}
+#gst-app button.mr2,#gst-app button.mr2:focus{display:grid;grid-template-columns:100px minmax(0,1fr) 92px;gap:10px;align-items:center;width:100%;border:0;border-top:1px solid var(--line);border-radius:0;padding:8px 14px;min-height:44px;font-weight:400;text-align:left;background:#fff}
+#gst-app .mr2 .b{height:10px;border-radius:5px;background:var(--line);display:block}#gst-app .mr2 .b i{display:block;height:100%;border-radius:5px;background:#9FA1A1}#gst-app button.mr2.on{background:var(--tg);font-weight:700}#gst-app .mr2.on .b i{background:#017a5b}#gst-app .mr2 b{text-align:right}
+#gst-app .mtab{min-width:780px}#gst-app .mt{display:grid;grid-template-columns:minmax(0,2.6fr) minmax(0,.8fr) minmax(0,1.4fr) minmax(0,1.3fr) minmax(0,.9fr);gap:12px;align-items:center;padding:10px 20px;border-top:1px solid var(--line)}#gst-app .mt.h{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--charcoal);background:var(--bg);border-top:0}#gst-app .mt.on{background:var(--tg)}
+@media (max-width:760px){
+  #gst-app .v-main{padding:18px 16px}#gst-app .v-main h3{font-size:22px}#gst-app .v-side{border-left:0;border-top:1px solid var(--line);padding:14px 16px}
+  #gst-app .mrw,#gst-app .mrw.big{grid-template-columns:28px minmax(0,1fr) auto;padding:12px 14px;gap:8px 10px}
+  #gst-app .mrw .ic{grid-row:1;grid-column:1}#gst-app .c-name{grid-row:1;grid-column:2/-1}#gst-app .c-lift{grid-row:2;grid-column:1/3}#gst-app .c-st{grid-row:2;grid-column:3}#gst-app .c-ci{grid-row:3;grid-column:1/-1}#gst-app .c-z{grid-row:4;grid-column:1/-1}#gst-app .c-z br{display:none}
+  #gst-app .two{grid-template-columns:minmax(0,1fr)}#gst-app .steps{grid-template-columns:minmax(0,1fr)}#gst-app .hero h2{font-size:26px}#gst-app .mdebig .num{font-size:42px}
+  #gst-app .pill{font-size:12px;padding:4px 10px}
+}
+</style>
+<div id="gst-app"><p>Chargement de l'outil…</p></div>
+<script>
+(function(){
+'use strict';
+var API='https://my-gst-api.onrender.com/api/calculate-boundaries';
+var NEW_PREFIX='gstSeq_v40_',OLD_PREFIX='gstSequentialAnalysis_v321_',MAX_METRICS=15,VERSION='v41.0';
+var root=document.getElementById('gst-app');
+var EXEMPLE="Semaine;Date de début;Date de fin;Variation;Visiteurs;Visiteurs avec achat;Visiteurs avec rebond;Visiteurs avec ajout panier;Visiteurs fiche produit vue;Visiteurs inscrits newsletter;Visiteurs contact service client;CA (€) [somme];CA (€) [somme carrés]\n1;2026-10-05;2026-10-11;A - Contrôle;9862;495;3937;1212;5483;179;152;28604,98;2238859,44\n1;2026-10-05;2026-10-11;B - Variante;10197;517;4125;1264;5661;215;156;29274,97;2288280,78\n2;2026-10-05;2026-10-18;A - Contrôle;20124;1041;8019;2457;11114;383;302;60597,00;4878927,63\n2;2026-10-05;2026-10-18;B - Variante;20139;1082;8105;2514;11189;402;299;61509,76;4751805,20\n3;2026-10-05;2026-10-25;A - Contrôle;30011;1542;11992;3619;16555;577;473;89955,78;7285282,51\n3;2026-10-05;2026-10-25;B - Variante;29969;1610;11976;3750;16641;601;445;92128,15;7124589,83\n4;2026-10-05;2026-11-01;A - Contrôle;39984;2049;15857;4822;22041;773;611;118445,83;9399245,52\n4;2026-10-05;2026-11-01;B - Variante;39881;2136;15989;5044;22217;808;593;122493,11;9423902,14\n5;2026-10-05;2026-11-08;A - Contrôle;50089;2498;19872;6047;27648;987;741;144548,18;11467542,98\n5;2026-10-05;2026-11-08;B - Variante;49909;2688;19982;6268;27837;1016;733;153297,46;11698785,47\n6;2026-10-05;2026-11-15;A - Contrôle;60132;2962;23896;7259;33249;1176;891;171483,57;13527391,46\n6;2026-10-05;2026-11-15;B - Variante;60016;3240;24013;7544;33469;1230;872;185493,03;14310408,44\n";
+
+/* ---------- utilitaires ---------- */
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+function todayISO(){var d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function frDate(iso){var m=/^(\d{4})-(\d{2})-(\d{2})/.exec(iso||'');return m?m[3]+'/'+m[2]+'/'+m[1]:'—';}
+function addDays(iso,n){var m=/^(\d{4})-(\d{2})-(\d{2})/.exec(iso||'');if(!m)return '';var d=new Date(+m[1],+m[2]-1,+m[3]+n);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function nf(v,d){return (typeof v==='number'&&isFinite(v))?v.toLocaleString('fr-FR',{minimumFractionDigits:d||0,maximumFractionDigits:d||0}):'—';}
+function pct(v,d){if(typeof v!=='number'||!isFinite(v))return '—';d=d==null?2:d;var r=Math.round(v*100*Math.pow(10,d))/Math.pow(10,d);if(r===0)r=0;return (r>0?'+':'')+nf(r,d)+' %';}
+function norm(s){return String(s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').trim();}
+function uid(){return 'm'+Math.random().toString(36).slice(2,8);}
+function normInv(p){var a=[-39.69683028665376,220.9460984245205,-275.9285104469687,138.357751867269,-30.66479806614716,2.506628277459239],b=[-54.47609879822406,161.5858368580409,-155.6989798598866,66.80131188771972,-13.28068155288572],c=[-0.007784894002430293,-0.3223964580411365,-2.400758277161838,-2.549732539343734,4.374664141464968,2.938163982698783],d=[0.007784695709041462,0.3224671290700398,2.445134137142996,3.754408661907416],q,r;if(p<0.02425){q=Math.sqrt(-2*Math.log(p));return(((((c[0]*q+c[1])*q+c[2])*q+c[3])*q+c[4])*q+c[5])/((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1);}if(p>1-0.02425){q=Math.sqrt(-2*Math.log(1-p));return-(((((c[0]*q+c[1])*q+c[2])*q+c[3])*q+c[4])*q+c[5])/((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1);}q=p-0.5;r=q*q;return(((((a[0]*r+a[1])*r+a[2])*r+a[3])*r+a[4])*r+a[5])*q/(((((b[0]*r+b[1])*r+b[2])*r+b[3])*r+b[4])*r+1);}
+
+/* ---------- état ---------- */
+function freshState(){return {v:40,name:'',plan:{k:4,alpha:0.05,power:0.8,beta:0.2,testType:3,sfu:'KimDeMets',sfl:'HSD',startDate:todayISO()},metrics:[],labels:{A:'Contrôle',B:'Variante'},weeks:[],bounds:null,boundsKey:'',boundsG:null,boundsS:null,auxKey:''};}
+var state=freshState();
+var ui={tab:'resultats',week:null,sel:null,draft:null,manual:false,busy:false,error:'',notice:'',planDraft:null,mde:{traffic:'',conv:'',auto:false},adv:false,unit:'pct',legend:false,detail:false,ifc:{},howto:'piano'};
+function planKey(p){return [p.k,p.alpha,p.beta,p.testType,p.sfu,p.sfl].join('|');}
+function autosave(){if(state.name){try{localStorage.setItem(NEW_PREFIX+state.name,JSON.stringify(state));}catch(e){ui.error='Sauvegarde impossible : '+e.message;}}}
+
+/* ---------- statistiques ---------- */
+function stat(m,a,b,crit){
+  if(!a||!b||!(a.n>0)||!(b.n>0))return null;var va=a.m[m.id],vb=b.m[m.id];if(!va||!vb)return null;
+  var mA,mB,seP,seU;
+  if(m.type==='continue'){mA=va.s/a.n;mB=vb.s/b.n;var sA=(va.ss-va.s*va.s/a.n)/(a.n-1),sB=(vb.ss-vb.s*vb.s/b.n)/(b.n-1);if(!(sA>=0)||!(sB>=0))return null;seU=Math.sqrt(sA/a.n+sB/b.n);seP=seU;}
+  else{mA=va.c/a.n;mB=vb.c/b.n;var pp=(va.c+vb.c)/(a.n+b.n);seP=Math.sqrt(pp*(1-pp)*(1/a.n+1/b.n));seU=Math.sqrt(mA*(1-mA)/a.n+mB*(1-mB)/b.n);}
+  var d=mB-mA,sg=m.sens==='baisse'?-1:1,ok=seP>1e-15;
+  var z=ok?d/seP:(Math.abs(d)<1e-15?0:null);
+  var marge=(isFinite(m.marge)&&m.marge>0?m.marge:1)/100;
+  var r={mA:mA,mB:mB,d:d,se:seP,z:z,zAdj:z==null?null:sg*z,zNi:ok?(sg*d+marge*Math.abs(mA))/seP:null,lift:mA!==0?d/Math.abs(mA):null,lo:null,hi:null};
+  if(isFinite(crit)&&seU>0&&mA!==0){r.lo=(d-crit*seU)/Math.abs(mA);r.hi=(d+crit*seU)/Math.abs(mA);}
+  return r;
+}
+function statusOf(m,st,eff,fut){
+  if(!st||st.zAdj==null||!isFinite(eff))return 'NA';var z=st.zAdj;
+  if(m.role==='principale')return z>=eff?'POSITIF':z<=-eff?'NEGATIF':(Number.isFinite(fut)&&z<=fut)?'FUTILE':'NEUTRE';
+  if(m.role==='garde-fou')return z<=-eff?'REGRESSION':(st.zNi!=null&&st.zNi>=eff)?'SECURITE':z<=-1?'WATCH':'AUCUN_SIGNAL';
+  return z>=eff?'SIGNAL_POS':z<=-eff?'SIGNAL_NEG':'NEUTRE';
+}
+var STATUS={POSITIF:['Gain démontré','sg'],NEGATIF:['Effet négatif démontré','sc'],FUTILE:['Futilité',''],NEUTRE:['Non conclusif',''],REGRESSION:['Régression démontrée','sc'],SECURITE:['Non-régression démontrée','sg'],WATCH:['À surveiller','w'],AUCUN_SIGNAL:['Non conclusif',''],SIGNAL_POS:['Signal positif','sg'],SIGNAL_NEG:['Signal négatif','sc'],NA:['En attente','']};
+var TONE={POSITIF:'g',SECURITE:'g',SIGNAL_POS:'g',NEGATIF:'c',REGRESSION:'c',SIGNAL_NEG:'c',WATCH:'w'};
+/* Bornes par rôle : plan (principale) ; efficacité seule à alpha (garde-fous) ; efficacité seule à alpha/m (m secondaires, Bonferroni). */
+function effFor(role,i){var b=role==='principale'?state.bounds:role==='garde-fou'?(state.boundsG||state.bounds):(state.boundsS||state.boundsG||state.bounds);return b&&b.eff[i]!=null?b.eff[i]:NaN;}
+function names(rows){return rows.map(function(r){return '« '+r.metric.name+' »';}).join(', ');}
+function decide(i,rows){
+  var k=state.plan.k,stage=i+1,prim=rows.filter(function(r){return r.metric.role==='principale';})[0],guards=rows.filter(function(r){return r.metric.role==='garde-fou';});
+  if(!prim||prim.status==='NA')return {cls:'continue',stop:false,title:'En attente',text:!prim?'Aucune métrique principale définie.':'Bornes ou données indisponibles pour cette semaine.'};
+  var ps=prim.status,reg=guards.filter(function(g){return g.status==='REGRESSION';}),noSec=guards.filter(function(g){return g.status!=='SECURITE';});
+  var gs=!guards.length?'NON_APPLICABLE':reg.length?'REGRESSION':!noSec.length?'SECURITE':'AUCUN_SIGNAL';
+  var complG={SECURITE:' Garde-fous : non-régression démontrée.',AUCUN_SIGNAL:' Garde-fous : aucune régression détectée, non-régression non démontrée pour '+names(noSec)+'.',REGRESSION:'',NON_APPLICABLE:''}[gs];
+  var complP=ps==='POSITIF'?' Objectif principal : gain démontré.':ps==='NEGATIF'?' Objectif principal : effet négatif démontré.':' Objectif principal : non conclusif.';
+  if(gs==='REGRESSION')return {cls:'critical',stop:true,title:'Arrêter — ne pas déployer',text:'Régression démontrée sur '+names(reg)+' (z ≤ −borne d\'efficacité).'+complP};
+  if(ps==='POSITIF'){
+    if(gs==='NON_APPLICABLE'||gs==='SECURITE')return {cls:'win',stop:true,title:'Arrêter — déploiement recommandé',text:'Gain démontré sur l\'objectif principal.'+(gs==='SECURITE'?' La non-régression des garde-fous est démontrée.':'')};
+    return {cls:'discuss',stop:true,title:'Arrêter — discussion requise',text:'Gain démontré sur l\'objectif principal, mais la non-régression n\'est pas démontrée pour '+names(noSec)+' (aucune régression détectée non plus).'};
+  }
+  if(ps==='NEGATIF')return {cls:'stop',stop:true,title:'Arrêter — ne pas déployer',text:'Effet négatif démontré sur l\'objectif principal.'+complG};
+  if(ps==='FUTILE')return {cls:'stop',stop:true,title:'Arrêter — non concluant',text:'Borne de futilité franchie : l\'effet recherché ne sera pas démontré sur ce test. L\'effet observé n\'est pas pour autant démontré négatif.'+complG};
+  if(stage<k)return {cls:'continue',stop:false,title:'Continuer',text:'Analyse pour la semaine '+(stage+1)+' nécessaire. Objectif principal non conclusif à ce stade.'+complG};
+  return {cls:'stop',stop:true,title:'Arrêter — test terminé, non concluant',text:'Aucun résultat démontré après '+k+' semaines.'+complG};
+}
+function compute(){
+  var b=state.bounds,out={weeks:[],decisionWeek:null};
+  state.weeks.forEach(function(w,i){
+    var eff=effFor('principale',i),fut=b?b.fut[i]:null;
+    var rows=state.metrics.map(function(m){var e=effFor(m.role,i),st=stat(m,w.A,w.B,e);return {metric:m,st:st,eff:e,status:statusOf(m,st,e,fut)};});
+    var dec=decide(i,rows);out.weeks.push({rows:rows,dec:dec,eff:eff,fut:fut});
+    if(out.decisionWeek==null&&dec.stop)out.decisionWeek=i;
+  });
+  return out;
+}
+
+/* ---------- API des bornes ---------- */
+function fetchBounds(p){
+  if(p.k===1){var z=normInv(1-p.alpha);return Promise.resolve({eff:[z],fut:[p.testType===1?null:z],IF:1});}
+  return fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({k:p.k,alpha:p.alpha,power:p.power,beta:p.beta,sfu:p.sfu,sfl:p.sfl,testType:p.testType})})
+    .then(function(r){return r.json().then(function(j){if(!r.ok||j.error===true||!j.boundaries)throw new Error(j.message||('Erreur API ('+r.status+')'));var bd=j.boundaries;return {eff:bd.map(function(x){return x.efficacyZ;}),fut:bd.map(function(x){return x.futilityZ;}),IF:bd[bd.length-1].infoFraction};});});
+}
+function nRole(r){return state.metrics.filter(function(m){return m.role===r;}).length;}
+function ensureBounds(){
+  var p=state.plan,key=planKey(p),ng=nRole('garde-fou'),ns=nRole('secondaire'),ak=key+'|'+ng+'|'+ns;
+  if(state.bounds&&state.boundsKey===key&&state.auxKey===ak)return Promise.resolve();
+  ui.busy=true;ui.error='';render();
+  var p1=Object.assign({},p,{testType:1}),needG=(ng>0||ns>0)&&p.testType!==1;
+  return Promise.all([fetchBounds(p),needG?fetchBounds(p1):null,ns>1?fetchBounds(Object.assign({},p1,{alpha:p.alpha/ns})):null]).then(function(r){
+    state.bounds=r[0];state.boundsKey=key;state.boundsG=r[1]||(p.testType===1?r[0]:null);state.boundsS=r[2]||state.boundsG;state.auxKey=ak;ui.ifc[key]=r[0].IF;
+  }).catch(function(e){state.bounds=null;state.boundsKey='';state.auxKey='';ui.error='Calcul des bornes impossible : '+e.message+' Réessayez dans un instant (le serveur de calcul peut mettre jusqu\'à une minute à démarrer).';}).then(function(){ui.busy=false;autosave();render();});
+}
+
+/* ---------- CSV ---------- */
+function parseCSV(text){
+  text=text.replace(/^﻿/,'');var first=(text.split(/\r?\n/).filter(function(l){return l.trim();})[0])||'';
+  var delim=[';','\t',','].sort(function(a,b){return first.split(b).length-first.split(a).length;})[0];
+  var rows=[],row=[],cur='',q=false;
+  for(var i=0;i<text.length;i++){var ch=text[i];
+    if(q){if(ch==='"'){if(text[i+1]==='"'){cur+='"';i++;}else q=false;}else cur+=ch;}
+    else if(ch==='"')q=true;
+    else if(ch===delim){row.push(cur);cur='';}
+    else if(ch==='\n'||ch==='\r'){if(ch==='\r'&&text[i+1]==='\n')i++;row.push(cur);cur='';if(row.some(function(c){return c.trim()!=='';}))rows.push(row);row=[];}
+    else cur+=ch;}
+  row.push(cur);if(row.some(function(c){return c.trim()!=='';}))rows.push(row);
+  return rows;
+}
+function toNum(s){s=String(s==null?'':s).trim().replace(/[\s  €%]/g,'');if(s==='')return NaN;if(/^-?\d{1,3}(,\d{3})+$/.test(s))s=s.replace(/,/g,'');else s=s.replace(',','.');return Number(s);}
+function toCSV(rows){return '﻿'+rows.map(function(r){return r.map(function(c){c=String(c);return /[;"\n]/.test(c)?'"'+c.replace(/"/g,'""')+'"':c;}).join(';');}).join('\r\n')+'\r\n';}
+function download(name,text){var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type:'text/csv;charset=utf-8'}));a.download=name;document.body.appendChild(a);a.click();setTimeout(function(){URL.revokeObjectURL(a.href);a.remove();},500);}
+var RE_SUM=/^(.*?)\s*[\[(]\s*(somme des carres|somme carres|somme2|sumsq|sum2|somme|sum)\s*[\])]$/;
+function analyze(table,fileName,keep){
+  var H=table[0].map(function(h){return h.trim();}),N=H.map(norm),data=table.slice(1);
+  var find=function(re,not){for(var i=0;i<N.length;i++)if(re.test(N[i])&&!(not&&not.test(N[i])))return i;return -1;};
+  var d={file:fileName,H:H,data:data,errors:[],cumulate:false};
+  d.cTest=find(/^(test|mv_test|nom du test|experience|experiment)/);
+  d.cWeek=find(/semaine|^week/);
+  d.cEnd=find(/date de fin|^fin|end/);d.cStart=find(/date de debut|^debut|start/);
+  d.cVar=keep&&keep.cVar!=null?keep.cVar:find(/variation|variante|variant|mv_creation|creation|version|groupe/);
+  d.cVis=keep&&keep.cVis!=null?keep.cVis:find(/visit|utilisateur|^users?$|m_uv/,/conv|achat|transaction|avec|ayant|rebond/);
+  var used=[d.cTest,d.cWeek,d.cEnd,d.cStart,d.cVar,d.cVis];
+  var isNum=function(i){var ok=0,tot=0;data.forEach(function(r){if((r[i]||'').trim()!==''){tot++;if(isFinite(toNum(r[i])))ok++;}});return tot>0&&ok/tot>=0.9;};
+  var mets=[],sums={};
+  H.forEach(function(h,i){if(used.indexOf(i)>=0||!isNum(i))return;var m=RE_SUM.exec(N[i]);
+    if(m){var base=h.slice(0,m[1].length).trim(),sq=/carres|2|sq/.test(m[2]);sums[base]=sums[base]||{};sums[base][sq?'ss':'s']=i;}
+    else mets.push({src:h,name:h,type:'binaire',col:i});});
+  Object.keys(sums).forEach(function(b){if(sums[b].s!=null&&sums[b].ss!=null)mets.push({src:b,name:b,type:'continue',col:sums[b].s,col2:sums[b].ss});});
+  var firstPrim=true;
+  d.metrics=mets.map(function(m,idx){var n=norm(m.name),ex=state.metrics.filter(function(x){return x.src===m.src;})[0];
+    var guard=/secur|garde|guardrail|rebond|bounce|erreur|service client/.test(n),down=/rebond|bounce|erreur|contact|retour|desabonn|sortie|abandon/.test(n);
+    var role=ex?ex.role:(guard?'garde-fou':(firstPrim&&m.type==='binaire'?'principale':'secondaire'));if(!ex&&role==='principale')firstPrim=false;
+    return {src:m.src,name:ex?ex.name:m.name,type:m.type,col:m.col,col2:m.col2,include:ex?true:(state.metrics.length?false:idx<MAX_METRICS),role:role,sens:ex?ex.sens:(down?'baisse':'hausse'),marge:ex?ex.marge:1,id:ex?ex.id:null};});
+  if(!state.metrics.length&&!d.metrics.some(function(m){return m.role==='principale';})&&d.metrics[0])d.metrics[0].role='principale';
+  var uniq=function(c){var s=[];data.forEach(function(r){var v=(r[c]||'').trim();if(v&&s.indexOf(v)<0)s.push(v);});return s;};
+  d.tests=d.cTest>=0?uniq(d.cTest):[];d.test=keep&&d.tests.indexOf(keep.test)>=0?keep.test:(d.tests[0]||'');
+  d.vars=d.cVar>=0?uniq(d.cVar):[];
+  var ctrl=d.vars.filter(function(v){return /contr|origin|reference|temoin|^a\b/.test(norm(v));})[0]||d.vars.slice().sort()[0]||'';
+  d.control=keep&&d.vars.indexOf(keep.control)>=0?keep.control:ctrl;
+  d.variant=keep&&d.vars.indexOf(keep.variant)>=0&&keep.variant!==d.control?keep.variant:(d.vars.filter(function(v){return v!==d.control;})[0]||'');
+  var rowsT=data.filter(function(r){return d.cTest<0||(r[d.cTest]||'').trim()===d.test;});
+  var wk=d.cWeek>=0?d.cWeek:d.cEnd;d.keys=[];
+  if(wk>=0)rowsT.forEach(function(r){var v=(r[wk]||'').trim();if(v&&d.keys.indexOf(v)<0)d.keys.push(v);});
+  d.mode=d.keys.length>1||(d.cWeek>=0&&d.keys.length===1&&!state.weeks.length)?'serie':'instantane';
+  if(d.mode==='serie')d.keys.sort(function(a,b){var x=toNum(a),y=toNum(b);return (isFinite(x)&&isFinite(y)&&d.cWeek>=0)?x-y:(a<b?-1:a>b?1:0);});
+  var nW=d.mode==='serie'?d.keys.length:state.weeks.length+1;
+  d.k=keep&&keep.k?keep.k:Math.max(nW,state.weeks.length?state.plan.k:Math.max(nW,2));
+  var sd=d.cStart>=0&&rowsT[0]?(rowsT[0][d.cStart]||'').trim():'';
+  d.startDate=keep&&keep.startDate?keep.startDate:(/^\d{4}-\d{2}-\d{2}/.test(sd)?sd.slice(0,10):(/^(\d{2})\/(\d{2})\/(\d{4})/.test(sd)?sd.replace(/^(\d{2})\/(\d{2})\/(\d{4}).*/,'$3-$2-$1'):state.plan.startDate));
+  d.name=keep?keep.name:(state.name||d.test||(fileName||'').replace(/\.[a-z]+$/i,''));
+  return d;
+}
+function buildWeeks(d){
+  var errs=[],inc=d.metrics.filter(function(m){return m.include;});
+  if(d.cVar<0)errs.push('Colonne « variation » introuvable : choisissez-la ci-dessous.');
+  if(d.cVis<0)errs.push('Colonne « visiteurs » introuvable : choisissez-la ci-dessous.');
+  if(!inc.length)errs.push('Sélectionnez au moins une métrique.');
+  if(inc.length>MAX_METRICS)errs.push('Maximum '+MAX_METRICS+' métriques ('+inc.length+' sélectionnées).');
+  if(inc.filter(function(m){return m.role==='principale';}).length!==1)errs.push('Il faut exactement une métrique principale.');
+  if(!d.control||!d.variant||d.control===d.variant)errs.push('Il faut deux variations distinctes (contrôle et variante).');
+  if(state.weeks.length&&d.mode==='instantane'){state.metrics.forEach(function(m){if(!inc.some(function(x){return x.src===m.src;}))errs.push('Métrique « '+m.name+' » absente du fichier (colonne « '+m.src+' »).');});}
+  if(errs.length)return {errors:errs};
+  inc.forEach(function(m){if(!m.id)m.id=uid();});
+  var rowsT=d.data.filter(function(r){return d.cTest<0||(r[d.cTest]||'').trim()===d.test;}),wk=d.cWeek>=0?d.cWeek:d.cEnd;
+  var keys=d.mode==='serie'?d.keys:[null],weeks=[];
+  keys.forEach(function(key,wi){
+    var lab='Semaine '+(d.mode==='serie'?(wi+1):(state.weeks.length+1)),W={};
+    [['A',d.control],['B',d.variant]].forEach(function(p){
+      var rs=rowsT.filter(function(r){return (r[d.cVar]||'').trim()===p[1]&&(key===null||(r[wk]||'').trim()===key);});
+      if(rs.length!==1){errs.push(lab+' : '+rs.length+' ligne(s) pour « '+p[1]+' » (1 attendue).');return;}
+      var r=rs[0],n=toNum(r[d.cVis]),o={n:n,m:{}};
+      if(!(n>0)||n!==Math.round(n))errs.push(lab+' — '+p[1]+' : visiteurs invalides (« '+r[d.cVis]+' »).');
+      inc.forEach(function(m){
+        if(m.type==='continue'){var s=toNum(r[m.col]),ss=toNum(r[m.col2]);if(!isFinite(s)||!isFinite(ss)||ss<0)errs.push(lab+' — '+p[1]+' : « '+m.name+' » invalide.');o.m[m.id]={s:s,ss:ss};}
+        else{var c=toNum(r[m.col]);if(!(c>=0)||c!==Math.round(c))errs.push(lab+' — '+p[1]+' : « '+m.name+' » invalide (« '+r[m.col]+' »).');else if(c>n)errs.push(lab+' — '+p[1]+' : « '+m.name+' » ('+c+') dépasse les visiteurs ('+n+').');o.m[m.id]={c:c};}
+      });W[p[0]]=o;});
+    if(W.A&&W.B)weeks.push(W);
+  });
+  if(errs.length)return {errors:errs.slice(0,8)};
+  if(d.cumulate&&d.mode==='serie'){for(var i=1;i<weeks.length;i++)['A','B'].forEach(function(v){var c=weeks[i][v],p=weeks[i-1][v];c.n+=p.n;inc.forEach(function(m){var x=c.m[m.id],y=p.m[m.id];if(m.type==='continue'){x.s+=y.s;x.ss+=y.ss;}else x.c+=y.c;});});}
+  var all=(d.mode==='serie'?[]:state.weeks).concat(weeks);
+  for(var j=1;j<all.length;j++)['A','B'].forEach(function(v){var c=all[j][v],p=all[j-1][v];
+    if(c.n<p.n)errs.push('Semaine '+(j+1)+' : les visiteurs cumulés baissent ('+p.n+' → '+c.n+'). Les données doivent être cumulées depuis le début du test.');
+    inc.forEach(function(m){if(m.type!=='continue'&&c.m[m.id]&&p.m[m.id]&&c.m[m.id].c<p.m[m.id].c)errs.push('Semaine '+(j+1)+' : « '+m.name+' » cumulé baisse.');});});
+  if(all.length>d.k)errs.push('Le fichier contient '+all.length+' semaines pour une durée prévue de '+d.k+'.');
+  if(errs.length)return {errors:errs.slice(0,8)};
+  return {weeks:all,metrics:inc.map(function(m){return {id:m.id,src:m.src,name:m.name.trim()||m.src,type:m.type,role:m.role,sens:m.sens,marge:m.marge};})};
+}
+function readFile(f){
+  var rd=new FileReader();rd.onload=function(){var t=rd.result;
+    if(t.indexOf('�')>=0){var r2=new FileReader();r2.onload=function(){openDraft(r2.result,f.name);};r2.readAsText(f,'windows-1252');}else openDraft(t,f.name);};
+  rd.readAsText(f,'utf-8');
+}
+function openDraft(text,name){
+  ui.error='';ui.notice='';var t=parseCSV(text);
+  if(/^PK/.test(text)){ui.error='Ce fichier est un classeur Excel. Enregistrez-le en CSV, puis déposez le CSV.';ui.tab='donnees';return render();}
+  if(t.length<2||t[0].length<3){ui.error='Fichier illisible : il faut une ligne d\'en-têtes puis au moins une ligne par variation.';ui.tab='donnees';return render();}
+  ui.rawTable=t;ui.draft=analyze(t,name,null);ui.tab='donnees';render();
+}
+function applyDraft(){
+  var d=ui.draft,res=buildWeeks(d);if(res.errors){d.errors=res.errors;return render();}
+  var replace=d.mode==='serie'||!state.weeks.length;
+  if(replace){state.metrics=res.metrics;state.labels={A:d.control,B:d.variant};}
+  state.weeks=res.weeks;state.name=(d.name||'').trim()||state.name;
+  if(replace){state.plan.k=d.k;state.plan.startDate=d.startDate;}
+  ui.draft=null;ui.rawTable=null;ui.week=null;ui.sel=null;ui.tab='resultats';ui.notice=res.weeks.length+' semaine(s) de données chargée(s).';
+  autosave();ensureBounds().then(render);render();
+}
+
+/* ---------- sauvegardes ---------- */
+function listSaved(){var a=[];for(var i=0;i<localStorage.length;i++){var k=localStorage.key(i);if(k.indexOf(NEW_PREFIX)===0)a.push({key:k,label:k.slice(NEW_PREFIX.length)});else if(k.indexOf(OLD_PREFIX)===0)a.push({key:k,label:k.slice(OLD_PREFIX.length)+' (ancien format)'});}return a.sort(function(x,y){return x.label<y.label?-1:1;});}
+function convertOld(o){
+  var s=freshState(),p=o.currentDesignParams||{};s.name=o.name||'';
+  var hasBeta=typeof p.beta==='number';
+  s.plan={k:p.k||parseInt(o.designK,10)||4,alpha:p.alpha||0.05,power:hasBeta?p.power:0.8,beta:hasBeta?p.beta:0.2,testType:p.testTypePrincipal||3,sfu:p.sfu||'KimDeMets',sfl:p.sfl||'HSD',startDate:p.testStartDate||o.testStartDate||todayISO()};
+  var sec=o.isSecondaryKpiPlanned===true;
+  s.metrics=[{id:'principal',src:'',name:'Objectif principal',type:'binaire',role:'principale',sens:'hausse',marge:1}];
+  if(sec)s.metrics.push({id:'securite',src:'',name:'Objectif de sécurité',type:'binaire',role:'garde-fou',sens:'hausse',marge:parseFloat(o.niMarginRel)||1});
+  s.weeks=(o.weeklyEnteredData||[]).map(function(w){var A={n:w.visitorsACumul,m:{principal:{c:w.conversionsACumul_P}}},B={n:w.visitorsBCumul,m:{principal:{c:w.conversionsBCumul_P}}};
+    if(sec){A.m.securite={c:w.conversionsASecondaryCumul||0};B.m.securite={c:w.conversionsBSecondaryCumul||0};}return {A:A,B:B};});
+  return s;
+}
+function loadSaved(key){
+  try{var o=JSON.parse(localStorage.getItem(key));state=key.indexOf(OLD_PREFIX)===0?convertOld(o):o;}catch(e){ui.error='Chargement impossible : '+e.message;return render();}
+  ui.week=null;ui.sel=null;ui.draft=null;ui.planDraft=null;ui.error='';ui.notice='Test « '+state.name+' » chargé.';ui.tab='resultats';
+  if(state.metrics.length)ensureBounds();render();
+}
+
+/* ---------- rendu ---------- */
+var ICON={
+  g:'<svg aria-hidden="true" class="ic" viewBox="0 0 32 32"><circle cx="16" cy="16" r="16" fill="#017a5b"/><path d="M9.5 16.5l4.4 4.4L22.5 12" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  c:'<svg aria-hidden="true" class="ic" viewBox="0 0 32 32"><circle cx="16" cy="16" r="16" fill="#c9402f"/><path d="M11 11l10 10M21 11L11 21" stroke="#fff" stroke-width="3" stroke-linecap="round"/></svg>',
+  w:'<svg aria-hidden="true" class="ic" viewBox="0 0 32 32"><circle cx="16" cy="16" r="14.5" fill="#fff" stroke="#c9402f" stroke-width="2.5"/><path d="M16 8.5v9" stroke="#c9402f" stroke-width="3" stroke-linecap="round"/><circle cx="16" cy="22.5" r="1.9" fill="#c9402f"/></svg>',
+  n:'<svg aria-hidden="true" class="ic" viewBox="0 0 32 32"><circle cx="16" cy="16" r="14.5" fill="#fff" stroke="#9FA1A1" stroke-width="2.5"/><path d="M10 16h12" stroke="#464849" stroke-width="3" stroke-linecap="round"/></svg>',
+  ok:'<svg aria-hidden="true" width="20" height="20" viewBox="0 0 20 20" style="flex:none"><circle cx="10" cy="10" r="9" fill="#E6F4F0" stroke="#028D6A"/><path d="M6 10.4l2.6 2.6L14 7.6" fill="none" stroke="#017a5b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  ko:'<svg aria-hidden="true" width="20" height="20" viewBox="0 0 20 20" style="flex:none"><circle cx="10" cy="10" r="9" fill="#FCF1EF" stroke="#c9402f"/><path d="M10 5.5v5.5" stroke="#c9402f" stroke-width="2.2" stroke-linecap="round"/><circle cx="10" cy="14" r="1.3" fill="#c9402f"/></svg>'
+};
+function ciBar(st,M,tone){
+  if(!st||st.lo==null||!(M>0))return '';
+  var W=400,x=function(v){return Math.max(6,Math.min(W-6,W/2+v/M*(W/2-12)));},col=tone==='g'?'#017a5b':(tone==='c'||tone==='w')?'#c9402f':'#464849',fill=tone?col:'#9FA1A1';
+  return '<svg class="ci" role="img" aria-label="Intervalle de '+pct(st.lo)+' à '+pct(st.hi)+'" viewBox="0 0 400 30" preserveAspectRatio="none"><line x1="200" y1="1" x2="200" y2="29" stroke="#464849"/><rect x="'+x(st.lo).toFixed(1)+'" y="9" width="'+Math.max(4,x(st.hi)-x(st.lo)).toFixed(1)+'" height="12" rx="6" fill="'+fill+'" fill-opacity=".45"/><circle cx="'+x(st.lift).toFixed(1)+'" cy="15" r="6.5" fill="'+col+'"/></svg>';
+}
+function smooth(P){
+  var n=P.length;if(!n)return '';var d='M'+P[0][0].toFixed(1)+' '+P[0][1].toFixed(1);if(n===1)return d;
+  var dx=[],s=[],m=[],i;for(i=0;i<n-1;i++){dx.push(P[i+1][0]-P[i][0]);s.push((P[i+1][1]-P[i][1])/dx[i]);}
+  m.push(s[0]);for(i=1;i<n-1;i++)m.push(s[i-1]*s[i]<=0?0:2*s[i-1]*s[i]/(s[i-1]+s[i]));m.push(s[n-2]);
+  for(i=0;i<n-1;i++)d+=' C'+(P[i][0]+dx[i]/3).toFixed(1)+' '+(P[i][1]+m[i]*dx[i]/3).toFixed(1)+' '+(P[i+1][0]-dx[i]/3).toFixed(1)+' '+(P[i+1][1]-m[i+1]*dx[i]/3).toFixed(1)+' '+P[i+1][0].toFixed(1)+' '+P[i+1][1].toFixed(1);
+  return d;
+}
+function seqChart(m,comp,cur,W){
+  var k=state.plan.k,mi=state.metrics.indexOf(m),prim=m.role==='principale',guard=m.role==='garde-fou',pctMode=ui.unit!=='z',small=W<560;
+  var H=Math.round(Math.max(230,Math.min(340,W*0.42))),L=small?34:46,R=small?10:22,T=14,B=30,i;
+  var last=-1;comp.weeks.forEach(function(w,j){if(w.rows[mi].st)last=j;});if(last<0)return '<p class="hint">Pas encore de données pour cette métrique.</p>';
+  var sl=comp.weeks[last].rows[mi].st,scale=[];
+  for(i=0;i<k;i++){var st=comp.weeks[i]&&comp.weeks[i].rows[mi].st;scale.push(!pctMode?1:(st&&st.mA?st.se/Math.abs(st.mA)*100:(sl.mA?sl.se/Math.abs(sl.mA)*100*Math.sqrt((last+1)/(i+1)):NaN)));}
+  var eff=[],fut=[],zs=[],zn=[];
+  for(i=0;i<k;i++){var e=effFor(m.role,i);eff.push(e*scale[i]);var f=prim&&state.bounds?state.bounds.fut[i]:null;fut.push(Number.isFinite(f)?f*scale[i]:null);
+    var s2=comp.weeks[i]&&comp.weeks[i].rows[mi].st;zs.push(s2&&s2.zAdj!=null?s2.zAdj*scale[i]:null);zn.push(guard&&s2&&s2.zNi!=null?s2.zNi*scale[i]:null);}
+  if(!eff.every(function(v){return isFinite(v);}))return '<p class="hint">Bornes indisponibles.</p>';
+  var hasFut=fut.some(function(v){return v!=null;}),vals=[0].concat(eff,eff.map(function(v){return -v;}),zs,zn).filter(function(v){return typeof v==='number'&&isFinite(v);});
+  var mx=Math.max.apply(null,vals.map(Math.abs))*1.12,lo=-mx,hi=mx;
+  var x=function(j){return k===1?L+(W-L-R)/2:L+j*(W-L-R)/(k-1);},y=function(v){return T+(hi-v)/(hi-lo)*(H-T-B);};
+  var pts=function(arr){var P=[];arr.forEach(function(v,j){if(typeof v==='number'&&isFinite(v))P.push([x(j),y(v)]);});return P;};
+  var pe=smooth(pts(eff)),pn=smooth(pts(eff.map(function(v){return -v;}))),pf=hasFut?smooth(pts(fut)):'',pz=smooth(pts(zs)),xr=x(k-1),xl=x(0),yb=H-B;
+  var s='<svg viewBox="0 0 '+W+' '+H+'" width="'+W+'" height="'+H+'" role="img" aria-label="Trajectoire de '+esc(m.name)+' et bornes séquentielles"><rect width="'+W+'" height="'+H+'" fill="#FFFFFF"/>';
+  if(k>1){s+='<path d="'+pe+' L'+xr+' '+T+' L'+xl+' '+T+' Z" fill="#E6F4F0"/>';
+    if(hasFut)s+='<path d="'+pf+' L'+xr+' '+yb+' L'+xl+' '+yb+' Z" fill="#ECEEEE"/>';
+    s+='<path d="'+pn+' L'+xr+' '+yb+' L'+xl+' '+yb+' Z" fill="#F7DAD5"/>';}
+  s+='<line x1="'+L+'" x2="'+(W-R)+'" y1="'+y(0)+'" y2="'+y(0)+'" stroke="#9FA1A1" stroke-dasharray="2 4"/>';
+  var step=mx>40?20:mx>16?10:mx>8?5:mx>4?2:mx>1.6?1:0.5,dec=step<1?1:0;
+  for(var v=-Math.floor(mx/step)*step;v<=mx;v+=step)s+='<text x="'+(L-6)+'" y="'+(y(v)+4)+'" text-anchor="end" font-size="11" fill="#464849">'+(v>0&&pctMode?'+':'')+nf(v,dec)+(pctMode?' %':'')+'</text>';
+  var stp=Math.ceil(k/(small?6:12));for(i=0;i<k;i++)if(i%stp===0||i===k-1)s+='<text x="'+x(i)+'" y="'+(H-10)+'" text-anchor="middle" font-size="11" fill="#464849"'+(i===cur?' font-weight="700"':'')+'>S'+(i+1)+'</text>';
+  s+='<path d="'+pe+'" fill="none" stroke="#028D6A" stroke-width="2" stroke-linecap="round"/><path d="'+pn+'" fill="none" stroke="#c9402f" stroke-width="2" stroke-linecap="round"/>';
+  if(hasFut)s+='<path d="'+pf+'" fill="none" stroke="#464849" stroke-width="2" stroke-linecap="round"/>';
+  if(guard)s+='<path d="'+smooth(pts(zn))+'" fill="none" stroke="#0082C3" stroke-width="2" stroke-dasharray="5 5" stroke-linecap="round"/>';
+  if(!small&&k>1){s+='<g font-size="12" font-weight="700"><text x="'+(xr-10)+'" y="'+(T+18)+'" text-anchor="end" fill="#015c45">'+(guard?'Seuil de non-régression':'Gain démontré : on arrête')+'</text><text x="'+(xr-10)+'" y="'+(yb-10)+'" text-anchor="end" fill="#8f2c20">'+(guard?'Régression démontrée':'Effet négatif démontré : on arrête')+'</text>'+(hasFut?(function(){var j=Math.min(k-2,Math.floor(k*0.6));return '<text x="'+x(j)+'" y="'+(y((fut[j]-eff[j])/2)+4)+'" text-anchor="middle" fill="#464849">Plus assez de chances d\'aboutir (futilité)</text>';})():'')+'</g>';}
+  var dz=zs[cur];if(typeof dz==='number'&&isFinite(dz))s+='<circle cx="'+x(cur).toFixed(1)+'" cy="'+y(dz).toFixed(1)+'" r="15" fill="#0082C3" fill-opacity=".18"/>';
+  s+='<path d="'+pz+'" fill="none" stroke="#0082C3" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>';
+  zs.forEach(function(z,j){if(typeof z==='number'&&isFinite(z))s+=j===cur?'<circle cx="'+x(j).toFixed(1)+'" cy="'+y(z).toFixed(1)+'" r="7" fill="#0082C3" stroke="#fff" stroke-width="2.5"/>':'<circle cx="'+x(j).toFixed(1)+'" cy="'+y(z).toFixed(1)+'" r="5" fill="#fff" stroke="#0082C3" stroke-width="3"/>';});
+  s+='</svg>';
+  var lg='<span style="color:#015c45;font-weight:600">Zone verte : '+(guard?'non-régression démontrée (courbe en tirets)':'gain démontré')+'</span> · <span style="color:#8f2c20;font-weight:600">zone rose : '+(guard?'régression démontrée':'effet négatif démontré')+'</span>'+(hasFut?' · <span style="font-weight:600">zone grise : futilité</span>':'')+' · couloir blanc : on continue.'+(pctMode&&last<k-1?' Les bornes des semaines à venir sont estimées à trafic constant.':'')+(m.sens==='baisse'?' Écart orienté : positif = favorable (baisse).':'');
+  return s+'<p class="hint" style="margin-top:6px">'+lg+'</p>';
+}
+function head(){
+  var saved=listSaved();
+  return '<div class="head"><input class="name" data-f="name" value="'+esc(state.name)+'" placeholder="Nom du test" aria-label="Nom du test">'
+    +'<select data-act="load" aria-label="Tests enregistrés"><option value="">Mes tests ('+saved.length+')</option>'+saved.map(function(s){return '<option value="'+esc(s.key)+'">'+esc(s.label)+'</option>';}).join('')+'</select>'
+    +'<button type="button" data-act="save">Enregistrer</button><button type="button" data-act="new">Nouveau</button></div>'
+    +'<div class="tabs" role="tablist">'+[['resultats','Résultats'],['donnees','Données'],['plan','Plan et métriques']].map(function(t){return '<button type="button" role="tab" aria-selected="'+(ui.tab===t[0])+'" class="'+(ui.tab===t[0]?'on':'')+'" data-act="tab" data-v="'+t[0]+'">'+t[1]+'</button>';}).join('')+'</div>'
+    +(ui.error?'<div class="err" role="alert">'+esc(ui.error)+'</div>':'')+(ui.notice?'<div class="ok">'+esc(ui.notice)+'</div>':'')+(ui.busy?'<div class="ok">Calcul des bornes en cours…</div>':'');
+}
+function dropzone(big){return '<div class="drop'+(big?' big':'')+'" data-act="pick" tabindex="0" role="button"><svg aria-hidden="true" width="48" height="48" viewBox="0 0 48 48"><circle cx="24" cy="24" r="23" fill="#fff" stroke="#028D6A" stroke-width="1.5"/><path d="M24 33V15M16 23l8-8 8 8" fill="none" stroke="#017a5b" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg><h3>Déposez votre export CSV ici</h3><p class="muted">Une ligne par variation, les métriques en colonnes.</p><p><button type="button" class="pri" data-act="pick">Choisir un fichier</button></p>'
+  +'<p class="row" style="justify-content:center"><button type="button" class="sec" data-act="template"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 16 16"><path d="M8 2v8M4.5 7L8 10.5 11.5 7M2.5 13.5h11" fill="none" stroke="#015c45" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Télécharger le modèle CSV</button><button type="button" data-act="example">Essayer avec un exemple</button></p></div><input type="file" accept=".csv,.txt,.tsv,text/csv" data-f="file" style="display:none">'
+  +'<div class="privacy"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 22 22" style="flex:none"><rect x="4" y="10" width="14" height="9" rx="2" fill="none" stroke="#017a5b" stroke-width="2"/><path d="M7.5 10V7a3.5 3.5 0 017 0v3" fill="none" stroke="#017a5b" stroke-width="2" stroke-linecap="round"/></svg><span><b>Vos chiffres ne quittent pas votre poste.</b> Rien n\'est enregistré sur le site : le calcul se fait dans votre navigateur, et vous pouvez sauvegarder le test en local.</span></div>';}
+function viewHome(){
+  var tab=ui.howto||'piano',step=function(n,t){return '<div class="stp"><span class="nb">'+n+'</span><span>'+t+'</span></div>';};
+  return '<div class="hero"><div class="kicker" style="color:#015c45">Analyse séquentielle de test A/B</div><h2>Concluez vos tests A/B plus tôt, <em>sans tricher avec les stats</em></h2><p class="lead">Regarder un test chaque semaine et s\'arrêter au premier résultat favorable fabrique des faux gagnants. Ici, vous regardez chaque semaine et vous arrêtez dès que c\'est prouvé, gagnant ou sans avenir, avec le risque d\'erreur que vous avez choisi.</p></div>'
+    +'<div class="steps"><div class="card"><div class="sh"><span class="n">01</span><svg aria-hidden="true" width="96" height="56" viewBox="0 0 96 56"><rect x="1" y="1" width="94" height="54" rx="6" fill="#fff" stroke="#D9D9D9"/><rect x="1" y="1" width="94" height="14" rx="6" fill="#E6F4F0"/><path d="M1 15h94M1 28h94M1 41h94M32 1v54M64 1v54" stroke="#D9D9D9"/><rect x="38" y="19" width="20" height="5" rx="2.5" fill="#9FA1A1"/><rect x="70" y="19" width="16" height="5" rx="2.5" fill="#028D6A"/><rect x="38" y="32" width="20" height="5" rx="2.5" fill="#9FA1A1"/><rect x="70" y="32" width="18" height="5" rx="2.5" fill="#028D6A"/></svg></div><h4>Exportez vos chiffres</h4><p class="muted">Une ligne par variation, vos métriques en colonnes, depuis le premier jour du test.</p></div>'
+    +'<div class="card"><div class="sh"><span class="n">02</span><svg aria-hidden="true" width="96" height="56" viewBox="0 0 96 56"><rect x="1.5" y="1.5" width="93" height="53" rx="8" fill="#ECF7F4" stroke="#028D6A" stroke-width="1.5" stroke-dasharray="5 4"/><path d="M48 38V18M40 26l8-8 8 8" fill="none" stroke="#017a5b" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></div><h4>Déposez le fichier</h4><p class="muted">L\'outil reconnaît les colonnes. Vous choisissez la métrique principale et les garde-fous.</p></div>'
+    +'<div class="card"><div class="sh"><span class="n">03</span><div aria-hidden="true" class="mini"><span>Continuer</span><span class="on">Déployer</span><span>Arrêter</span></div></div><h4>Lisez la décision</h4><p class="muted">Continuer, déployer ou arrêter. Revenez chaque semaine avec un nouvel export.</p></div></div>'
+    +'<div class="two"><div>'+dropzone(true)+'</div><div class="card" style="margin-top:0"><h3>À quoi ressemble le fichier ?</h3><div class="scroll" style="margin-top:10px;border:1px solid var(--border);border-radius:8px"><table><thead><tr><th>Variation</th><th>Visiteurs</th><th>Achats</th><th>Rebonds</th></tr></thead><tbody><tr><td>A - Contrôle</td><td class="num">20 124</td><td class="num">1 041</td><td class="num">8 019</td></tr><tr><td>B - Variante</td><td class="num">20 139</td><td class="num">1 082</td><td class="num">8 105</td></tr></tbody></table></div>'
+    +'<div class="chk">'+ICON.ok+'<span><b>Une ligne par variation</b>, une colonne par métrique ('+MAX_METRICS+' au maximum).</span></div><div class="chk">'+ICON.ok+'<span><b>Des visiteurs, pas des visites</b> : chaque métrique compte les visiteurs ayant fait l\'action.</span></div><div class="chk">'+ICON.ko+'<span><b>Toujours depuis le premier jour du test.</b> Un export « semaine 3 seule » compterait deux fois les visiteurs revenus.</span></div></div></div>'
+    +'<div class="card"><h3>Comment obtenir cet export ?</h3><div class="tabs" style="margin-top:8px">'+[['piano','Piano Analytics'],['autre','Autre outil']].map(function(t){return '<button type="button" aria-pressed="'+(tab===t[0])+'" class="'+(tab===t[0]?'on':'')+'" data-act="howto" data-v="'+t[0]+'">'+t[1]+'</button>';}).join('')+'</div><div style="margin-top:14px">'
+    +(tab==='piano'?step(1,'<b>Ouvrez Data Query</b> et créez une requête sur le site du test.')+step(2,'<b>En lignes</b> : la propriété « création » du MV testing (<code>mv_creation</code>), filtrée sur votre test (<code>mv_test</code>).')+step(3,'<b>En colonnes</b> : Visiteurs, puis une métrique « visiteurs ayant… » par objectif suivi.')+step(4,'<b>Période</b> : du premier jour du test à hier, en une seule période.')+step(5,'<b>Exportez en CSV</b> et déposez le fichier ici. Refaites le même export chaque semaine.')
+      :step(1,'<b>Créez un rapport par variation</b> : une ligne pour le contrôle, une pour la variante.')+step(2,'<b>Ajoutez le nombre de visiteurs</b> (ou d\'utilisateurs) exposés à chaque variation.')+step(3,'<b>Ajoutez une colonne par objectif</b> : le nombre de visiteurs ayant réalisé l\'action, pas le nombre d\'actions.')+step(4,'<b>Période</b> : du premier jour du test à hier, en une seule période.')+step(5,'<b>Exportez en CSV</b>, ou remplissez le modèle à la main.'))
+    +'</div></div>';
+}
+function metricRow(r,wk,M,sel,big){
+  var m=r.metric,st=r.st,S=STATUS[r.status],tone=TONE[r.status]||'',cont=m.type==='continue',va=wk.A.m[m.id]||{},vb=wk.B.m[m.id]||{};
+  var fv=function(v){return st?(cont?nf(v,2):nf(v*100,2)+' %'):'—';};
+  var vol=cont?nf(va.s,0)+' / '+nf(vb.s,0)+' cumulés':nf(va.c)+' / '+nf(vb.c)+' conversions';
+  return '<div class="mrw'+(big?' big':'')+(tone?' t-'+tone:'')+(m.id===sel?' sel':'')+'" data-act="sel" data-v="'+m.id+'" tabindex="0" role="button" aria-pressed="'+(m.id===sel)+'">'+ICON[tone||'n']
+    +'<div class="c-name"><div class="mn">'+esc(m.name)+'</div><div class="hint">'+(cont?'Moyenne par visiteur ':'Taux ')+fv(st&&st.mA)+' → '+fv(st&&st.mB)+(m.sens==='baisse'?' · baisse favorable':'')+'<br>'+vol+(m.role==='garde-fou'?' · marge '+nf(m.marge,1)+' %':'')+'</div></div>'
+    +'<div class="c-lift"><div class="lift num">'+pct(st&&st.lift)+'</div><div class="int num">'+(st&&st.lo!=null?'de '+pct(st.lo)+' à '+pct(st.hi):'')+'</div></div>'
+    +'<div class="c-ci">'+ciBar(st,M,tone)+(big&&M>0?'<div class="scale"><span>'+pct(-M,0)+'</span><span>0</span><span>'+pct(M,0)+'</span></div>':'')+'</div>'
+    +'<div class="c-z num"><span class="hint">Z / borne</span> <br><b>'+(st&&st.zAdj!=null?nf(st.zAdj,2):'—')+'</b> / '+nf(r.eff,2)+'</div>'
+    +'<div class="c-st"><span class="pill '+S[1]+'">'+S[0]+'</span></div></div>';
+}
+function viewResults(){
+  if(!state.weeks.length)return viewHome();
+  var comp=compute(),n=state.weeks.length,dw=comp.decisionWeek,cur=ui.week!=null&&ui.week<n?ui.week:(dw!=null?dw:n-1),W=comp.weeks[cur],wk=state.weeks[cur],k=state.plan.k,i;
+  var d=dw!=null?comp.weeks[dw].dec:W.dec,tone=d.cls==='win'?'g':(d.cls==='critical'||d.cls==='stop')?'c':'a';
+  var cnt=function(f){return W.rows.filter(f).length;},nG=cnt(function(r){return TONE[r.status]==='g';}),nC=cnt(function(r){return TONE[r.status]==='c';}),nW=cnt(function(r){return TONE[r.status]==='w';}),nN=W.rows.length-nG-nC-nW;
+  var tot=wk.A.n+wk.B.n,chi=Math.pow(wk.A.n-tot/2,2)/(tot/2)*2,srm=chi>10.828;
+  var dico='<svg aria-hidden="true" width="44" height="44" viewBox="0 0 44 44" style="flex:none"><circle cx="22" cy="22" r="21" fill="#fff" stroke="'+(tone==='g'?'#028D6A':tone==='c'?'#c9402f':'#D79A2A')+'" stroke-width="2"/>'+(d.cls==='win'?'<path d="M13 22.5l6 6L31 16" fill="none" stroke="#017a5b" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>':d.cls==='continue'?'<path d="M17 13l13 9-13 9z" fill="#8a5d0b"/>':tone==='c'?'<rect x="14" y="14" width="16" height="16" rx="2.5" fill="#c9402f"/>':'<rect x="15" y="13" width="5" height="18" rx="1.5" fill="#8a5d0b"/><rect x="24" y="13" width="5" height="18" rx="1.5" fill="#8a5d0b"/>')+'</svg>';
+  var h='<div class="verdict"><div class="v-main t-'+tone+'">'+dico+'<div><div class="kicker">Décision · '+(dw!=null?'acquise en semaine '+(dw+1)+' sur '+k:'semaine '+(cur+1)+' sur '+k)+'</div><h3>'+esc(d.title)+'</h3><p>'+esc(d.text)+'</p>'
+    +(dw!=null&&cur!==dw?'<p class="hint" style="margin-top:6px">Vous relisez la semaine '+(cur+1)+' : elle ne modifie pas la décision.</p>':'')
+    +'<div class="chips">'+(nG?'<span class="pill sg">'+nG+' démontrée'+(nG>1?'s':'')+' favorable'+(nG>1?'s':'')+'</span>':'')+(nC?'<span class="pill sc">'+nC+' démontrée'+(nC>1?'s':'')+' défavorable'+(nC>1?'s':'')+'</span>':'')+(nW?'<span class="pill w">'+nW+' garde-fou'+(nW>1?'s':'')+' à surveiller</span>':'')+(nN?'<span class="pill">'+nN+' non conclusive'+(nN>1?'s':'')+'</span>':'')+'</div></div></div>';
+  var seg='';for(i=0;i<k;i++)seg+='<span class="'+(i<n?'done':'todo')+(i===dw?' dec':'')+'"></span>';
+  var lab='';if(k<=12)for(i=0;i<k;i++)lab+='<span'+(i===dw?' style="font-weight:700;color:#1A1D1F"':'')+'>S'+(i+1)+'</span>';
+  h+='<div class="v-side"><div class="row" style="justify-content:space-between;align-items:baseline"><span class="hint" style="font-weight:600">Progression</span><b class="big">'+n+' semaine'+(n>1?'s':'')+' sur '+k+'</b></div>'
+    +(k<=16?'<div class="segs" style="grid-template-columns:repeat('+k+',minmax(0,1fr))">'+seg+'</div>'+(lab?'<div class="seglab" style="grid-template-columns:repeat('+k+',minmax(0,1fr))">'+lab+'</div>':''):'<div class="bar"><i style="width:'+Math.min(100,n/k*100)+'%"></i></div>')
+    +'<span class="hint">Vert : semaines importées'+(dw!=null?' · contour jaune : semaine de décision':'')+' · du '+frDate(state.plan.startDate)+' au '+frDate(addDays(state.plan.startDate,7*n-1))+'</span>'
+    +'<div class="chk" style="border-top:1px solid var(--line);padding-top:12px">'+(srm?ICON.ko:ICON.ok)+'<span><b>'+(srm?'Répartition déséquilibrée':'Répartition équilibrée')+'</b><br><span class="hint num">'+nf(wk.A.n)+' / '+nf(wk.B.n)+' visiteurs · '+(srm?'p < 0,001 : vérifiez le tracking':'pas de SRM')+'</span></span></div>'
+    +'<div class="chk">'+ICON.ok+'<span><b>Données cumulées cohérentes</b><br><span class="hint num">'+nf(tot)+' visiteurs · aucun cumul en baisse</span></span></div></div></div>';
+  h+='<div class="tools"><button type="button" data-act="legend" aria-expanded="'+!!ui.legend+'"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 18 18"><circle cx="9" cy="9" r="8" fill="none" stroke="#464849" stroke-width="1.5"/><path d="M6.8 7a2.3 2.3 0 114 1.5c-.8.7-1.7 1-1.7 2.2" fill="none" stroke="#464849" stroke-width="1.6" stroke-linecap="round"/><circle cx="9" cy="13.3" r="1" fill="#464849"/></svg>Comment lire les statuts</button>'
+    +'<label class="hist">Historique <select data-act="weeksel" aria-label="Semaine affichée">'+comp.weeks.map(function(w,j){return '<option value="'+j+'"'+(j===cur?' selected':'')+'>Semaine '+(j+1)+(j===dw?' — décision':'')+'</option>';}).join('')+'</select></label></div>';
+  if(ui.legend)h+='<div class="card legend" style="margin-top:8px"><div><span class="pill sg">Démontré favorable</span> La borne séquentielle est franchie dans le bon sens : le résultat est acquis avec le risque d\'erreur choisi.</div><div><span class="pill sc">Démontré défavorable</span> La borne est franchie dans le mauvais sens.</div><div><span class="pill w">À surveiller</span> Garde-fou dont l\'écart va dans le mauvais sens, sans que ce soit démontré. Simple signalement, pas un test.</div><div><span class="pill">Non conclusif</span> Aucune borne franchie : rien n\'est démontré à ce stade.</div><div class="hint">Toutes les métriques sont lues avec des bornes séquentielles : celles du plan pour l\'objectif principal, des bornes d\'efficacité seule pour les garde-fous, et des bornes partagées entre les secondaires (correction de Bonferroni).</div></div>';
+  var hw=W.rows.map(function(r){return r.st&&r.st.lo!=null?Math.max(Math.abs(r.st.lo),Math.abs(r.st.hi)):null;}).filter(function(v){return v!=null;}).sort(function(a,b){return a-b;});
+  var M=hw.length?Math.min(hw[hw.length-1],3*hw[Math.floor((hw.length-1)/2)]):0;
+  var sel=ui.sel&&state.metrics.some(function(m){return m.id===ui.sel;})?ui.sel:(state.metrics.filter(function(m){return m.role==='principale';})[0]||state.metrics[0]).id;
+  [['principale','Objectif principal','C\'est lui qui décide.'],['garde-fou','Garde-fous','Ils peuvent bloquer un déploiement'],['secondaire','Métriques secondaires','Lecture complémentaire, sans effet sur la décision']].forEach(function(g){
+    var rows=W.rows.filter(function(r){return r.metric.role===g[0];});if(!rows.length)return;
+    var sub=g[2];if(g[0]==='garde-fou'){var a=rows.filter(function(r){return r.status==='REGRESSION';}).length,b=rows.filter(function(r){return r.status==='WATCH';}).length;sub+=' · '+a+' régression'+(a>1?'s':'')+' démontrée'+(a>1?'s':'')+', '+b+' à surveiller';}
+    h+='<div class="grp"><h3>'+g[1]+'</h3><span class="hint">'+sub+'</span></div><div class="ml'+(g[0]==='principale'?' prim':'')+'">'+rows.map(function(r){return metricRow(r,wk,M,sel,g[0]==='principale');}).join('')+'</div>';
+  });
+  var m=state.metrics.filter(function(x){return x.id===sel;})[0],mi=state.metrics.indexOf(m);
+  h+='<div class="card detail"><div class="row" style="justify-content:space-between"><h3>Trajectoire — '+esc(m.name)+'</h3><span class="toggle" role="group" aria-label="Unité du graphique"><button type="button" data-act="unit" data-v="pct" aria-pressed="'+(ui.unit!=='z')+'" class="'+(ui.unit!=='z'?'on':'')+'">Écart en %</button><button type="button" data-act="unit" data-v="z" aria-pressed="'+(ui.unit==='z')+'" class="'+(ui.unit==='z'?'on':'')+'">Z</button></span></div>'
+    +'<p class="hint">Tant que la courbe bleue reste dans le couloir blanc, on continue. Dès qu\'elle en sort, le test s\'arrête. Cliquez une métrique pour afficher sa trajectoire.</p><div data-chart="'+m.id+'" data-cur="'+cur+'" style="margin-top:10px"></div>'
+    +'<div style="border-top:1px solid var(--line);margin-top:10px;padding-top:6px"><button type="button" class="link" data-act="detail" aria-expanded="'+!!ui.detail+'">'+(ui.detail?'▾ Masquer':'▸ Voir')+' le détail semaine par semaine (Z et bornes)</button></div>';
+  if(ui.detail)h+='<div class="scroll" style="margin-top:6px"><table><thead><tr><th>Sem.</th><th>'+esc(state.labels.A)+'</th><th>'+esc(state.labels.B)+'</th><th>Écart</th><th>Z</th>'+(m.role==='garde-fou'?'<th>Z non-rég.</th>':'')+'<th>Borne eff.</th>'+(m.role==='principale'?'<th>Borne fut.</th>':'')+'<th class="l">Statut</th></tr></thead><tbody>'
+    +comp.weeks.map(function(w,j){var r=w.rows[mi],st=r.st,cont=m.type==='continue',fv=function(v){return st?(cont?nf(v,2):nf(v*100,2)+' %'):'—';};
+      return '<tr class="'+(j===cur?'on':'')+'"><td>S'+(j+1)+'</td><td class="num">'+fv(st&&st.mA)+'</td><td class="num">'+fv(st&&st.mB)+'</td><td class="num">'+pct(st&&st.lift)+'</td><td class="num">'+(st&&st.zAdj!=null?nf(st.zAdj,3):'—')+'</td>'+(m.role==='garde-fou'?'<td class="num">'+(st&&st.zNi!=null?nf(st.zNi,3):'—')+'</td>':'')+'<td class="num">'+nf(r.eff,3)+'</td>'+(m.role==='principale'?'<td class="num">'+(Number.isFinite(w.fut)?nf(w.fut,3):'—')+'</td>':'')+'<td class="l"><span class="pill '+STATUS[r.status][1]+'">'+STATUS[r.status][0]+'</span></td></tr>';}).join('')
+    +'</tbody></table></div><p class="hint" style="margin-top:8px">Intervalle : écart ± borne de la semaine × erreur standard.</p>';
+  return h+'</div>';
+}
+function viewData(){
+  var h='';
+  if(ui.draft){var d=ui.draft,opt=function(sel,none){return (none?'<option value="-1">—</option>':'')+d.H.map(function(x,i){return '<option value="'+i+'"'+(i===sel?' selected':'')+'>'+esc(x)+'</option>';}).join('');};
+    var locked=state.weeks.length&&d.mode==='instantane';
+    h+='<div class="card"><div class="kicker">Import · '+esc(d.file||'')+'</div><h3>Vérifiez la lecture du fichier</h3>'
+      +'<p class="muted" style="margin-top:4px">'+(d.mode==='serie'?d.keys.length+' semaine(s) détectée(s) : le fichier <b>remplace</b> les données du test.':'Instantané cumulé : ajouté comme <b>semaine '+(state.weeks.length+1)+'</b>.')+'</p>'
+      +(d.errors.length?'<div class="err" role="alert">'+d.errors.map(esc).join('<br>')+'</div>':'')
+      +'<div class="form"><div><label>Nom du test</label><input data-d="name" value="'+esc(d.name)+'"></div>'
+      +(d.tests.length>1?'<div><label>Test (colonne « '+esc(d.H[d.cTest])+' »)</label><select data-d="test">'+d.tests.map(function(t){return '<option'+(t===d.test?' selected':'')+'>'+esc(t)+'</option>';}).join('')+'</select></div>':'')
+      +'<div><label>Colonne variation</label><select data-d="cVar">'+opt(d.cVar,true)+'</select></div><div><label>Colonne visiteurs</label><select data-d="cVis">'+opt(d.cVis,true)+'</select></div>'
+      +'<div><label>Contrôle (A)</label><select data-d="control">'+d.vars.map(function(t){return '<option'+(t===d.control?' selected':'')+'>'+esc(t)+'</option>';}).join('')+'</select></div>'
+      +'<div><label>Variante (B)</label><select data-d="variant">'+d.vars.filter(function(t){return t!==d.control;}).map(function(t){return '<option'+(t===d.variant?' selected':'')+'>'+esc(t)+'</option>';}).join('')+'</select></div>'
+      +(locked?'':'<div><label>Durée prévue (semaines)</label><input type="number" min="1" max="50" data-d="k" value="'+d.k+'"></div><div><label>Date de début</label><input type="date" data-d="startDate" value="'+esc(d.startDate)+'"></div>')+'</div>'
+      +(d.mode==='serie'?'<p class="row" style="margin-top:10px"><input type="checkbox" id="gst-cum" data-d="cumulate"'+(d.cumulate?' checked':'')+'><label for="gst-cum" style="margin:0;font-weight:400;font-size:13px">Mon fichier donne les chiffres de chaque semaine séparément : les cumuler. <span class="hint">Déconseillé : un visiteur vu deux semaines est alors compté deux fois.</span></label></p>':'')
+      +'<h4 style="margin-top:16px">Métriques ('+d.metrics.filter(function(m){return m.include;}).length+' / '+MAX_METRICS+')</h4>'
+      +d.metrics.map(function(m,i){return '<div class="mrow"><input type="checkbox" data-dm="include" data-i="'+i+'"'+(m.include?' checked':'')+(locked?' disabled':'')+' aria-label="Inclure '+esc(m.name)+'"><div class="mname"><input data-dm="name" data-i="'+i+'" value="'+esc(m.name)+'" aria-label="Nom"'+(locked?' disabled':'')+'><span class="hint">'+(m.type==='continue'?'Continue (somme + somme des carrés)':'Binaire (visiteurs ayant fait l\'action)')+'</span></div>'
+        +'<select data-dm="role" data-i="'+i+'" aria-label="Rôle"'+(locked?' disabled':'')+'>'+[['principale','Principale'],['garde-fou','Garde-fou'],['secondaire','Secondaire']].map(function(o){return '<option value="'+o[0]+'"'+(m.role===o[0]?' selected':'')+(o[0]==='principale'&&m.type==='continue'?'':'')+'>'+o[1]+'</option>';}).join('')+'</select>'
+        +'<select data-dm="sens" data-i="'+i+'" aria-label="Sens favorable"'+(locked?' disabled':'')+'><option value="hausse"'+(m.sens==='hausse'?' selected':'')+'>Hausse favorable</option><option value="baisse"'+(m.sens==='baisse'?' selected':'')+'>Baisse favorable</option></select><span></span><span></span></div>';}).join('')
+      +(d.metrics.length?'':'<p class="err">Aucune colonne numérique de métrique détectée.</p>')
+      +'<p class="row" style="margin-top:14px"><button type="button" class="pri" data-act="apply">Importer et analyser</button><button type="button" data-act="cancel">Annuler</button></p></div>';
+    return h;}
+  h+='<div class="card"><div class="kicker">Import</div><h3>'+(state.weeks.length?'Ajouter la semaine '+(state.weeks.length+1)+' ou remplacer les données':'Importer les données du test')+'</h3><p class="muted" style="margin:4px 0 12px">Chaque fichier doit couvrir <b>du début du test à la fin de la semaine</b> (cumul). Un fichier sans colonne « Semaine » est ajouté comme semaine suivante ; un fichier avec plusieurs semaines remplace tout.</p>'+dropzone()+'</div>';
+  if(state.metrics.length){
+    h+='<div class="card"><div class="row" style="justify-content:space-between"><h3>Données cumulées</h3><span class="row"><button type="button" data-act="manual">'+(ui.manual?'Fermer la saisie':'Saisir une semaine à la main')+'</button><button type="button" data-act="export">Exporter en CSV</button>'+(state.weeks.length?'<button type="button" class="danger" data-act="delweek">Supprimer la semaine '+state.weeks.length+'</button>':'')+'</span></div>';
+    if(ui.manual){h+='<div class="scroll" style="margin-top:10px"><table><thead><tr><th>Semaine '+(state.weeks.length+1)+' (cumul)</th><th>'+esc(state.labels.A)+'</th><th>'+esc(state.labels.B)+'</th></tr></thead><tbody><tr><td>Visiteurs</td><td><input type="number" min="0" data-mw="A|n"></td><td><input type="number" min="0" data-mw="B|n"></td></tr>'
+      +state.metrics.map(function(m){return m.type==='continue'?'<tr><td>'+esc(m.name)+' — somme</td><td><input data-mw="A|'+m.id+'|s"></td><td><input data-mw="B|'+m.id+'|s"></td></tr><tr><td>'+esc(m.name)+' — somme des carrés</td><td><input data-mw="A|'+m.id+'|ss"></td><td><input data-mw="B|'+m.id+'|ss"></td></tr>':'<tr><td>'+esc(m.name)+'</td><td><input type="number" min="0" data-mw="A|'+m.id+'|c"></td><td><input type="number" min="0" data-mw="B|'+m.id+'|c"></td></tr>';}).join('')
+      +'</tbody></table></div><p style="margin-top:10px"><button type="button" class="pri" data-act="addweek">Ajouter la semaine '+(state.weeks.length+1)+'</button></p>';}
+    h+='<div class="scroll" style="margin-top:10px"><table><thead><tr><th>Sem.</th><th class="l">Variation</th><th>Visiteurs</th>'+state.metrics.map(function(m){return '<th>'+esc(m.name)+'</th>';}).join('')+'</tr></thead><tbody>'
+      +(state.weeks.length?state.weeks.map(function(w,i){return ['A','B'].map(function(v){return '<tr><td>'+(v==='A'?'S'+(i+1):'')+'</td><td class="l">'+esc(state.labels[v])+'</td><td class="num">'+nf(w[v].n)+'</td>'+state.metrics.map(function(m){var x=w[v].m[m.id];return '<td class="num">'+(x?(m.type==='continue'?nf(x.s,2):nf(x.c)):'—')+'</td>';}).join('')+'</tr>';}).join('');}).join(''):'<tr><td colspan="'+(3+state.metrics.length)+'" class="l">Aucune semaine saisie.</td></tr>')
+      +'</tbody></table></div></div>';}
+  return h;
+}
+function softRender(){var a=document.activeElement;if(a&&root.contains(a)&&a.tagName==='INPUT'&&a.type!=='radio'&&a.type!=='checkbox'){setTimeout(softRender,700);return;}render();}
+function needIF(p,k){
+  if(k===1)return 1;var q=Object.assign({},p,{k:k,beta:parseFloat((1-p.power).toFixed(4))}),key=planKey(q);
+  if(typeof ui.ifc[key]==='number')return ui.ifc[key];
+  if(ui.ifc[key]===undefined){ui.ifc[key]=null;fetchBounds(q).then(function(b){ui.ifc[key]=b.IF;}).catch(function(){ui.ifc[key]=false;}).then(function(){if(ui.tab==='plan')softRender();});}
+  return ui.ifc[key];
+}
+function mdeBase(){
+  var t=toNum(ui.mde.traffic),c=toNum(ui.mde.conv);
+  if(!(t>0)&&state.weeks.length){var w=state.weeks[state.weeks.length-1],pm=state.metrics.filter(function(m){return m.role==='principale'&&m.type!=='continue';})[0];
+    if(pm&&w.A.m[pm.id]){t=Math.round((w.A.n+w.B.n)/state.weeks.length);c=Math.round((w.A.m[pm.id].c+w.B.m[pm.id].c)/state.weeks.length);ui.mde.traffic=String(t);ui.mde.conv=String(c);ui.mde.auto=true;}}
+  return (t>0&&c>0&&c<t)?{t:t,p:c/t}:null;
+}
+function mdeAt(p,base,w){return (normInv(1-p.alpha)+normInv(p.power))*Math.sqrt(2*base.p*(1-base.p)/(base.t*w/2))/base.p;}
+function viewPlan(){
+  var p=ui.planDraft||(ui.planDraft=JSON.parse(JSON.stringify(state.plan))),sel=function(v,opts){return opts.map(function(o){return '<option value="'+o[0]+'"'+(String(o[0])===String(v)?' selected':'')+'>'+o[1]+'</option>';}).join('');};
+  var dirty=planKey(p)!==planKey(state.plan)||p.startDate!==state.plan.startDate,base=mdeBase();
+  var h='<div class="card pcard"><div class="phead"><span class="n">01</span><div><h3>Durée du test et effet détectable</h3><span class="hint">Réglez la durée, lisez tout de suite ce que le test pourra démontrer.</span></div></div><div class="psplit"><div class="pform">'
+    +'<div class="form2"><div><label>Trafic par semaine (A + B)</label><input inputmode="numeric" data-mde="traffic" value="'+esc(ui.mde.traffic)+'" placeholder="ex. 20 000"></div><div><label>Conversions par semaine</label><input inputmode="numeric" data-mde="conv" value="'+esc(ui.mde.conv)+'" placeholder="ex. 1 000"></div></div>'
+    +(ui.mde.auto?'<span class="hint">Pré-rempli depuis vos données importées (métrique principale). Modifiable.</span>':'')
+    +'<div class="form2"><div><label>Durée prévue (semaines)</label><input type="number" min="1" max="50" data-p="k" value="'+p.k+'"></div><div><label>Date de début</label><input type="date" data-p="startDate" value="'+esc(p.startDate)+'"></div>'
+    +'<div><label>Confiance</label><select data-p="alpha">'+sel(p.alpha,[[0.2,'80 %'],[0.15,'85 %'],[0.1,'90 %'],[0.05,'95 %'],[0.01,'99 %']])+'</select></div><div><label>Puissance</label><select data-p="power">'+sel(p.power,[[0.6,'60 %'],[0.7,'70 %'],[0.8,'80 %'],[0.85,'85 %'],[0.9,'90 %'],[0.95,'95 %']])+'</select></div></div>'
+    +'<div><label>Quand le test peut-il s\'arrêter avant la fin ?</label>'
+    +'<label class="opt'+(p.testType===3?' on':'')+'"><input type="radio" name="gst-tt" data-p="testType" value="3"'+(p.testType===3?' checked':'')+'><span><b>Dès qu\'il gagne, ou dès qu\'il n\'a plus de chances de gagner</b> · recommandé<br><span class="hint">Vous libérez le trafic des tests sans avenir. Contrepartie : il faut respecter l\'arrêt quand l\'outil le demande.</span></span></label>'
+    +'<label class="opt'+(p.testType===1?' on':'')+'"><input type="radio" name="gst-tt" data-p="testType" value="1"'+(p.testType===1?' checked':'')+'><span><b>Seulement dès qu\'il gagne</b><br><span class="hint">Sinon le test va jusqu\'au bout de la durée prévue. À choisir si vous voulez toutes les données, même sur un test neutre.</span></span></label></div>'
+    +(ui.adv?'<div class="form2"><div><label>Dépense du risque α (efficacité)</label><select data-p="sfu">'+sel(p.sfu,[['KimDeMets','Kim-DeMets (ρ = 3)'],['OF','O\'Brien-Fleming']])+'</select></div><div><label>Dépense du risque β (futilité)</label><select data-p="sfl">'+sel(p.sfl,[['HSD','HSD (γ = −2)'],['KimDeMets','Kim-DeMets (ρ = 3)'],['OF','O\'Brien-Fleming']])+'</select></div></div>':'')
+    +'<p class="row"><button type="button" class="pri" data-act="applyplan"'+(dirty?'':' disabled')+'>Appliquer le plan</button><button type="button" class="link" data-act="adv">'+(ui.adv?'Masquer les':'Afficher les')+' réglages avancés</button></p></div><div class="pmde">';
+  h+='<div class="kicker" style="color:#015c45">Ce que ce plan peut démontrer</div>';
+  if(!base)h+='<p>Renseignez le trafic et les conversions par semaine pour connaître le plus petit effet que ce test pourra démontrer.</p>';
+  else{
+    var IF=needIF(p,p.k),fix=mdeAt(p,base,p.k),seq=typeof IF==='number'?fix*Math.sqrt(IF):null,val=seq||fix;
+    h+='<div class="mdebig"><span class="num">'+nf(val*100,2)+' %</span><span><b>Effet minimal détectable</b><br>en '+p.k+' semaine'+(p.k>1?'s':'')+' de test'+(seq?'':' <span class="hint">('+(IF===false?'horizon fixe, calcul séquentiel indisponible':'calcul séquentiel en cours…')+')</span>')+'</span></div>'
+      +'<p>Si la variante fait passer le taux de <b>'+nf(base.p*100,2)+' % à '+nf(base.p*(1+val)*100,2)+' %</b> ou plus, ce test a <b>'+nf(p.power*100,0)+' % de chances</b> de le démontrer. En dessous, il finira le plus souvent non concluant.</p>'
+      +(seq&&IF>1.0005?'<p class="hint">Dont '+pct(Math.sqrt(IF)-1,1)+' dus au suivi chaque semaine : le même test lu une seule fois à la fin détecterait '+nf(fix*100,2)+' %.</p>':'');
+    var ks=[2,4,6,8,10,12,p.k].filter(function(v,i,a){return v>=1&&v<=50&&a.indexOf(v)===i;}).sort(function(a,b){return a-b;}),rows=ks.map(function(w){var f=needIF(p,w),v=mdeAt(p,base,w);return {w:w,ok:typeof f==='number',v:typeof f==='number'?v*Math.sqrt(f):v};}),mxv=Math.max.apply(null,rows.map(function(r){return r.v;}));
+    h+='<div class="mdetab"><div class="mh">Et avec une autre durée ?</div>'+rows.map(function(r){return '<button type="button" class="mr2'+(r.w===p.k?' on':'')+'" data-act="pickk" data-v="'+r.w+'"><span>'+r.w+' semaine'+(r.w>1?'s':'')+'</span><span class="b"><i style="width:'+Math.max(4,r.v/mxv*100)+'%"></i></span><b class="num">'+(r.ok?'':'≈ ')+nf(r.v*100,2)+' %</b></button>';}).join('')+'</div><span class="hint">« ≈ » : valeur à horizon fixe, remplacée dès que le calcul séquentiel répond. Cliquez une durée pour la retenir.</span>';
+  }
+  h+='</div></div></div>';
+  h+='<div class="card pcard"><div class="phead"><span class="n">02</span><div><h3>Métriques suivies <span class="hint">· '+state.metrics.length+' sur '+MAX_METRICS+'</span></h3><span class="hint">Une principale décide, les garde-fous peuvent bloquer, les secondaires informent.</span></div></div>'
+    +(state.metrics.length?'<div class="scroll"><div class="mtab"><div class="mt h"><span>Nom affiché</span><span>Type</span><span>Rôle</span><span>Sens favorable</span><span>Marge tolérée</span></div>'
+      +state.metrics.map(function(m,i){return '<div class="mt'+(m.role==='principale'?' on':'')+'"><input data-m="name" data-i="'+i+'" value="'+esc(m.name)+'" aria-label="Nom affiché"><span class="hint">'+(m.type==='continue'?'Moyenne':'Taux')+'</span>'
+        +'<select data-m="role" data-i="'+i+'" aria-label="Rôle">'+sel(m.role,[['principale','Principale'],['garde-fou','Garde-fou'],['secondaire','Secondaire']])+'</select>'
+        +'<select data-m="sens" data-i="'+i+'" aria-label="Sens favorable">'+sel(m.sens,[['hausse','Hausse'],['baisse','Baisse']])+'</select>'
+        +(m.role==='garde-fou'?'<input type="number" min="0.1" max="20" step="0.1" data-m="marge" data-i="'+i+'" value="'+m.marge+'" aria-label="Marge tolérée en %">':'<span class="hint">—</span>')+'</div>';}).join('')
+      +'</div></div><p class="hint" style="padding:12px 20px 0">Marge tolérée : dégradation relative maximale acceptée pour un garde-fou (en %). Changer un rôle après avoir vu les résultats fausse la lecture du test : l\'outil demande une confirmation.</p>'
+      :'<p class="hint" style="padding:16px 20px 0">Les métriques sont créées à l\'import du fichier (onglet Données).</p>')+'</div>';
+  return h;
+}
+function render(){
+  var a=document.activeElement,fsel='';
+  if(a&&root.contains(a)&&a!==root)['data-f','data-d','data-dm','data-p','data-m','data-mde','data-i','data-act','data-v'].forEach(function(k){if(a.hasAttribute(k))fsel+='['+k+'="'+a.getAttribute(k)+'"]';});
+  root.innerHTML=head()+(ui.tab==='donnees'?viewData():ui.tab==='plan'?viewPlan():viewResults())+'<div class="foot"><span>Analyse séquentielle par groupes (gsDesign) · '+VERSION+'</span><span class="logo"><b>FWO</b>ptimisation</span></div>';
+  drawCharts();
+  if(fsel){var el=null;try{el=root.querySelector(fsel);}catch(e){}if(el&&!el.disabled)el.focus({preventScroll:true});}
+}
+function drawCharts(){
+  var el=root.querySelector('[data-chart]');if(!el||!state.bounds)return;
+  var m=state.metrics.filter(function(x){return x.id===el.getAttribute('data-chart');})[0];if(!m)return;
+  el.innerHTML=seqChart(m,compute(),+el.getAttribute('data-cur'),Math.max(260,Math.floor(el.clientWidth)));
+}
+var rz;window.addEventListener('resize',function(){clearTimeout(rz);rz=setTimeout(drawCharts,150);});
+
+/* ---------- événements ---------- */
+function act(name,v,el){
+  ui.notice='';
+  if(name==='tab'){ui.tab=v;ui.error='';if(v!=='plan')ui.planDraft=null;}
+  else if(name==='pick'){var fi=root.querySelector('[data-f=file]');if(fi)fi.click();return;}
+  else if(name==='example'){openDraft(EXEMPLE,'exemple-7-metriques.csv');if(ui.draft){ui.draft.k=8;ui.draft.name='Exemple — 7 métriques';render();}return;}
+  else if(name==='template'){return download('modele-import-sequentiel.csv',toCSV([['Semaine','Date de début','Date de fin','Variation','Visiteurs','Visiteurs convertis (principal)','Visiteurs avec rebond','CA (€) [somme]','CA (€) [somme carrés]'],['1','2026-01-05','2026-01-11','A - Contrôle','','','','',''],['1','2026-01-05','2026-01-11','B - Variante','','','','','']]));}
+  else if(name==='export'){var rows=[['Semaine','Variation','Visiteurs'].concat([].concat.apply([],state.metrics.map(function(m){return m.type==='continue'?[m.name+' [somme]',m.name+' [somme carrés]']:[m.name];})))];
+    state.weeks.forEach(function(w,i){['A','B'].forEach(function(s){rows.push([i+1,state.labels[s],w[s].n].concat([].concat.apply([],state.metrics.map(function(m){var x=w[s].m[m.id]||{};return m.type==='continue'?[String(x.s).replace('.',','),String(x.ss).replace('.',',')]:[x.c];}))));});});
+    return download((state.name||'test')+'-donnees.csv',toCSV(rows));}
+  else if(name==='apply'){return applyDraft();}
+  else if(name==='cancel'){ui.draft=null;}
+  else if(name==='week'){ui.week=+v;}
+  else if(name==='legend'){ui.legend=!ui.legend;}
+  else if(name==='detail'){ui.detail=!ui.detail;}
+  else if(name==='unit'){ui.unit=v;}
+  else if(name==='howto'){ui.howto=v;}
+  else if(name==='sel'){ui.sel=v;}
+  else if(name==='manual'){ui.manual=!ui.manual;}
+  else if(name==='adv'){ui.adv=!ui.adv;}
+  else if(name==='pickk'){if(ui.planDraft)ui.planDraft.k=+v;}
+  else if(name==='delweek'){if(!confirm('Supprimer les données de la semaine '+state.weeks.length+' ?'))return;state.weeks.pop();ui.week=null;autosave();}
+  else if(name==='addweek'){return addManual();}
+  else if(name==='save'){if(!state.name.trim()){ui.error='Donnez un nom au test avant de l\'enregistrer.';}else{autosave();if(!ui.error)ui.notice='Test « '+state.name+' » enregistré dans ce navigateur.';}}
+  else if(name==='new'){if(state.weeks.length&&!confirm('Démarrer un nouveau test ? Les données non enregistrées seront perdues.'))return;state=freshState();ui.week=null;ui.sel=null;ui.draft=null;ui.planDraft=null;ui.error='';ui.tab='resultats';}
+  else if(name==='applyplan'){var p=ui.planDraft;if(!(p.k>=1&&p.k<=50)){ui.error='Durée invalide (1 à 50 semaines).';return render();}
+    if(p.k<state.weeks.length){ui.error='La durée ('+p.k+') est inférieure au nombre de semaines déjà saisies ('+state.weeks.length+').';return render();}
+    if(state.weeks.length&&planKey(p)!==planKey(state.plan)&&!confirm('Modifier le plan recalcule les bornes sur les données déjà saisies. À réserver à la correction d\'une erreur de paramétrage. Continuer ?'))return;
+    p.beta=parseFloat((1-p.power).toFixed(4));state.plan=p;ui.planDraft=null;ui.error='';ui.notice='Plan appliqué.';autosave();ensureBounds();}
+  render();
+}
+function addManual(){
+  var W={A:{n:NaN,m:{}},B:{n:NaN,m:{}}},errs=[];
+  root.querySelectorAll('[data-mw]').forEach(function(i){var k=i.getAttribute('data-mw').split('|'),v=toNum(i.value);if(k[1]==='n')W[k[0]].n=v;else{(W[k[0]].m[k[1]]=W[k[0]].m[k[1]]||{})[k[2]]=v;}});
+  var prev=state.weeks[state.weeks.length-1];
+  ['A','B'].forEach(function(s){var o=W[s];if(!(o.n>0)||o.n!==Math.round(o.n))errs.push(state.labels[s]+' : visiteurs invalides.');if(prev&&o.n<prev[s].n)errs.push(state.labels[s]+' : visiteurs cumulés inférieurs à la semaine précédente.');
+    state.metrics.forEach(function(m){var x=o.m[m.id]||{};if(m.type==='continue'){if(!isFinite(x.s)||!isFinite(x.ss))errs.push(state.labels[s]+' — « '+m.name+' » : valeurs manquantes.');}
+      else if(!(x.c>=0)||x.c!==Math.round(x.c))errs.push(state.labels[s]+' — « '+m.name+' » : valeur invalide.');else if(x.c>o.n)errs.push(state.labels[s]+' — « '+m.name+' » dépasse les visiteurs.');else if(prev&&x.c<prev[s].m[m.id].c)errs.push(state.labels[s]+' — « '+m.name+' » : cumul inférieur à la semaine précédente.');});});
+  if(state.weeks.length>=state.plan.k)errs.push('Durée prévue atteinte ('+state.plan.k+' semaines).');
+  if(errs.length){ui.error=errs.slice(0,6).join(' ');return render();}
+  state.weeks.push(W);ui.manual=false;ui.week=null;ui.error='';ui.tab='resultats';autosave();ensureBounds();render();
+}
+root.addEventListener('click',function(e){var t=e.target.closest('[data-act]');if(!t||!root.contains(t)||t.tagName==='SELECT'||e.target.closest('select'))return;if(t.disabled)return;e.stopPropagation();act(t.getAttribute('data-act'),t.getAttribute('data-v'),t);});
+root.addEventListener('keydown',function(e){if((e.key==='Enter'||e.key===' ')&&e.target.matches('[data-act][tabindex]')){e.preventDefault();act(e.target.getAttribute('data-act'),e.target.getAttribute('data-v'),e.target);}});
+function later(){setTimeout(render,0);}
+root.addEventListener('change',function(e){
+  var t=e.target,d=ui.draft;
+  if(t.matches('[data-f=file]')){if(t.files[0])readFile(t.files[0]);return;}
+  if(t.matches('[data-f=name]')){state.name=t.value.trim();return;}
+  if(t.matches('[data-act=load]')){if(t.value)loadSaved(t.value);return;}
+  if(t.matches('[data-act=weeksel]')){ui.week=+t.value;return later();}
+  if(t.hasAttribute('data-d')&&d){var f=t.getAttribute('data-d');
+    if(f==='cumulate')d.cumulate=t.checked;else if(f==='name')d.name=t.value;else if(f==='k')d.k=parseInt(t.value,10)||d.k;else if(f==='startDate')d.startDate=t.value;
+    else{var keep={name:d.name,k:d.k,startDate:d.startDate,cVar:d.cVar,cVis:d.cVis,test:d.test,control:d.control,variant:d.variant},old=d.metrics,cum=d.cumulate;
+      if(f==='cVar'||f==='cVis'){keep[f]=parseInt(t.value,10);if(f==='cVar'){keep.control=null;keep.variant=null;}}else keep[f]=t.value;
+      if(f==='test'){keep.k=null;keep.startDate=null;keep.name=d.name===d.test?t.value:d.name;}
+      ui.draft=analyze(ui.rawTable,d.file,keep);ui.draft.cumulate=cum;
+      ui.draft.metrics.forEach(function(m){var o=old.filter(function(x){return x.src===m.src;})[0];if(o){m.include=o.include;m.role=o.role;m.sens=o.sens;m.name=o.name;}});}
+    return later();}
+  if(t.hasAttribute('data-dm')&&d){var m=d.metrics[+t.getAttribute('data-i')],g=t.getAttribute('data-dm');
+    if(g==='include')m.include=t.checked;else m[g]=t.value;
+    if(g==='role'&&t.value==='principale')d.metrics.forEach(function(x){if(x!==m&&x.role==='principale')x.role='secondaire';});
+    return later();}
+  if(t.hasAttribute('data-p')&&ui.planDraft){var k=t.getAttribute('data-p');ui.planDraft[k]=(k==='startDate'||k==='sfu'||k==='sfl')?t.value:(k==='k'||k==='testType'?parseInt(t.value,10):parseFloat(t.value));return later();}
+  if(t.hasAttribute('data-m')){var mm=state.metrics[+t.getAttribute('data-i')],q=t.getAttribute('data-m');
+    if(q==='role'&&state.weeks.length&&!confirm('Changer le rôle d\'une métrique après avoir vu les résultats fausse la lecture du test. À réserver à la correction d\'une erreur. Continuer ?'))return later();
+    mm[q]=q==='marge'?(parseFloat(t.value)>0?parseFloat(t.value):1):(q==='name'?(t.value.trim()||mm.name):t.value);
+    if(q==='role'&&t.value==='principale')state.metrics.forEach(function(x){if(x!==mm&&x.role==='principale')x.role='secondaire';});
+    autosave();if(q==='role')ensureBounds();return later();}
+  if(t.hasAttribute('data-mde')){ui.mde[t.getAttribute('data-mde')]=t.value;ui.mde.auto=false;return later();}
+});
+root.addEventListener('dragover',function(e){var z=e.target.closest('.drop');if(z){e.preventDefault();z.classList.add('over');}});
+root.addEventListener('dragleave',function(e){var z=e.target.closest('.drop');if(z)z.classList.remove('over');});
+root.addEventListener('drop',function(e){var z=e.target.closest('.drop');if(!z)return;e.preventDefault();z.classList.remove('over');var f=e.dataTransfer&&e.dataTransfer.files[0];if(f)readFile(f);});
+window.GST={getState:function(){return state;},compute:compute,openCSV:openDraft};
+render();
+})();
+</script>
