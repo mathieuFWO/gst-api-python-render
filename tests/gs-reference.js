@@ -41,11 +41,16 @@ var GS=(function(){
     return tot*Math.pow(t,par==null?3:par);}
   function incs(name,tot,t,par){var o=[],prev=0;for(var i=0;i<t.length;i++){var c=i===t.length-1?tot:spend(name,tot,t[i],par);o.push(Math.max(c-prev,0));prev=c;}return o;}
   function type1(t,ia){var P=new Path(t,zeros(t.length)),u=[];for(var i=0;i<t.length;i++){var ui=ia[i]>0?bis(function(z){return P.tail(z,true)-ia[i];},-3,40):40;if(!isFinite(ui))ui=40;u.push(ui);if(i<t.length-1)P.advance(-Infinity,ui);}return u;}
-  function type3(t,ia,ib,m){var k=t.length,P0=new Path(t,zeros(k)),P1=new Path(t,m),u=[],l=[];
-    for(var i=0;i<k;i++){var ui=bis(function(z){return P0.tail(z,true)-ia[i];},-40,40);if(!isFinite(ui))ui=P0.tail(40,true)>ia[i]?40:-40;
+  /* atot : alpha total. Si la futilité rejoint l'efficacité avant la fin (volume prévu déjà atteint), cette lecture devient la dernière :
+     sa borne d'efficacité reste celle du calendrier (l'alpha restant n'est pas dépensé, choix prudent) et les lectures suivantes n'ont plus de borne (end = indice de cette lecture). */
+  function type3(t,ia,ib,m,atot){var k=t.length,P0=new Path(t,zeros(k)),P1=new Path(t,m),u=[],l=[],end=null;
+    for(var i=0;i<k;i++){
+      if(end!==null){u.push(null);l.push(null);continue;}
+      var ui=bis(function(z){return P0.tail(z,true)-ia[i];},-40,40);if(!isFinite(ui))ui=P0.tail(40,true)>ia[i]?40:-40;
       var li=bis(function(z){return P1.tail(z,false)-ib[i];},-40,40);if(!isFinite(li))li=P1.tail(40,false)<ib[i]?40:-40;
+      if(i<k-1&&atot!=null&&li>=ui-1e-6){li=ui;end=i;u.push(ui);l.push(li);continue;}
       if(i<k-1)li=Math.min(li,ui-1e-6);u.push(ui);l.push(li);if(i<k-1){P0.advance(li,ui);P1.advance(li,ui);}}
-    return {u:u,l:l};}
+    return {u:u,l:l,end:end};}
   function design(p){
     var k=p.k,a=p.alpha,b=p.beta,i,t=[];for(i=1;i<=k;i++)t.push(i/k);tune(t);
     if(k===1){var z=qn(1-a);return {eff:[z],fut:[p.testType===1?null:z],IF:1};}
@@ -67,7 +72,7 @@ var GS=(function(){
     for(i=0;i<k;i++)if(!(info[i]>0)||(i&&info[i]<info[i-1]))return design(p);
     var ia=incs(p.sfu,p.alpha,t,null),d0=design(p);tune(info);
     if(p.testType===1)return {eff:type1(info,ia),fut:t.map(function(){return null;}),IF:d0.IF};
-    var d=d0,ib=incs(p.sfl,p.beta,t,p.sfl==='HSD'?-2:null),r=type3(info,ia,ib,drift(d.th,frac&&frac.length===k?frac:t));
-    r.l[k-1]=r.u[k-1];return {eff:r.u,fut:r.l,IF:d.IF,th:d.th};}
+    var d=d0,ib=incs(p.sfl,p.beta,t,p.sfl==='HSD'?-2:null),r=type3(info,ia,ib,drift(d.th,frac&&frac.length===k?frac:t),p.alpha);
+    if(r.end===null)r.l[k-1]=r.u[k-1];return {eff:r.u,fut:r.l,IF:d.IF,th:d.th,end:r.end};}
   return {design:design,actual:actual};
 })();

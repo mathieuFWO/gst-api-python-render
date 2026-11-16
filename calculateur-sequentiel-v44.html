@@ -192,7 +192,7 @@
 (function(){
 'use strict';
 var API='https://my-gst-api.onrender.com/api/calculate-boundaries';
-var NEW_PREFIX='gstSeq_v40_',OLD_PREFIX='gstSequentialAnalysis_v321_',MAX_METRICS=15,VERSION='v44.1';
+var NEW_PREFIX='gstSeq_v40_',OLD_PREFIX='gstSequentialAnalysis_v321_',MAX_METRICS=15,VERSION='v44.2';
 var root=document.getElementById('gst-app');
 var EXEMPLE="Semaine;Date de début;Date de fin;Variation;Visiteurs;Visiteurs avec achat;Visiteurs avec rebond;Visiteurs avec ajout panier;Visiteurs fiche produit vue;Visiteurs inscrits newsletter;Visiteurs contact service client;CA (€) [somme];CA (€) [somme carrés]\n1;2026-10-05;2026-10-11;A - Contrôle;9862;495;3937;1212;5483;179;152;28604,98;2238859,44\n1;2026-10-05;2026-10-11;B - Variante;10197;517;4125;1264;5661;215;156;29274,97;2288280,78\n2;2026-10-05;2026-10-18;A - Contrôle;20124;1041;8019;2457;11114;383;302;60597,00;4878927,63\n2;2026-10-05;2026-10-18;B - Variante;20139;1082;8105;2514;11189;402;299;61509,76;4751805,20\n3;2026-10-05;2026-10-25;A - Contrôle;30011;1542;11992;3619;16555;577;473;89955,78;7285282,51\n3;2026-10-05;2026-10-25;B - Variante;29969;1610;11976;3750;16641;601;445;92128,15;7124589,83\n4;2026-10-05;2026-11-01;A - Contrôle;39984;2049;15857;4822;22041;773;611;118445,83;9399245,52\n4;2026-10-05;2026-11-01;B - Variante;39881;2136;15989;5044;22217;808;593;122493,11;9423902,14\n5;2026-10-05;2026-11-08;A - Contrôle;50089;2498;19872;6047;27648;987;741;144548,18;11467542,98\n5;2026-10-05;2026-11-08;B - Variante;49909;2688;19982;6268;27837;1016;733;153297,46;11698785,47\n6;2026-10-05;2026-11-15;A - Contrôle;60132;2962;23896;7259;33249;1176;891;171483,57;13527391,46\n6;2026-10-05;2026-11-15;B - Variante;60016;3240;24013;7544;33469;1230;872;185493,03;14310408,44\n";
 
@@ -248,7 +248,7 @@ function ciLevel(role){var a=state.plan.alpha,ns=nRole('secondaire');return role
 function names(rows){return rows.map(function(r){return '« '+r.metric.name+' »';}).join(', ');}
 function decide(i,rows){
   var k=state.plan.k,stage=i+1,prim=rows.filter(function(r){return r.metric.role==='principale';})[0],guards=rows.filter(function(r){return r.metric.role==='garde-fou';});
-  if(!prim||prim.status==='NA')return {cls:'continue',stop:false,title:'En attente',text:!prim?'Aucune métrique principale définie.':'Bornes ou données indisponibles pour cette semaine.'};
+  if(!prim||prim.status==='NA')return {cls:'continue',stop:false,title:'En attente',text:!prim?'Aucune métrique principale définie.':(state.bounds&&state.bounds.end!=null&&i>state.bounds.end?'Le volume prévu a été atteint en semaine '+(state.bounds.end+1)+' : c\'est la dernière lecture du test, les semaines suivantes ne sont pas analysées.':'Bornes ou données indisponibles pour cette semaine.')};
   var ps=prim.status,reg=guards.filter(function(g){return g.status==='REGRESSION';}),noSec=guards.filter(function(g){return g.status!=='SECURITE';});
   var gs=!guards.length?'NON_APPLICABLE':reg.length?'REGRESSION':!noSec.length?'SECURITE':'AUCUN_SIGNAL';
   var complG={SECURITE:' Garde-fous : non-régression démontrée.',AUCUN_SIGNAL:' Garde-fous : aucune régression détectée, non-régression non démontrée pour '+names(noSec)+'.',REGRESSION:'',NON_APPLICABLE:''}[gs];
@@ -318,11 +318,16 @@ var GS=(function(){
     return tot*Math.pow(t,par==null?3:par);}
   function incs(name,tot,t,par){var o=[],prev=0;for(var i=0;i<t.length;i++){var c=i===t.length-1?tot:spend(name,tot,t[i],par);o.push(Math.max(c-prev,0));prev=c;}return o;}
   function type1(t,ia){var P=new Path(t,zeros(t.length)),u=[];for(var i=0;i<t.length;i++){var ui=ia[i]>0?bis(function(z){return P.tail(z,true)-ia[i];},-3,40):40;if(!isFinite(ui))ui=40;u.push(ui);if(i<t.length-1)P.advance(-Infinity,ui);}return u;}
-  function type3(t,ia,ib,m){var k=t.length,P0=new Path(t,zeros(k)),P1=new Path(t,m),u=[],l=[];
-    for(var i=0;i<k;i++){var ui=bis(function(z){return P0.tail(z,true)-ia[i];},-40,40);if(!isFinite(ui))ui=P0.tail(40,true)>ia[i]?40:-40;
+  /* atot : alpha total. Si la futilité rejoint l'efficacité avant la fin (volume prévu déjà atteint), cette lecture devient la dernière :
+     sa borne d'efficacité reste celle du calendrier (l'alpha restant n'est pas dépensé, choix prudent) et les lectures suivantes n'ont plus de borne (end = indice de cette lecture). */
+  function type3(t,ia,ib,m,atot){var k=t.length,P0=new Path(t,zeros(k)),P1=new Path(t,m),u=[],l=[],end=null;
+    for(var i=0;i<k;i++){
+      if(end!==null){u.push(null);l.push(null);continue;}
+      var ui=bis(function(z){return P0.tail(z,true)-ia[i];},-40,40);if(!isFinite(ui))ui=P0.tail(40,true)>ia[i]?40:-40;
       var li=bis(function(z){return P1.tail(z,false)-ib[i];},-40,40);if(!isFinite(li))li=P1.tail(40,false)<ib[i]?40:-40;
+      if(i<k-1&&atot!=null&&li>=ui-1e-6){li=ui;end=i;u.push(ui);l.push(li);continue;}
       if(i<k-1)li=Math.min(li,ui-1e-6);u.push(ui);l.push(li);if(i<k-1){P0.advance(li,ui);P1.advance(li,ui);}}
-    return {u:u,l:l};}
+    return {u:u,l:l,end:end};}
   function design(p){
     var k=p.k,a=p.alpha,b=p.beta,i,t=[];for(i=1;i<=k;i++)t.push(i/k);tune(t);
     if(k===1){var z=qn(1-a);return {eff:[z],fut:[p.testType===1?null:z],IF:1};}
@@ -344,8 +349,8 @@ var GS=(function(){
     for(i=0;i<k;i++)if(!(info[i]>0)||(i&&info[i]<info[i-1]))return design(p);
     var ia=incs(p.sfu,p.alpha,t,null),d0=design(p);tune(info);
     if(p.testType===1)return {eff:type1(info,ia),fut:t.map(function(){return null;}),IF:d0.IF};
-    var d=d0,ib=incs(p.sfl,p.beta,t,p.sfl==='HSD'?-2:null),r=type3(info,ia,ib,drift(d.th,frac&&frac.length===k?frac:t));
-    r.l[k-1]=r.u[k-1];return {eff:r.u,fut:r.l,IF:d.IF,th:d.th};}
+    var d=d0,ib=incs(p.sfl,p.beta,t,p.sfl==='HSD'?-2:null),r=type3(info,ia,ib,drift(d.th,frac&&frac.length===k?frac:t),p.alpha);
+    if(r.end===null)r.l[k-1]=r.u[k-1];return {eff:r.u,fut:r.l,IF:d.IF,th:d.th,end:r.end};}
   return {design:design,actual:actual};
 })();
 var bcache={};
@@ -556,7 +561,8 @@ function seqChart(m,comp,cur,W){
   var sl=comp.weeks[last].rows[mi].st,scale=[];
   for(i=0;i<k;i++){var st=comp.weeks[i]&&comp.weeks[i].rows[mi].st;scale.push(!pctMode?1:(st&&st.mA?st.se/Math.abs(st.mA)*100:(sl.mA?sl.se/Math.abs(sl.mA)*100*Math.sqrt((last+1)/(i+1)):NaN)));}
   var eff=[],up=[],fut=[],zs=[],zn=[];
-  for(i=0;i<k;i++){var e=effFor(m.role,i);eff.push(e*scale[i]);up.push((guard?niFor(i):e)*scale[i]);var f=prim&&state.bounds?state.bounds.fut[i]:null;fut.push(Number.isFinite(f)?f*scale[i]:null);
+  var bend=prim&&state.bounds&&state.bounds.end!=null?state.bounds.end:k;
+  for(i=0;i<k;i++){var bi=Math.min(i,bend),e=effFor(m.role,bi);eff.push(e*scale[i]);up.push((guard?niFor(i):e)*scale[i]);var f=prim&&state.bounds?state.bounds.fut[bi]:null;fut.push(Number.isFinite(f)?f*scale[i]:null);
     var s2=comp.weeks[i]&&comp.weeks[i].rows[mi].st;zs.push(s2&&s2.zAdj!=null?s2.zAdj*scale[i]:null);zn.push(guard&&s2&&s2.zNi!=null?s2.zNi*scale[i]:null);}
   if(!eff.concat(up).every(function(v){return isFinite(v);}))return '<p class="hint">Bornes indisponibles.</p>';
   var hasFut=fut.some(function(v){return v!=null;}),vals=[0].concat(up,eff.map(function(v){return -v;}),zs,zn).filter(function(v){return typeof v==='number'&&isFinite(v);});
@@ -640,7 +646,7 @@ function viewResults(){
   var comp=compute(),n=state.weeks.length,dw=comp.decisionWeek,cur=ui.week!=null&&ui.week<n?ui.week:(dw!=null?dw:n-1),W=comp.weeks[cur],wk=state.weeks[cur],k=state.plan.k,i;
   var d=dw!=null?comp.weeks[dw].dec:W.dec,tone=d.cls==='win'?'g':(d.cls==='critical'||d.cls==='stop')?'c':'a';
   var cnt=function(f){return W.rows.filter(f).length;},nG=cnt(function(r){return TONE[r.status]==='g';}),nC=cnt(function(r){return TONE[r.status]==='c';}),nW=cnt(function(r){return TONE[r.status]==='w';}),nN=W.rows.length-nG-nC-nW;
-  var dev=0,late=false;for(i=0;i<=cur;i++){var dv=(state.weeks[i].A.n+state.weeks[i].B.n)/(wk.A.n+wk.B.n)-(i+1)/(cur+1);if(Math.abs(dv)>dev){dev=Math.abs(dv);late=dv<0;}}var irr=dev>0.10;
+  var dev=0,late=false;for(i=0;i<=cur;i++){var dv=(state.weeks[i].A.n+state.weeks[i].B.n)/(wk.A.n+wk.B.n)-(i+1)/(cur+1);if(Math.abs(dv)>dev){dev=Math.abs(dv);late=dv<0;}}var irr=dev>0.10,noinfo=k>1&&!infoVec();
   var tot=wk.A.n+wk.B.n,chi=Math.pow(wk.A.n-tot/2,2)/(tot/2)*2,srm=chi>10.828;
   var dico='<svg aria-hidden="true" width="44" height="44" viewBox="0 0 44 44" style="flex:none"><circle cx="22" cy="22" r="21" fill="#fff" stroke="'+(tone==='g'?'#028D6A':tone==='c'?'#c9402f':'#D79A2A')+'" stroke-width="2"/>'+(d.cls==='win'?'<path d="M13 22.5l6 6L31 16" fill="none" stroke="#017a5b" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>':d.cls==='continue'?'<path d="M17 13l13 9-13 9z" fill="#8a5d0b"/>':tone==='c'?'<rect x="14" y="14" width="16" height="16" rx="2.5" fill="#c9402f"/>':'<rect x="15" y="13" width="5" height="18" rx="1.5" fill="#8a5d0b"/><rect x="24" y="13" width="5" height="18" rx="1.5" fill="#8a5d0b"/>')+'</svg>';
   var pr=(dw!=null?comp.weeks[dw]:W).rows.filter(function(r){return r.metric.role==='principale';})[0],vkey='';
@@ -655,7 +661,7 @@ function viewResults(){
     +(k<=16?'<div class="segs" style="grid-template-columns:repeat('+k+',minmax(0,1fr))">'+seg+'</div>'+(lab?'<div class="seglab" style="grid-template-columns:repeat('+k+',minmax(0,1fr))">'+lab+'</div>':''):'<div class="bar"><i style="width:'+Math.min(100,n/k*100)+'%"></i></div>')
     +'<span class="hint">'+(dw!=null?'<b style="color:#1A1D1F">Résultat acquis depuis la semaine '+(dw+1)+'.</b> '+(n>dw+1?'Le test devait s\'arrêter là : '+(n-dw-1>1?'les semaines '+(dw+2)+(n-dw-1>2?' à ':' et ')+n+' ont été importées':'la semaine '+n+' a été importée')+' après la décision (en hachuré). '+(n-dw-1>1?'Elles':'Elle')+' ne '+(n-dw-1>1?'peuvent':'peut')+' plus la modifier et '+(n-dw-1>1?'servent':'sert')+' seulement de lecture complémentaire.':''):'Semaines importées en vert.')+' Du '+frDate(state.plan.startDate)+' au '+frDate(addDays(state.plan.startDate,7*n-1))+'.</span>'
     +'<div class="chk" style="border-top:1px solid var(--line);padding-top:12px">'+(srm?ICON.ko:ICON.ok)+'<span><b>'+(srm?'Répartition déséquilibrée':'Répartition équilibrée')+'</b><br><span class="hint num">'+nf(wk.A.n)+' / '+nf(wk.B.n)+' visiteurs · '+(srm?'p < 0,001 : vérifiez le tracking':'pas de SRM')+'</span></span></div>'
-    +'<div class="chk">'+(irr?ICON.ko:ICON.ok)+'<span><b>'+(irr?'Trafic irrégulier':'Trafic régulier')+'</b><br><span class="hint num">'+(irr?'Les semaines n\'apportent pas le même volume (écart max '+nf(dev*100,0)+' points). Les seuils sont calculés sur le trafic réel de chaque semaine : le risque d\'erreur est tenu.'+(late?(state.plan.traffic>0?' Le trafic arrive tard : la futilité en tient compte grâce au trafic prévu dans le plan.':' Le trafic arrive tard : renseignez le trafic prévu dans l\'onglet Plan, sinon la futilité peut arrêter le test trop tôt.'):''):nf(tot)+' visiteurs · volume stable d\'une semaine à l\'autre')+'</span></span></div></div></div>';
+    +'<div class="chk">'+(irr||noinfo?ICON.ko:ICON.ok)+'<span><b>'+(noinfo?'Volumes incohérents':irr?'Trafic irrégulier':'Trafic régulier')+'</b><br><span class="hint num">'+(noinfo?'Un cumul de visiteurs est nul ou en baisse : les seuils sont calculés comme si chaque semaine apportait le même volume.':irr?'Les semaines n\'apportent pas le même volume (écart max '+nf(dev*100,0)+' points). Les seuils sont calculés sur le trafic réel de chaque semaine : le risque de faux positif est tenu.'+(late?(state.plan.traffic>0?' Le trafic arrive tard : la futilité est réglée sur le trafic prévu, ce qui limite les arrêts à tort, mais la puissance reste inférieure à celle du plan.':' Le trafic arrive tard : la futilité peut arrêter à tort un test gagnant. Renseignez le trafic prévu dans l\'onglet Plan pour limiter ce risque.'):''):nf(tot)+' visiteurs · volume stable d\'une semaine à l\'autre')+'</span></span></div></div></div>';
   h+='<div class="tools"><button type="button" data-act="legend" aria-expanded="'+!!ui.legend+'"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 18 18"><circle cx="9" cy="9" r="8" fill="none" stroke="#464849" stroke-width="1.5"/><path d="M6.8 7a2.3 2.3 0 114 1.5c-.8.7-1.7 1-1.7 2.2" fill="none" stroke="#464849" stroke-width="1.6" stroke-linecap="round"/><circle cx="9" cy="13.3" r="1" fill="#464849"/></svg>Comment lire les statuts</button>'
     +'<label class="hist">Historique <select data-act="weeksel" aria-label="Semaine affichée">'+comp.weeks.map(function(w,j){return '<option value="'+j+'"'+(j===cur?' selected':'')+'>Semaine '+(j+1)+(j===dw?' — décision':'')+'</option>';}).join('')+'</select></label></div>';
   if(ui.legend)h+='<div class="card legend" style="margin-top:8px"><div><span class="pill sg">Démontré favorable</span> La borne séquentielle est franchie dans le bon sens : le résultat est acquis avec le risque d\'erreur choisi.</div><div><span class="pill sc">Démontré défavorable</span> La borne est franchie dans le mauvais sens.</div><div><span class="pill w">À surveiller</span> Garde-fou dont l\'écart défavorable passe le seuil d\'alerte (Z ≤ −1,90) sans que la régression soit démontrée. Simple signalement, pas un test : sans aucun effet réel, un garde-fou l\'affiche au moins une fois dans 7 % (4 semaines) à 12 % (12 semaines) des tests.</div><div><span class="pill">Non conclusif</span> Aucune borne franchie : rien n\'est démontré à ce stade.</div><div><b>Lecture d\'une ligne.</b> La barre est l\'intervalle de confiance de l\'écart, le trait son niveau observé ; l\'axe est le même pour toutes les métriques. Survolez une ligne (ou sélectionnez-la) pour ses volumes, son Z et sa borne.</div><div class="hint">Toutes les métriques sont lues avec des bornes séquentielles : celles du plan pour l\'objectif principal ; des bornes d\'efficacité seule pour les garde-fous, partagées entre eux pour la régression ; des bornes partagées entre les secondaires et lues dans les deux sens (correction de Bonferroni). Le risque de fausse alerte est tenu pour chaque famille, pas seulement par métrique.</div></div>';
