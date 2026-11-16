@@ -325,6 +325,7 @@ var GS=(function(){
       if(end!==null){u.push(null);l.push(null);continue;}
       var ui=bis(function(z){return P0.tail(z,true)-ia[i];},-40,40);if(!isFinite(ui))ui=P0.tail(40,true)>ia[i]?40:-40;
       var li=bis(function(z){return P1.tail(z,false)-ib[i];},-40,40);if(!isFinite(li))li=P1.tail(40,false)<ib[i]?40:-40;
+      if(atot!=null&&i>0&&ui<=-39){ui=u[i-1];li=ui;end=i;u.push(ui);l.push(li);continue;} /* presque plus de tests en cours sous H0 : on garde la borne précédente */
       if(i<k-1&&atot!=null&&li>=ui-1e-6){li=ui;end=i;u.push(ui);l.push(li);continue;}
       if(i<k-1)li=Math.min(li,ui-1e-6);u.push(ui);l.push(li);if(i<k-1){P0.advance(li,ui);P1.advance(li,ui);}}
     return {u:u,l:l,end:end};}
