@@ -23,3 +23,4 @@ const proj=(obs,k)=>{const N=obs.slice();const rate=N[N.length-1]/N.length;while
 const o3=[2000,4000,7000],o4=[2000,4000,7000,15000];
 for(const tt of [1,3]){const b3=GS.actual({...base,testType:tt},proj(o3,8)),b4=GS.actual({...base,testType:tt},proj(o4,8));
  console.log('stabilité type',tt,'eff S1-S3',d(b3.eff.slice(0,3),b4.eff.slice(0,3)).toExponential(1),tt===3?'fut '+d(b3.fut.slice(0,3),b4.fut.slice(0,3)).toExponential(1):'');}
+for(const p of [{k:16,alpha:0.2,beta:0.1,sfu:'KimDeMets',sfl:'OF',testType:3},{k:16,alpha:0.05,beta:0.2,sfu:'OF',sfl:'HSD',testType:1},{k:12,alpha:0.01,beta:0.2,sfu:'OF',sfl:'HSD',testType:1}]){const t0=Date.now();const r=GS.design(p);console.log(JSON.stringify(p),'eff',r.eff.slice(0,3).map(x=>x.toFixed(4)),'fut',r.fut.slice(0,3).map(x=>x==null?null:x.toFixed(4)),Date.now()-t0,'ms');}

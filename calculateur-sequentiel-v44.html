@@ -192,7 +192,7 @@
 (function(){
 'use strict';
 var API='https://my-gst-api.onrender.com/api/calculate-boundaries';
-var NEW_PREFIX='gstSeq_v40_',OLD_PREFIX='gstSequentialAnalysis_v321_',MAX_METRICS=15,VERSION='v44.0';
+var NEW_PREFIX='gstSeq_v40_',OLD_PREFIX='gstSequentialAnalysis_v321_',MAX_METRICS=15,VERSION='v44.1';
 var root=document.getElementById('gst-app');
 var EXEMPLE="Semaine;Date de début;Date de fin;Variation;Visiteurs;Visiteurs avec achat;Visiteurs avec rebond;Visiteurs avec ajout panier;Visiteurs fiche produit vue;Visiteurs inscrits newsletter;Visiteurs contact service client;CA (€) [somme];CA (€) [somme carrés]\n1;2026-10-05;2026-10-11;A - Contrôle;9862;495;3937;1212;5483;179;152;28604,98;2238859,44\n1;2026-10-05;2026-10-11;B - Variante;10197;517;4125;1264;5661;215;156;29274,97;2288280,78\n2;2026-10-05;2026-10-18;A - Contrôle;20124;1041;8019;2457;11114;383;302;60597,00;4878927,63\n2;2026-10-05;2026-10-18;B - Variante;20139;1082;8105;2514;11189;402;299;61509,76;4751805,20\n3;2026-10-05;2026-10-25;A - Contrôle;30011;1542;11992;3619;16555;577;473;89955,78;7285282,51\n3;2026-10-05;2026-10-25;B - Variante;29969;1610;11976;3750;16641;601;445;92128,15;7124589,83\n4;2026-10-05;2026-11-01;A - Contrôle;39984;2049;15857;4822;22041;773;611;118445,83;9399245,52\n4;2026-10-05;2026-11-01;B - Variante;39881;2136;15989;5044;22217;808;593;122493,11;9423902,14\n5;2026-10-05;2026-11-08;A - Contrôle;50089;2498;19872;6047;27648;987;741;144548,18;11467542,98\n5;2026-10-05;2026-11-08;B - Variante;49909;2688;19982;6268;27837;1016;733;153297,46;11698785,47\n6;2026-10-05;2026-11-15;A - Contrôle;60132;2962;23896;7259;33249;1176;891;171483,57;13527391,46\n6;2026-10-05;2026-11-15;B - Variante;60016;3240;24013;7544;33469;1230;872;185493,03;14310408,44\n";
 
@@ -294,6 +294,8 @@ var GS=(function(){
       if(fm*fhi<0){lo=hi;flo=fhi;}else{flo*=0.5;}hi=m;fhi=fm;if(Math.abs(hi-lo)<tol)break;}
     return Math.abs(flo)<Math.abs(fhi)?lo:hi;}
   /* Z_i : moyenne m[i], corrélation entre deux lectures = racine du rapport des informations cumulées. */
+  /* bissection : sûre même quand la probabilité visée est infime (premières lectures) */
+  function bis(f,lo,hi){var flo=f(lo),fhi=f(hi);if(!(flo*fhi<=0))return NaN;for(var i=0;i<60;i++){var m=(lo+hi)/2,fm=f(m);if(flo*fm<=0){hi=m;}else{lo=m;flo=fm;}if(hi-lo<1e-10)break;}return (lo+hi)/2;}
   function Path(info,m){this.I=info;this.m=m;this.i=0;this.x=null;this.g=null;}
   Path.prototype.step=function(){var I=this.I,i=this.i,r=Math.min(Math.sqrt(I[i-1]/I[i]),RMAX);return {a:r,s:Math.sqrt(1-r*r),d:this.m[i]-r*this.m[i-1]};};
   Path.prototype.tail=function(z,up){
@@ -315,10 +317,10 @@ var GS=(function(){
     if(name==='Pocock')return tot*Math.log(1+(Math.E-1)*t);
     return tot*Math.pow(t,par==null?3:par);}
   function incs(name,tot,t,par){var o=[],prev=0;for(var i=0;i<t.length;i++){var c=i===t.length-1?tot:spend(name,tot,t[i],par);o.push(Math.max(c-prev,0));prev=c;}return o;}
-  function type1(t,ia){var P=new Path(t,zeros(t.length)),u=[];for(var i=0;i<t.length;i++){var ui=ia[i]>0?root(function(z){return P.tail(z,true)-ia[i];},-3,14):14;u.push(ui);if(i<t.length-1)P.advance(-Infinity,ui);}return u;}
+  function type1(t,ia){var P=new Path(t,zeros(t.length)),u=[];for(var i=0;i<t.length;i++){var ui=ia[i]>0?bis(function(z){return P.tail(z,true)-ia[i];},-3,40):40;if(!isFinite(ui))ui=40;u.push(ui);if(i<t.length-1)P.advance(-Infinity,ui);}return u;}
   function type3(t,ia,ib,m){var k=t.length,P0=new Path(t,zeros(k)),P1=new Path(t,m),u=[],l=[];
-    for(var i=0;i<k;i++){var ui=root(function(z){return P0.tail(z,true)-ia[i];},-40,14);if(!isFinite(ui))ui=-40;
-      var li=root(function(z){return P1.tail(z,false)-ib[i];},-40,40);if(!isFinite(li))li=P1.tail(40,false)<ib[i]?40:-40;
+    for(var i=0;i<k;i++){var ui=bis(function(z){return P0.tail(z,true)-ia[i];},-40,40);if(!isFinite(ui))ui=P0.tail(40,true)>ia[i]?40:-40;
+      var li=bis(function(z){return P1.tail(z,false)-ib[i];},-40,40);if(!isFinite(li))li=P1.tail(40,false)<ib[i]?40:-40;
       if(i<k-1)li=Math.min(li,ui-1e-6);u.push(ui);l.push(li);if(i<k-1){P0.advance(li,ui);P1.advance(li,ui);}}
     return {u:u,l:l};}
   function design(p){

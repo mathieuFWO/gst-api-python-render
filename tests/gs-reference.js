@@ -17,6 +17,8 @@ var GS=(function(){
       if(fm*fhi<0){lo=hi;flo=fhi;}else{flo*=0.5;}hi=m;fhi=fm;if(Math.abs(hi-lo)<tol)break;}
     return Math.abs(flo)<Math.abs(fhi)?lo:hi;}
   /* Z_i : moyenne m[i], corrélation entre deux lectures = racine du rapport des informations cumulées. */
+  /* bissection : sûre même quand la probabilité visée est infime (premières lectures) */
+  function bis(f,lo,hi){var flo=f(lo),fhi=f(hi);if(!(flo*fhi<=0))return NaN;for(var i=0;i<60;i++){var m=(lo+hi)/2,fm=f(m);if(flo*fm<=0){hi=m;}else{lo=m;flo=fm;}if(hi-lo<1e-10)break;}return (lo+hi)/2;}
   function Path(info,m){this.I=info;this.m=m;this.i=0;this.x=null;this.g=null;}
   Path.prototype.step=function(){var I=this.I,i=this.i,r=Math.min(Math.sqrt(I[i-1]/I[i]),RMAX);return {a:r,s:Math.sqrt(1-r*r),d:this.m[i]-r*this.m[i-1]};};
   Path.prototype.tail=function(z,up){
@@ -38,10 +40,10 @@ var GS=(function(){
     if(name==='Pocock')return tot*Math.log(1+(Math.E-1)*t);
     return tot*Math.pow(t,par==null?3:par);}
   function incs(name,tot,t,par){var o=[],prev=0;for(var i=0;i<t.length;i++){var c=i===t.length-1?tot:spend(name,tot,t[i],par);o.push(Math.max(c-prev,0));prev=c;}return o;}
-  function type1(t,ia){var P=new Path(t,zeros(t.length)),u=[];for(var i=0;i<t.length;i++){var ui=ia[i]>0?root(function(z){return P.tail(z,true)-ia[i];},-3,14):14;u.push(ui);if(i<t.length-1)P.advance(-Infinity,ui);}return u;}
+  function type1(t,ia){var P=new Path(t,zeros(t.length)),u=[];for(var i=0;i<t.length;i++){var ui=ia[i]>0?bis(function(z){return P.tail(z,true)-ia[i];},-3,40):40;if(!isFinite(ui))ui=40;u.push(ui);if(i<t.length-1)P.advance(-Infinity,ui);}return u;}
   function type3(t,ia,ib,m){var k=t.length,P0=new Path(t,zeros(k)),P1=new Path(t,m),u=[],l=[];
-    for(var i=0;i<k;i++){var ui=root(function(z){return P0.tail(z,true)-ia[i];},-40,14);if(!isFinite(ui))ui=-40;
-      var li=root(function(z){return P1.tail(z,false)-ib[i];},-40,40);if(!isFinite(li))li=P1.tail(40,false)<ib[i]?40:-40;
+    for(var i=0;i<k;i++){var ui=bis(function(z){return P0.tail(z,true)-ia[i];},-40,40);if(!isFinite(ui))ui=P0.tail(40,true)>ia[i]?40:-40;
+      var li=bis(function(z){return P1.tail(z,false)-ib[i];},-40,40);if(!isFinite(li))li=P1.tail(40,false)<ib[i]?40:-40;
       if(i<k-1)li=Math.min(li,ui-1e-6);u.push(ui);l.push(li);if(i<k-1){P0.advance(li,ui);P1.advance(li,ui);}}
     return {u:u,l:l};}
   function design(p){
