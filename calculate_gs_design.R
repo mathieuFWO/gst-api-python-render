@@ -97,7 +97,7 @@ sfu_func <- NULL
 sfu_standard_name <- NULL
 
 if (sfu_name_req == "pocock") {
-    sfu_func <- gsDesign::sfPocock
+    sfu_func <- gsDesign::sfLDPocock # v39.1 : sfPocock n'existe pas (HTTP 500)
     sfu_standard_name <- "Pocock"
 } else if (sfu_name_req == "of" || sfu_name_req == "obrienfleming") {
     sfu_func <- gsDesign::sfLDOF # O'Brien-Fleming like
@@ -136,7 +136,7 @@ if (test_type %in% c(3, 4, 5, 6)) {
         sfl_param_val <- 1 # Pente de 1 pour dépense linéaire
         sfl_standard_name <- "Linear"
      } else if (sfl_name_req == "pocock") { # Pocock pour futilité
-         sfl_func <- gsDesign::sfPocock
+         sfl_func <- gsDesign::sfLDPocock # v39.1 : sfPocock n'existe pas (HTTP 500)
          sfl_standard_name <- "Pocock"
      } else if (sfl_name_req == "of" || sfl_name_req == "obrienfleming") { # OF pour futilité
           sfl_func <- gsDesign::sfLDOF
@@ -173,7 +173,7 @@ design_result <- NULL
 design_error <- NULL
 design <- tryCatch({
     # Appel gsDesign en utilisant les fonctions et paramètres déterminés
-    # Note: sfupar et sflpar sont ignorés si la fonction correspondante ne prend pas de paramètre (ex: sfPocock, sfLDOF)
+    # Note: sfupar et sflpar sont ignorés si la fonction correspondante ne prend pas de paramètre (ex: sfLDPocock, sfLDOF)
     gsDesign(k = k, test.type = test_type, alpha = alpha, beta = beta, timing = timing,
              sfu = sfu_func, sfupar = sfu_param_val,
              sfl = sfl_func, sflpar = sfl_param_val) # sfl/sflpar seront ignorés par gsDesign si test.type=1 ou 2

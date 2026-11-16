@@ -1,7 +1,8 @@
+<!-- v39.1 - Lot A : puissance réellement transmise (beta), horizon fixe k=1, SRM p<0,001, fraction d'information normalisée -->
 <!-- v39.0 - Sémantique de décision corrigée (nocivité miroir + non-infériorité à marge) -->
 <head>
   <meta charset="UTF-8">
-  <title>Calculateur Test A/B – Analyse séquentielle (v39.0)</title>
+  <title>Calculateur Test A/B – Analyse séquentielle (v39.1)</title>
   <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -476,7 +477,7 @@ button#mdeAccordionButton {background: #fff;color: #333;font-weight: 600;font-si
           <tbody id="history-tbody"></tbody>
         </table>
       </div>
-      <div id="srm-warning" class="alert alert-warning" role="alert" style="display:none;"> <strong>Attention SRM :</strong> Répartition trafic cumulée (objectif principal) inégale détectée (p < 0.05). </div>
+      <div id="srm-warning" class="alert alert-warning" role="alert" style="display:none;"> <strong>Attention SRM :</strong> Répartition trafic cumulée (objectif principal) inégale détectée (p < 0,001). </div>
   </div><!-- Fin #history-section -->
 
 
@@ -1006,11 +1007,26 @@ button#mdeAccordionButton {background: #fff;color: #333;font-weight: 600;font-si
                 alert("Sélectionnez une durée valide."); 
                 return; 
             }
-            if (weeklyEnteredData.length > 0 && (currentDesignParams?.k !== validatedK || currentDesignParams?.testStartDate !== testStartDateValue)) { 
-                if (!confirm(`Changer les paramètres de planification (K=${validatedK}, Date début=${testStartDateValue}) réinitialisera les données entrées et les bornes. Continuer ?`)) { 
-                    designKInput.value = currentDesignParams.k; 
-                    testStartDateInput.value = currentDesignParams.testStartDate;
-                    applyKHighlight(currentDesignParams.k); 
+            // v39.1 : le plan est figé dès qu'une donnée est saisie. Tout changement de paramètre (pas seulement k et la date)
+            // demande confirmation et repart de zéro ; sans changement, beta est conservé (0,20 pour un test antérieur à v39.1).
+            const alpha = parseFloat(mdeConfidenceSelect.value); 
+            const power = parseFloat(mdePowerSelect.value); 
+            const testTypePrincipal = parseInt(mdeTestTypeSelect.value) || 1; 
+            const sfu = designSpendingFunctionSelect.value; 
+            const sfl = designSpendingFunctionLowerSelect.value;
+            const prevDesign = currentDesignParams;
+            const designChanged = !prevDesign || prevDesign.k !== validatedK || prevDesign.testStartDate !== testStartDateValue || prevDesign.alpha !== alpha || prevDesign.power !== power || prevDesign.sfu !== sfu || prevDesign.sfl !== sfl || prevDesign.testTypePrincipal !== testTypePrincipal;
+            if (weeklyEnteredData.length > 0 && designChanged) { 
+                if (!confirm(`Changer les paramètres de planification (durée, date de début, confiance, puissance, type de test ou fonctions de dépense) réinitialisera les données entrées et les bornes. Continuer ?`)) { 
+                    designKInput.value = prevDesign.k; 
+                    testStartDateInput.value = prevDesign.testStartDate;
+                    mdeConfidenceSelect.value = String(prevDesign.alpha);
+                    mdePowerSelect.value = prevDesign.power.toFixed(2);
+                    mdeTestTypeSelect.value = String(prevDesign.testTypePrincipal);
+                    designSpendingFunctionSelect.value = prevDesign.sfu;
+                    designSpendingFunctionLowerSelect.value = prevDesign.sfl;
+                    calculateAndDisplayMDEForecast();
+                    applyKHighlight(prevDesign.k); 
                     checkIfStartAnalysisCanBeEnabled(); return; 
                 } 
                 weeklyEnteredData = [];
@@ -1022,13 +1038,8 @@ button#mdeAccordionButton {background: #fff;color: #333;font-weight: 600;font-si
             
             startAnalysisButton.disabled = true; loadingDiv.style.display = 'block'; errorDivGen.textContent = ''; errorDivGen.style.display = 'none';
             
-            const alpha = parseFloat(mdeConfidenceSelect.value); 
-            const power = parseFloat(mdePowerSelect.value); 
-            const testTypePrincipal = parseInt(mdeTestTypeSelect.value) || 1; 
-            const sfu = designSpendingFunctionSelect.value; 
-            const sfl = designSpendingFunctionLowerSelect.value;
-            
-            currentDesignParams = { k: validatedK, alpha, power, sfu, sfl, testTypePrincipal, testStartDate: testStartDateValue }; 
+            const betaPlan = (!designChanged && prevDesign && typeof prevDesign.beta === 'number') ? prevDesign.beta : (!designChanged && prevDesign ? 0.20 : parseFloat((1 - power).toFixed(4)));
+            currentDesignParams = { k: validatedK, alpha, power, beta: betaPlan, sfu, sfl, testTypePrincipal, testStartDate: testStartDateValue }; 
             
             secondaryMetricInputsA.style.display = isSecondaryKpiPlanned ? 'block' : 'none';
             secondaryMetricInputsB.style.display = isSecondaryKpiPlanned ? 'block' : 'none';
@@ -1043,8 +1054,8 @@ button#mdeAccordionButton {background: #fff;color: #333;font-weight: 600;font-si
             if (validationError) { loadingDiv.style.display = 'none'; startAnalysisButton.disabled = false; return; }
 
             try {
-                const payloadPrincipal = { k: currentDesignParams.k, alpha: currentDesignParams.alpha, power: currentDesignParams.power, sfu: currentDesignParams.sfu, sfl: currentDesignParams.sfl, testType: currentDesignParams.testTypePrincipal };
-                const responsePrincipal = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payloadPrincipal) }); 
+                const payloadPrincipal = designPayload(currentDesignParams.testTypePrincipal);
+                const responsePrincipal = await postBoundaries(apiUrl, payloadPrincipal); 
                 const initialApiResultPrincipal = await responsePrincipal.json();
 
                 if (initialApiResultPrincipal.error === true || !responsePrincipal.ok) { let errMsg = initialApiResultPrincipal.message || `Erreur API (Principal) (${responsePrincipal.status})`; if(initialApiResultPrincipal.details) errMsg += ` Détails: ${initialApiResultPrincipal.details}`; throw new Error(errMsg); }
@@ -1126,27 +1137,23 @@ button#mdeAccordionButton {background: #fff;color: #333;font-weight: 600;font-si
                     resultsDiv.style.display = 'block';
                 }
 
-                const apiPayloadPrincipal = { 
-                    k: currentDesignParams.k, alpha: currentDesignParams.alpha, power: currentDesignParams.power, 
-                    sfu: currentDesignParams.sfu, sfl: currentDesignParams.sfl, testType: currentDesignParams.testTypePrincipal,
+                const apiPayloadPrincipal = designPayload(currentDesignParams.testTypePrincipal, {
                     visitors_a: visitorsACumul, conversions_a: conversionsACumul_P, 
                     visitors_b: visitorsBCumul, conversions_b: conversionsBCumul_P 
-                };
+                });
                 const apiUrl = apiUrlInput.value; 
-                const responsePrincipal = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(apiPayloadPrincipal) }); 
+                const responsePrincipal = await postBoundaries(apiUrl, apiPayloadPrincipal); 
                 const apiResultPrincipal = await responsePrincipal.json();
                 if (apiResultPrincipal.error === true || !responsePrincipal.ok) { let errMsg = apiResultPrincipal.message || `Erreur API (Principal) (${responsePrincipal.status})`; if (apiResultPrincipal.details) errMsg += ` Détails: ${apiResultPrincipal.details}`; throw new Error(errMsg); }
                 currentBoundariesApiResultPrincipal = apiResultPrincipal;
 
                 currentBoundariesApiResultSecondary = null; 
                 if (isSecondaryKpiPlanned && conversionsACumul_S !== undefined && conversionsBCumul_S !== undefined) {
-                    const apiPayloadSecondary = {
-                        k: currentDesignParams.k, alpha: currentDesignParams.alpha, power: currentDesignParams.power, 
-                        sfu: currentDesignParams.sfu, sfl: currentDesignParams.sfl, testType: TEST_TYPE_SECONDARY_DEFAULT, 
+                    const apiPayloadSecondary = designPayload(TEST_TYPE_SECONDARY_DEFAULT, {
                         visitors_a: visitorsACumul, conversions_a: conversionsACumul_S, 
                         visitors_b: visitorsBCumul, conversions_b: conversionsBCumul_S 
-                    };
-                    const responseSecondary = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(apiPayloadSecondary) });
+                    });
+                    const responseSecondary = await postBoundaries(apiUrl, apiPayloadSecondary);
                     const apiResultSecondary = await responseSecondary.json();
                     if (apiResultSecondary.error === true || !responseSecondary.ok) {
                         console.warn(`Erreur API (Secondaire): ${apiResultSecondary.message || responseSecondary.status}. Bornes du secondaire non mises à jour.`);
@@ -1312,7 +1319,7 @@ button#mdeAccordionButton {background: #fff;color: #333;font-weight: 600;font-si
                 principalState = 'POSITIF';
             } else if (zPrincipalIsValid && isFinite(effB_principal) && z_principal_from_api <= -effB_principal) {
                 principalState = 'NEGATIF_DEMONTRE';
-            } else if (zPrincipalIsValid && isFinite(futB_principal) && z_principal_from_api <= futB_principal) {
+            } else if (zPrincipalIsValid && Number.isFinite(futB_principal) && z_principal_from_api <= futB_principal) { // v39.1 : Number.isFinite (null = pas de borne en Supériorité)
                 principalState = 'FUTILE';
             }
 
@@ -1486,10 +1493,15 @@ button#mdeAccordionButton {background: #fff;color: #333;font-weight: 600;font-si
             if (boundariesTbody) boundariesTbody.innerHTML = ''; else { console.error("boundariesTbody is null!"); return; }
             updateBoundaryTableHeaders(testType); 
             
-            currentBoundariesApiResultPrincipal.boundaries.forEach(b => {
+            // v39.1 : l'API renvoie n.I (gonflé du facteur d'inflation, dernière valeur ≈ 1,09).
+            // On affiche la vraie fraction (timing si fourni, sinon n.I / n.I[k] = i/k).
+            const _bds = currentBoundariesApiResultPrincipal.boundaries;
+            const _lastIF = _bds.length ? _bds[_bds.length - 1].infoFraction : NaN;
+            _bds.forEach(b => {
                 const row = boundariesTbody.insertRow();
                 row.insertCell().textContent = formatNumberForDisplay(b.stage, 0);
-                row.insertCell().textContent = formatNumberForDisplay(b.infoFraction, 4);
+                const _frac = (typeof b.timing === 'number') ? b.timing : (isFinite(_lastIF) && _lastIF > 0 ? b.infoFraction / _lastIF : NaN);
+                row.insertCell().textContent = formatNumberForDisplay(_frac, 4);
                 row.insertCell().textContent = formatNumberForDisplay(b.efficacyZ, 3);
                 row.insertCell().textContent = formatNumberForDisplay(b.futilityZ, 3);
             });
@@ -1600,6 +1612,33 @@ button#mdeAccordionButton {background: #fff;color: #333;font-weight: 600;font-si
                     catch(e) { console.error("Erreur création mini-graphique lift:", e, chartId); document.getElementById(chartId).innerHTML = "<span style='font-size:0.8em; color:red;'>Erreur</span>"; }
                 });
             }, 0);
+        }
+
+        /**
+         * v39.1 — Charge utile du design. Le script R ne lit que `beta` (pas `power`) :
+         * jusqu'en v39.0 la puissance choisie était ignorée (beta=0,20 toujours).
+         * `beta` est figé dans currentDesignParams à la création du plan ; un test
+         * sauvegardé avant v39.1 n'a pas ce champ → on renvoie 0,20, la valeur
+         * réellement utilisée pour ses bornes (pas de changement de bornes en cours de test).
+         */
+        function designPayload(testType, extra) {
+            const beta = (currentDesignParams && typeof currentDesignParams.beta === 'number' && isFinite(currentDesignParams.beta)) ? currentDesignParams.beta : 0.20;
+            return Object.assign({ k: currentDesignParams.k, alpha: currentDesignParams.alpha, power: currentDesignParams.power, beta: beta, sfu: currentDesignParams.sfu, sfl: currentDesignParams.sfl, testType: testType }, extra || {});
+        }
+
+        /**
+         * v39.1 — k=1 = horizon fixe : gsDesign exige k>=2 (l'API répondait 500).
+         * Borne unilatérale z(1-alpha) calculée localement, sans appel réseau.
+         */
+        function fixedHorizonResult(p) {
+            const z = jStat.normal.inv(1 - p.alpha, 0, 1);
+            const obs = (p.visitors_a !== undefined) ? computeObservedZ(p.visitors_a, p.conversions_a, p.visitors_b, p.conversions_b) : null;
+            return { boundaries: [{ stage: 1, infoFraction: 1, timing: 1, efficacyZ: z, futilityZ: p.testType === 1 ? null : z }], observedZ: obs, inflationFactor: 1, parameters: { k: 1, alpha: p.alpha, beta: p.beta, power: 1 - p.beta, testType: p.testType, timing: [1], sfu: 'horizon fixe' }, observedZMessage: 'Horizon fixe (k=1) : calcul local, sans appel API.' };
+        }
+
+        async function postBoundaries(url, payload) {
+            if (payload.k === 1) { const r = fixedHorizonResult(payload); return { ok: true, status: 200, json: async () => r }; }
+            return fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
         }
 
         /**
@@ -1781,7 +1820,7 @@ button#mdeAccordionButton {background: #fff;color: #333;font-weight: 600;font-si
             }
             const expA = tot * 0.5; const expB = tot * 0.5;
             const chi2 = ((tA - expA)**2 / expA) + ((tB - expB)**2 / expB);
-            const isSRM = chi2 > 3.841; 
+            const isSRM = chi2 > 10.828; // v39.1 (D2) : p < 0,001 — à 0,05 testé chaque semaine, ~18 % de fausses alertes sur 8 semaines
             if(srmWarningDiv) srmWarningDiv.style.display = isSRM ? 'block' : 'none';
             if(isSRM) {
                 srmCheckIndicator.innerHTML = '⚠️ Erreur SRM';
@@ -1880,14 +1919,15 @@ button#mdeAccordionButton {background: #fff;color: #333;font-weight: 600;font-si
         async function triggerApiRecalculation() { 
             loadingDiv.style.display = 'block'; 
             addDataButton.disabled = true; 
+            try { // v39.1 : une erreur réseau ne laisse plus le chargement affiché indéfiniment
             if (weeklyEnteredData.length === 0) { 
                 if (currentDesignParams) { 
                     observedZDataPrincipal = new Array(currentDesignParams.k).fill(null);
                     observedZDataSecondary = new Array(currentDesignParams.k).fill(null);
                     observedZNiSecondary = new Array(currentDesignParams.k).fill(null);
-                    currentBoundariesApiResultPrincipal = await (await fetch(apiUrlInput.value, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ k: currentDesignParams.k, alpha: currentDesignParams.alpha, power: currentDesignParams.power, sfu: currentDesignParams.sfu, sfl: currentDesignParams.sfl, testType: currentDesignParams.testTypePrincipal }) })).json();
+                    currentBoundariesApiResultPrincipal = await (await postBoundaries(apiUrlInput.value, designPayload(currentDesignParams.testTypePrincipal))).json();
                     if (isSecondaryKpiPlanned) {
-                         currentBoundariesApiResultSecondary = await (await fetch(apiUrlInput.value, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ k: currentDesignParams.k, alpha: currentDesignParams.alpha, power: currentDesignParams.power, sfu: currentDesignParams.sfu, sfl: currentDesignParams.sfl, testType: TEST_TYPE_SECONDARY_DEFAULT }) })).json();
+                         currentBoundariesApiResultSecondary = await (await postBoundaries(apiUrlInput.value, designPayload(TEST_TYPE_SECONDARY_DEFAULT))).json();
                     } else {
                         currentBoundariesApiResultSecondary = null;
                     }
@@ -1896,7 +1936,10 @@ button#mdeAccordionButton {background: #fff;color: #333;font-weight: 600;font-si
                 prepareNextDataEntry(); 
                 updateDataEntryTitle(); // Mettre à jour le titre même si pas de données
             } else { 
-                const lastData = weeklyEnteredData[weeklyEnteredData.length - 1]; 
+                // v39.1 : on retire la dernière semaine restante puis on la ré-ajoute (recalcul API) — avant, elle était
+                // ré-ajoutée EN PLUS, ce qui recréait la semaine supprimée en copie de la précédente.
+                const lastData = weeklyEnteredData.pop(); 
+                observedZDataPrincipal[weeklyEnteredData.length] = null; observedZDataSecondary[weeklyEnteredData.length] = null; observedZNiSecondary[weeklyEnteredData.length] = null;
                 controlVisitorsInput.value = lastData.visitorsACumul; 
                 controlConversionsInput.value = lastData.conversionsACumul_P; 
                 variantVisitorsInput.value = lastData.visitorsBCumul; 
@@ -1907,12 +1950,12 @@ button#mdeAccordionButton {background: #fff;color: #333;font-weight: 600;font-si
                 } 
                 await handleAddOrUpdateCumulativeData(); 
             } 
-            loadingDiv.style.display = 'none'; 
-            addDataButton.disabled = false; 
+            } catch (error) { showError(`Erreur de recalcul après suppression : ${error.message}`, false); }
+            finally { loadingDiv.style.display = 'none'; addDataButton.disabled = false; checkIfDataEntryShouldBeEnabled(); updateHistoryTable(); updateDataEntryTitle(); }
         } 
         
         function saveCurrentTestState() { if (!testNameTopInput.value) { alert("Veuillez nommer le test."); return; } const testState = { name: testNameTopInput.value, timestamp: new Date().toISOString(), baselineTraffic: baselineTrafficInput.value, baselineTotalConversions: baselineTotalConversionsInput.value, baselineTotalConversionsSecondary: baselineTotalConversionsSecondaryInput.value, isSecondaryKpiPlanned, testStartDate: testStartDateInput.value, mdeConfidence: mdeConfidenceSelect.value, mdePower: mdePowerSelect.value, mdeTestType: mdeTestTypeSelect.value, designSpendingFunction: designSpendingFunctionSelect.value, designSpendingFunctionLower: designSpendingFunctionLowerSelect.value, designK: designKInput.value, currentDesignParams, currentBoundariesApiResultPrincipal, currentBoundariesApiResultSecondary, weeklyEnteredData, observedZDataPrincipal, observedZDataSecondary, observedZNiSecondary, niMarginRel: (niMarginRelInput ? niMarginRelInput.value : '1.0'), apiUrl: apiUrlInput.value }; try { localStorage.setItem(STORAGE_PREFIX + testNameTopInput.value, JSON.stringify(testState)); alert(`Test "${testNameTopInput.value}" sauvegardé.`); updateSavedTestsList(); } catch (e) { if (e.name === 'QuotaExceededError') { alert("Erreur de sauvegarde : Quota de stockage local dépassé. Veuillez supprimer d'anciens tests."); } else { alert("Erreur de sauvegarde : " + e.message); } } }
-        async function loadSelectedTestState() { const testNameToLoad = savedTestsListTop.value; if (!testNameToLoad) { alert("Sélectionnez un test à charger."); return; } const savedStateJSON = localStorage.getItem(STORAGE_PREFIX + testNameToLoad); if (!savedStateJSON) { alert("Test non trouvé."); return; } resetFullAnalysis(false); try { const savedState = JSON.parse(savedStateJSON); testNameTopInput.value = savedState.name || ''; baselineTrafficInput.value = savedState.baselineTraffic || ''; baselineTotalConversionsInput.value = savedState.baselineTotalConversions || ''; baselineTotalConversionsSecondaryInput.value = savedState.baselineTotalConversionsSecondary || ''; isSecondaryKpiPlanned = savedState.isSecondaryKpiPlanned === true; baselineSecondaryKpiGroup.style.display = isSecondaryKpiPlanned ? 'block' : 'none'; if (niMarginGroup) niMarginGroup.style.display = isSecondaryKpiPlanned ? 'block' : 'none'; if (niMarginRelInput) niMarginRelInput.value = savedState.niMarginRel || '1.0'; toggleBaselineSecondaryKpiLink.textContent = isSecondaryKpiPlanned ? 'Retirer le KPI de sécurité (planification)' : 'Ajouter un KPI de sécurité (planification)'; testStartDateInput.value = savedState.testStartDate || new Date().toISOString().split('T')[0];  mdeConfidenceSelect.value = savedState.mdeConfidence || '0.05'; mdePowerSelect.value = savedState.mdePower || '0.80'; mdeTestTypeSelect.value = savedState.mdeTestType || '3'; designSpendingFunctionSelect.value = savedState.designSpendingFunction || 'KimDeMets'; designSpendingFunctionLowerSelect.value = savedState.designSpendingFunctionLower || 'HSD'; designKInput.value = savedState.designK || ''; apiUrlInput.value = savedState.apiUrl || "https://my-gst-api.onrender.com/api/calculate-boundaries"; if (baselineTrafficInput.value && baselineTotalConversionsInput.value) { calculateAndDisplayMDEForecast(); } if (savedState.designK) { applyKHighlight(savedState.designK); checkIfStartAnalysisCanBeEnabled(); } if (savedState.currentDesignParams) { currentDesignParams = savedState.currentDesignParams; currentBoundariesApiResultPrincipal = savedState.currentBoundariesApiResultPrincipal; currentBoundariesApiResultSecondary = savedState.currentBoundariesApiResultSecondary; observedZDataPrincipal = savedState.observedZDataPrincipal || []; observedZDataSecondary = savedState.observedZDataSecondary || []; observedZNiSecondary = savedState.observedZNiSecondary || []; weeklyEnteredData = savedState.weeklyEnteredData || []; weeklyEnteredData.forEach((data, i) => { if (observedZDataPrincipal[i] == null) { const z = computeObservedZ(data.visitorsACumul, data.conversionsACumul_P, data.visitorsBCumul, data.conversionsBCumul_P); if (z !== null) observedZDataPrincipal[i] = parseFloat(z.toFixed(4)); } if (isSecondaryKpiPlanned && observedZNiSecondary[i] == null && data.conversionsASecondaryCumul !== undefined && data.conversionsBSecondaryCumul !== undefined) { const zni = computeObservedZNi(data.visitorsACumul, data.conversionsASecondaryCumul, data.visitorsBCumul, data.conversionsBSecondaryCumul, getNiMarginRelFraction()); if (zni !== null) observedZNiSecondary[i] = parseFloat(zni.toFixed(4)); } }); if (weeklyEnteredData.length > 0) { resultsDiv.style.display = 'block'; } dataEntrySection.style.display = 'block'; updateDataEntryTitle();  secondaryMetricInputsA.style.display = isSecondaryKpiPlanned ? 'block' : 'none'; secondaryMetricInputsB.style.display = isSecondaryKpiPlanned ? 'block' : 'none'; historyTableSecondaryHeaderGroup.style.display = isSecondaryKpiPlanned ? 'table-cell' : 'none'; historyTableSecondaryConvHeader.style.display = isSecondaryKpiPlanned ? 'table-cell' : 'none'; historyTableSecondaryRateHeader.style.display = isSecondaryKpiPlanned ? 'table-cell' : 'none'; displayBoundariesTableAndChart(); displayApiResults(); checkIfDataEntryShouldBeEnabled(); const lastData = weeklyEnteredData.length > 0 ? weeklyEnteredData[weeklyEnteredData.length - 1] : null; if (lastData) { controlVisitorsInput.value = lastData.visitorsACumul; controlConversionsInput.value = lastData.conversionsACumul_P; variantVisitorsInput.value = lastData.visitorsBCumul; variantConversionsInput.value = lastData.conversionsBCumul_P; if (isSecondaryKpiPlanned) { controlConversionsSecondaryInput.value = lastData.conversionsASecondaryCumul !== undefined ? lastData.conversionsASecondaryCumul : ''; variantConversionsSecondaryInput.value = lastData.conversionsBSecondaryCumul !== undefined ? lastData.conversionsBSecondaryCumul : ''; } } } alert(`Test "${testNameToLoad}" chargé.`); } catch (e) { alert("Erreur chargement test: " + e.message); resetFullAnalysis(false); } }
+        async function loadSelectedTestState() { const testNameToLoad = savedTestsListTop.value; if (!testNameToLoad) { alert("Sélectionnez un test à charger."); return; } const savedStateJSON = localStorage.getItem(STORAGE_PREFIX + testNameToLoad); if (!savedStateJSON) { alert("Test non trouvé."); return; } resetFullAnalysis(false); try { const savedState = JSON.parse(savedStateJSON); testNameTopInput.value = savedState.name || ''; baselineTrafficInput.value = savedState.baselineTraffic || ''; baselineTotalConversionsInput.value = savedState.baselineTotalConversions || ''; baselineTotalConversionsSecondaryInput.value = savedState.baselineTotalConversionsSecondary || ''; isSecondaryKpiPlanned = savedState.isSecondaryKpiPlanned === true; baselineSecondaryKpiGroup.style.display = isSecondaryKpiPlanned ? 'block' : 'none'; if (niMarginGroup) niMarginGroup.style.display = isSecondaryKpiPlanned ? 'block' : 'none'; if (niMarginRelInput) niMarginRelInput.value = savedState.niMarginRel || '1.0'; toggleBaselineSecondaryKpiLink.textContent = isSecondaryKpiPlanned ? 'Retirer le KPI de sécurité (planification)' : 'Ajouter un KPI de sécurité (planification)'; testStartDateInput.value = savedState.testStartDate || new Date().toISOString().split('T')[0];  mdeConfidenceSelect.value = savedState.mdeConfidence || '0.05'; mdePowerSelect.value = savedState.mdePower || '0.80'; mdeTestTypeSelect.value = savedState.mdeTestType || '3'; designSpendingFunctionSelect.value = savedState.designSpendingFunction || 'KimDeMets'; designSpendingFunctionLowerSelect.value = savedState.designSpendingFunctionLower || 'HSD'; designKInput.value = savedState.designK || ''; apiUrlInput.value = savedState.apiUrl || "https://my-gst-api.onrender.com/api/calculate-boundaries"; if (baselineTrafficInput.value && baselineTotalConversionsInput.value) { calculateAndDisplayMDEForecast(); } if (savedState.designK) { applyKHighlight(savedState.designK); checkIfStartAnalysisCanBeEnabled(); } if (savedState.currentDesignParams) { currentDesignParams = savedState.currentDesignParams; if (currentDesignParams && typeof currentDesignParams.beta !== 'number') { currentDesignParams.beta = 0.20; currentDesignParams.power = 0.80; mdePowerSelect.value = '0.80'; if (baselineTrafficInput.value && baselineTotalConversionsInput.value) { calculateAndDisplayMDEForecast(); } } currentBoundariesApiResultPrincipal = savedState.currentBoundariesApiResultPrincipal; currentBoundariesApiResultSecondary = savedState.currentBoundariesApiResultSecondary; observedZDataPrincipal = savedState.observedZDataPrincipal || []; observedZDataSecondary = savedState.observedZDataSecondary || []; observedZNiSecondary = savedState.observedZNiSecondary || []; weeklyEnteredData = savedState.weeklyEnteredData || []; weeklyEnteredData.forEach((data, i) => { if (observedZDataPrincipal[i] == null) { const z = computeObservedZ(data.visitorsACumul, data.conversionsACumul_P, data.visitorsBCumul, data.conversionsBCumul_P); if (z !== null) observedZDataPrincipal[i] = parseFloat(z.toFixed(4)); } if (isSecondaryKpiPlanned && observedZNiSecondary[i] == null && data.conversionsASecondaryCumul !== undefined && data.conversionsBSecondaryCumul !== undefined) { const zni = computeObservedZNi(data.visitorsACumul, data.conversionsASecondaryCumul, data.visitorsBCumul, data.conversionsBSecondaryCumul, getNiMarginRelFraction()); if (zni !== null) observedZNiSecondary[i] = parseFloat(zni.toFixed(4)); } }); if (weeklyEnteredData.length > 0) { resultsDiv.style.display = 'block'; } dataEntrySection.style.display = 'block'; updateDataEntryTitle();  secondaryMetricInputsA.style.display = isSecondaryKpiPlanned ? 'block' : 'none'; secondaryMetricInputsB.style.display = isSecondaryKpiPlanned ? 'block' : 'none'; historyTableSecondaryHeaderGroup.style.display = isSecondaryKpiPlanned ? 'table-cell' : 'none'; historyTableSecondaryConvHeader.style.display = isSecondaryKpiPlanned ? 'table-cell' : 'none'; historyTableSecondaryRateHeader.style.display = isSecondaryKpiPlanned ? 'table-cell' : 'none'; displayBoundariesTableAndChart(); displayApiResults(); checkIfDataEntryShouldBeEnabled(); const lastData = weeklyEnteredData.length > 0 ? weeklyEnteredData[weeklyEnteredData.length - 1] : null; if (lastData) { controlVisitorsInput.value = lastData.visitorsACumul; controlConversionsInput.value = lastData.conversionsACumul_P; variantVisitorsInput.value = lastData.visitorsBCumul; variantConversionsInput.value = lastData.conversionsBCumul_P; if (isSecondaryKpiPlanned) { controlConversionsSecondaryInput.value = lastData.conversionsASecondaryCumul !== undefined ? lastData.conversionsASecondaryCumul : ''; variantConversionsSecondaryInput.value = lastData.conversionsBSecondaryCumul !== undefined ? lastData.conversionsBSecondaryCumul : ''; } } } alert(`Test "${testNameToLoad}" chargé.`); } catch (e) { alert("Erreur chargement test: " + e.message); resetFullAnalysis(false); } }
         function deleteSelectedTestState() { const testNameToDelete = savedTestsListTop.value; if (!testNameToDelete) { alert("Sélectionnez un test à supprimer."); return; } if (confirm(`Supprimer le test "${testNameToDelete}" ?`)) { localStorage.removeItem(STORAGE_PREFIX + testNameToDelete); alert(`Test "${testNameToDelete}" supprimé.`); updateSavedTestsList(); } }
         function updateSavedTestsList() { savedTestsListTop.innerHTML = '<option value="">-- Charger un test --</option>'; for (let i = 0; i < localStorage.length; i++) { const key = localStorage.key(i); if (key.startsWith(STORAGE_PREFIX)) { const testName = key.substring(STORAGE_PREFIX.length); const option = document.createElement('option'); option.value = testName; option.textContent = testName; savedTestsListTop.appendChild(option); } } }
 
