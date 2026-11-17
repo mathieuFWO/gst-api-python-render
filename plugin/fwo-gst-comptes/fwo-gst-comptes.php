@@ -2,7 +2,7 @@
 /**
  * Plugin Name: FWO - Comptes du calculateur séquentiel
  * Description: Comptes, tableau de bord et partage par invitation pour le calculateur d'analyse séquentielle. Connexion par lien envoyé par email, sans mot de passe.
- * Version: 0.3.0
+ * Version: 0.3.1
  * Author: FWOptimisation
  * Requires at least: 6.0
  * Requires PHP: 7.4
@@ -68,9 +68,29 @@ add_filter('wp_pre_insert_user_data', function ($data, $update, $id) {
 add_filter('wp_is_application_passwords_available_for_user', function ($ok, $u) { return $ok && !fwo_gst_is_member($u); }, 10, 2);
 add_filter('allow_password_reset', function ($ok, $id) { return fwo_gst_is_member(get_userdata($id)) ? false : $ok; }, 10, 2);
 
-/** Adresse du visiteur ; en IPv6 on retient le préfixe /64 pour qu'un même abonné ne dispose pas de milliards de clés. */
+/** Plages de Cloudflare (cloudflare.com/ips-v4 et ips-v6, relevées le 17 novembre 2026). */
+function fwo_gst_cf_ranges() {
+    return ['173.245.48.0/20', '103.21.244.0/22', '103.22.200.0/22', '103.31.4.0/22', '141.101.64.0/18', '108.162.192.0/18', '190.93.240.0/20', '188.114.96.0/20',
+        '197.234.240.0/22', '198.41.128.0/17', '162.158.0.0/15', '104.16.0.0/13', '104.24.0.0/14', '172.64.0.0/13', '131.0.72.0/22',
+        '2400:cb00::/32', '2606:4700::/32', '2803:f800::/32', '2405:b500::/32', '2405:8100::/32', '2a06:98c0::/29', '2c0f:f248::/32'];
+}
+function fwo_gst_in_range($ip, $cidr) {
+    list($net, $bits) = explode('/', $cidr); $a = @inet_pton($ip); $b = @inet_pton($net); $bits = (int) $bits;
+    if ($a === false || $b === false || strlen($a) !== strlen($b)) { return false; }
+    $full = intdiv($bits, 8); $rem = $bits % 8;
+    if ($full && substr($a, 0, $full) !== substr($b, 0, $full)) { return false; }
+    if ($rem === 0) { return true; }
+    $mask = chr((0xFF << (8 - $rem)) & 0xFF);
+    return (($a[$full] & $mask) === ($b[$full] & $mask));
+}
+/** Adresse du visiteur. Derrière Cloudflare, l'adresse réelle est lue dans CF-Connecting-IP, et seulement si la requête vient bien d'une plage de Cloudflare.
+    En IPv6 on retient le préfixe /64 pour qu'un même abonné ne dispose pas de milliards de clés. */
 function fwo_gst_ip() {
     $ip = isset($_SERVER['REMOTE_ADDR']) ? sanitize_text_field(wp_unslash($_SERVER['REMOTE_ADDR'])) : '0';
+    if (!empty($_SERVER['HTTP_CF_CONNECTING_IP'])) {
+        $cf = sanitize_text_field(wp_unslash($_SERVER['HTTP_CF_CONNECTING_IP']));
+        if (@inet_pton($cf) !== false) { foreach (fwo_gst_cf_ranges() as $r) { if (fwo_gst_in_range($ip, $r)) { $ip = $cf; break; } } }
+    }
     $bin = @inet_pton($ip);
     return ($bin !== false && strlen($bin) === 16) ? bin2hex(substr($bin, 0, 8)) : $ip;
 }
