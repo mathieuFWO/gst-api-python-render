@@ -2,7 +2,7 @@
 /**
  * Plugin Name: FWO - Comptes du calculateur séquentiel
  * Description: Comptes, tableau de bord et partage par invitation pour le calculateur d'analyse séquentielle. Connexion par lien envoyé par email, sans mot de passe.
- * Version: 0.1.0
+ * Version: 0.2.0
  * Author: FWOptimisation
  * Requires at least: 6.0
  * Requires PHP: 7.4
@@ -11,8 +11,11 @@ if (!defined('ABSPATH')) { exit; }
 
 const FWO_GST_NS        = 'fwo-gst/v1';
 const FWO_GST_CPT       = 'fwo_gst_test';
-const FWO_GST_MAX_TESTS = 200;      // tests par compte
-const FWO_GST_MAX_BYTES = 400000;   // taille d'un test (JSON)
+const FWO_GST_ROLE      = 'fwo_gst_user';
+const FWO_GST_MAX_TESTS = 50;       // tests par compte
+const FWO_GST_MAX_BYTES = 150000;   // taille d'un test (JSON)
+const FWO_GST_MAX_MAILS = 150;      // emails envoyés par heure, tous comptes confondus
+const FWO_GST_MAX_NEW   = 200;      // comptes créés par jour
 const FWO_GST_MAX_SHARE = 20;       // invités par test
 const FWO_GST_TTL       = 900;      // durée de vie d'un lien de connexion (secondes)
 
@@ -28,13 +31,53 @@ add_action('init', function () {
     ]);
 });
 
-/** Les comptes créés ici sont de simples abonnés : pas de barre d'administration, pas d'accès à wp-admin. */
-add_filter('show_admin_bar', function ($show) { return current_user_can('edit_posts') ? $show : false; });
-add_action('admin_init', function () {
-    if (is_user_logged_in() && !current_user_can('edit_posts') && !wp_doing_ajax()) { wp_safe_redirect(fwo_gst_tool_url()); exit; }
-});
+/** Les comptes créés ici ont un rôle dédié, sans aucune capacité WordPress. */
+register_activation_hook(__FILE__, function () { add_role(FWO_GST_ROLE, 'Compte calculateur', []); });
+add_action('init', function () { if (!get_role(FWO_GST_ROLE)) { add_role(FWO_GST_ROLE, 'Compte calculateur', []); } }, 5);
 
-function fwo_gst_ip() { return isset($_SERVER['REMOTE_ADDR']) ? sanitize_text_field(wp_unslash($_SERVER['REMOTE_ADDR'])) : '0'; }
+function fwo_gst_is_member($user = null) {
+    $u = $user ? $user : wp_get_current_user();
+    return $u && $u->exists() && in_array(FWO_GST_ROLE, (array) $u->roles, true);
+}
+
+/** Ces comptes n'ont accès ni à wp-admin, ni à admin-ajax (sauf le jeton REST), ni au reste de l'API REST. */
+add_filter('show_admin_bar', function ($show) { return fwo_gst_is_member() ? false : $show; });
+add_action('admin_init', function () {
+    if (!fwo_gst_is_member()) { return; }
+    if (wp_doing_ajax()) {
+        $action = isset($_REQUEST['action']) ? sanitize_key(wp_unslash($_REQUEST['action'])) : '';
+        if ($action === 'rest-nonce') { return; }
+        wp_die('Interdit.', '', ['response' => 403]);
+    }
+    wp_safe_redirect(fwo_gst_tool_url()); exit;
+}, 1);
+add_filter('rest_pre_dispatch', function ($res, $server, $req) {
+    if (fwo_gst_is_member() && strpos($req->get_route(), '/' . FWO_GST_NS . '/') !== 0) {
+        return new WP_Error('rest_forbidden', 'Interdit.', ['status' => 403]);
+    }
+    return $res;
+}, 10, 3);
+/** L'adresse email d'un compte calculateur ne change jamais (elle sert de clé aux invitations). */
+add_filter('wp_pre_insert_user_data', function ($data, $update, $id) {
+    if ($update && $id && fwo_gst_is_member(get_userdata($id)) && !current_user_can('edit_users')) {
+        $old = get_userdata($id); if ($old) { $data['user_email'] = $old->user_email; }
+    }
+    return $data;
+}, 10, 3);
+add_filter('wp_is_application_passwords_available_for_user', function ($ok, $u) { return $ok && !fwo_gst_is_member($u); }, 10, 2);
+add_filter('allow_password_reset', function ($ok, $id) { return fwo_gst_is_member(get_userdata($id)) ? false : $ok; }, 10, 2);
+
+/** Adresse du visiteur ; en IPv6 on retient le préfixe /64 pour qu'un même abonné ne dispose pas de milliards de clés. */
+function fwo_gst_ip() {
+    $ip = isset($_SERVER['REMOTE_ADDR']) ? sanitize_text_field(wp_unslash($_SERVER['REMOTE_ADDR'])) : '0';
+    return strpos($ip, ':') !== false ? implode(':', array_slice(explode(':', $ip), 0, 4)) : $ip;
+}
+
+/** Envoi d'email sous plafond global : le site ne doit pas pouvoir servir de relais. */
+function fwo_gst_mail($to, $subject, $body) {
+    if (!fwo_gst_throttle('mail_global', FWO_GST_MAX_MAILS, HOUR_IN_SECONDS)) { return false; }
+    return wp_mail($to, $subject, $body);
+}
 
 /** Limite de débit : $max essais par fenêtre de $ttl secondes pour une clé. */
 function fwo_gst_throttle($key, $max, $ttl) {
@@ -64,14 +107,69 @@ function fwo_gst_access($post) {
     return in_array(strtolower($u->user_email), fwo_gst_shares($post->ID), true) ? 'guest' : false;
 }
 
-function fwo_gst_row($post, $access) {
-    $sum = json_decode((string) get_post_meta($post->ID, '_fwo_gst_sum', true), true);
+/** Résumé et invités d'une liste de tests en une seule requête, sans charger l'état (volumineux) de chaque test. */
+function fwo_gst_meta_light($ids) {
+    global $wpdb; $out = [];
+    $ids = array_values(array_filter(array_map('intval', $ids)));
+    if (!$ids) { return $out; }
+    $in = implode(',', $ids);
+    $rows = $wpdb->get_results("SELECT post_id, meta_key, meta_value FROM {$wpdb->postmeta} WHERE meta_key IN ('_fwo_gst_sum','_fwo_gst_share') AND post_id IN ($in)");
+    foreach ((array) $rows as $r) {
+        $pid = (int) $r->post_id; if (!isset($out[$pid])) { $out[$pid] = ['sum' => null, 'share' => []]; }
+        if ($r->meta_key === '_fwo_gst_sum') { $j = json_decode((string) $r->meta_value, true); $out[$pid]['sum'] = is_array($j) ? $j : null; }
+        else { $out[$pid]['share'][] = (string) $r->meta_value; }
+    }
+    return $out;
+}
+
+function fwo_gst_row($post, $access, $light = null) {
+    if ($light === null) { $light = fwo_gst_meta_light([$post->ID]); }
+    $m = isset($light[$post->ID]) ? $light[$post->ID] : ['sum' => null, 'share' => []];
     $owner = get_userdata($post->post_author);
     return [
-        'id' => $post->ID, 'name' => $post->post_title, 'sum' => is_array($sum) ? $sum : null,
+        'id' => $post->ID, 'name' => $post->post_title, 'sum' => $m['sum'],
         'updated' => mysql2date('Y-m-d', $post->post_modified), 'mine' => $access === 'owner',
-        'owner' => $owner ? $owner->display_name : '', 'shared' => $access === 'owner' ? fwo_gst_shares($post->ID) : [],
+        'owner' => $owner ? $owner->user_email : '', 'shared' => $access === 'owner' ? array_values(array_unique($m['share'])) : [],
     ];
+}
+
+/** Reconstruit un test champ par champ : types et valeurs contrôlés, rien d'autre n'est conservé (même règle que cleanState côté outil). */
+function fwo_gst_num($v, $d) { return (is_int($v) || is_float($v) || (is_string($v) && is_numeric($v))) && is_finite((float) $v) ? (float) $v : $d; }
+function fwo_gst_clean_state($s) {
+    $p = isset($s['plan']) && is_array($s['plan']) ? $s['plan'] : [];
+    $a = fwo_gst_num($p['alpha'] ?? null, 0.05); $pw = fwo_gst_num($p['power'] ?? null, 0.8); $tr = fwo_gst_num($p['traffic'] ?? null, 0);
+    $pw = ($pw >= 0.5 && $pw < 1) ? $pw : 0.8;
+    $plan = [
+        'k' => (int) min(50, max(1, round(fwo_gst_num($p['k'] ?? null, 4)))), 'alpha' => ($a > 0 && $a < 0.5) ? $a : 0.05, 'power' => $pw, 'beta' => round(1 - $pw, 4),
+        'testType' => ((int) fwo_gst_num($p['testType'] ?? null, 3)) === 1 ? 1 : 3, 'sfu' => (($p['sfu'] ?? '') === 'OF') ? 'OF' : 'KimDeMets',
+        'sfl' => in_array($p['sfl'] ?? '', ['HSD', 'KimDeMets', 'OF'], true) ? $p['sfl'] : 'HSD',
+        'startDate' => (is_string($p['startDate'] ?? null) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $p['startDate'])) ? $p['startDate'] : gmdate('Y-m-d'),
+        'unit' => (($p['unit'] ?? '') === 'jour') ? 'jour' : 'semaine',
+    ];
+    if ($tr > 0) { $plan['traffic'] = $tr; }
+    $metrics = []; $ids = [];
+    foreach (array_slice(is_array($s['metrics'] ?? null) ? $s['metrics'] : [], 0, 15) as $m) {
+        if (!is_array($m) || !is_string($m['id'] ?? null) || !preg_match('/^[A-Za-z0-9_-]{1,40}$/', $m['id']) || isset($ids[$m['id']])) { continue; }
+        $ids[$m['id']] = true;
+        $metrics[] = ['id' => $m['id'], 'src' => mb_substr(sanitize_text_field((string) ($m['src'] ?? '')), 0, 160), 'name' => mb_substr(sanitize_text_field((string) ($m['name'] ?? '')), 0, 120),
+            'type' => (($m['type'] ?? '') === 'continue') ? 'continue' : 'binaire', 'role' => in_array($m['role'] ?? '', ['principale', 'garde-fou', 'secondaire'], true) ? $m['role'] : 'secondaire',
+            'sens' => (($m['sens'] ?? '') === 'baisse') ? 'baisse' : 'hausse', 'marge' => fwo_gst_num($m['marge'] ?? null, 1)];
+    }
+    $arm = function ($x) use ($ids) {
+        $r = ['n' => fwo_gst_num(is_array($x) ? ($x['n'] ?? null) : null, 0), 'm' => new stdClass()]; $mm = [];
+        foreach ((is_array($x) && is_array($x['m'] ?? null)) ? $x['m'] : [] as $key => $v) {
+            if (!isset($ids[(string) $key]) || !is_array($v)) { continue; }
+            $q = []; foreach (['c', 's', 'ss', 'n'] as $f) { if (isset($v[$f])) { $q[$f] = fwo_gst_num($v[$f], 0); } }
+            $mm[(string) $key] = $q;
+        }
+        if ($mm) { $r['m'] = $mm; }
+        return $r;
+    };
+    $weeks = [];
+    foreach (array_slice(is_array($s['weeks'] ?? null) ? $s['weeks'] : [], 0, 60) as $w) { if (is_array($w)) { $weeks[] = ['A' => $arm($w['A'] ?? null), 'B' => $arm($w['B'] ?? null)]; } }
+    $L = is_array($s['labels'] ?? null) ? $s['labels'] : [];
+    return ['plan' => $plan, 'metrics' => $metrics,
+        'labels' => ['A' => mb_substr(sanitize_text_field((string) ($L['A'] ?? 'Contrôle')), 0, 60), 'B' => mb_substr(sanitize_text_field((string) ($L['B'] ?? 'Variante')), 0, 60)], 'weeks' => $weeks];
 }
 
 /** Valide et normalise le corps d'un test. Renvoie WP_Error ou [nom, état JSON, résumé JSON]. */
@@ -80,6 +178,8 @@ function fwo_gst_payload(WP_REST_Request $r) {
     if ($name === '') { return new WP_Error('fwo_gst_name', 'Nom du test manquant.', ['status' => 400]); }
     $state = $r->get_param('state'); $sum = $r->get_param('sum');
     if (!is_array($state) || !isset($state['plan'], $state['metrics'], $state['weeks'])) { return new WP_Error('fwo_gst_state', 'Test illisible.', ['status' => 400]); }
+    $state = fwo_gst_clean_state($state);
+    if (!$state) { return new WP_Error('fwo_gst_state', 'Test illisible.', ['status' => 400]); }
     $js = wp_json_encode($state);
     if ($js === false || strlen($js) > FWO_GST_MAX_BYTES) { return new WP_Error('fwo_gst_size', 'Test trop volumineux.', ['status' => 413]); }
     $keep = [];
@@ -98,36 +198,58 @@ add_action('rest_api_init', function () {
     register_rest_route(FWO_GST_NS, '/login-link', ['methods' => 'POST', 'permission_callback' => '__return_true', 'callback' => function (WP_REST_Request $r) {
         $email = strtolower(sanitize_email((string) $r->get_param('email')));
         if (!is_email($email)) { return new WP_Error('fwo_gst_email', 'Adresse email invalide.', ['status' => 400]); }
-        if (!fwo_gst_throttle('ip' . fwo_gst_ip(), 8, FWO_GST_TTL) || !fwo_gst_throttle('em' . $email, 3, FWO_GST_TTL)) {
+        if (!fwo_gst_throttle('ip' . fwo_gst_ip(), 8, FWO_GST_TTL) || !fwo_gst_throttle('em' . $email, 5, FWO_GST_TTL)) {
             return new WP_Error('fwo_gst_rate', 'Trop de demandes. Réessayez dans quelques minutes.', ['status' => 429]);
         }
         $u = get_user_by('email', $email);
-        if ($u && user_can($u, 'edit_posts')) { return ['sent' => true]; } // jamais de lien pour un compte d'administration
+        if ($u && !fwo_gst_is_member($u)) { // jamais de lien pour un compte du site (administration, rédaction, abonné existant) ; même délai de réponse
+            fwo_gst_mail($email, 'Connexion au calculateur séquentiel', "Bonjour,\n\nCette adresse correspond à un compte du site : connectez-vous par votre accès habituel.\n\nFWOptimisation");
+            return ['sent' => true];
+        }
         $token = wp_generate_password(48, false);
         $test = absint($r->get_param('test'));
         set_transient('fwo_gst_tk_' . hash('sha256', $token), ['email' => $email, 'test' => $test], FWO_GST_TTL);
         $link = add_query_arg('token', rawurlencode($token), rest_url(FWO_GST_NS . '/login'));
-        wp_mail($email, 'Votre lien de connexion au calculateur séquentiel',
-            "Bonjour,\n\nCliquez sur ce lien pour ouvrir votre espace (valable 15 minutes, utilisable une seule fois) :\n" . $link . "\n\nSi vous n'êtes pas à l'origine de cette demande, ignorez ce message.\n\nFWOptimisation");
+        fwo_gst_mail($email, 'Votre lien de connexion au calculateur séquentiel',
+            "Bonjour,\n\nOuvrez ce lien puis confirmez pour accéder à votre espace (valable 15 minutes, utilisable une seule fois) :\n" . $link . "\n\nSi vous n'êtes pas à l'origine de cette demande, ignorez ce message.\n\nFWOptimisation");
         return ['sent' => true];
     }]);
 
-    // Clic sur le lien reçu : crée le compte si besoin, ouvre la session, renvoie vers l'outil.
-    register_rest_route(FWO_GST_NS, '/login', ['methods' => 'GET', 'permission_callback' => '__return_true', 'callback' => function (WP_REST_Request $r) {
-        $back = fwo_gst_tool_url();
-        $key = 'fwo_gst_tk_' . hash('sha256', (string) $r->get_param('token'));
-        $d = get_transient($key); delete_transient($key);
-        if (!fwo_gst_throttle('lg' . fwo_gst_ip(), 20, FWO_GST_TTL) || !is_array($d) || empty($d['email'])) { wp_safe_redirect($back . '#lien-expire'); exit; }
+    // Lien reçu par email. La visite (GET) n'ouvre rien : elle affiche une confirmation qui nomme l'adresse.
+    // Seul l'envoi du formulaire (POST) consomme le lien, crée le compte si besoin et ouvre la session.
+    register_rest_route(FWO_GST_NS, '/login', ['methods' => ['GET', 'POST'], 'permission_callback' => '__return_true', 'callback' => function (WP_REST_Request $r) {
+        $back = fwo_gst_tool_url(); $token = (string) $r->get_param('token');
+        $key = 'fwo_gst_tk_' . hash('sha256', $token); $d = get_transient($key);
+        nocache_headers();
+        if (!fwo_gst_throttle('lg' . fwo_gst_ip(), 30, FWO_GST_TTL) || !is_array($d) || empty($d['email'])) { wp_safe_redirect($back . '#lien-expire'); exit; }
+        $page = function ($body) { header('Content-Type: text/html; charset=utf-8'); header('X-Robots-Tag: noindex, nofollow'); header('Referrer-Policy: no-referrer');
+            echo '<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Connexion au calculateur</title>'
+               . '<style>body{font-family:system-ui,sans-serif;background:#F8FBFA;color:#1A1D1F;margin:0;padding:24px 16px}main{max-width:460px;margin:8vh auto 0;background:#fff;border:1px solid #D9D9D9;border-radius:12px;padding:24px}h1{font-size:22px;margin:0 0 12px}p{line-height:1.5}button{background:#028D6A;color:#fff;border:0;border-radius:8px;padding:14px 20px;font-size:16px;font-weight:600;cursor:pointer;width:100%}a{color:#0E7C5D}</style></head><body><main>'
+               . $body . '</main></body></html>'; exit; };
+        $cur = wp_validate_auth_cookie('', 'logged_in'); $curUser = $cur ? get_userdata($cur) : null;
+        if ($curUser && !fwo_gst_is_member($curUser)) {
+            $page('<h1>Vous êtes connecté au site</h1><p>Ce lien ouvre un compte du calculateur, mais ce navigateur est connecté avec un compte du site. Déconnectez-vous d\'abord, ou ouvrez le lien dans une fenêtre de navigation privée.</p><p><a href="' . esc_url($back) . '">Revenir au calculateur</a></p>');
+        }
+        if ($r->get_method() !== 'POST') {
+            $c = wp_generate_password(40, false, false); $d['c'] = hash('sha256', $c); set_transient($key, $d, FWO_GST_TTL);
+            setcookie('fwo_gst_c', $c, ['expires' => time() + FWO_GST_TTL, 'path' => '/', 'secure' => is_ssl(), 'httponly' => true, 'samesite' => 'Strict']);
+            $page('<h1>Ouvrir votre espace</h1><p>Vous allez être connecté avec l\'adresse <strong>' . esc_html($d['email']) . '</strong>.</p><p>Si ce n\'est pas votre adresse, fermez cette page.</p>'
+                . '<form method="post" action="' . esc_url(rest_url(FWO_GST_NS . '/login')) . '"><input type="hidden" name="token" value="' . esc_attr($token) . '"><button type="submit">Ouvrir mon espace</button></form>');
+        }
+        $c = isset($_COOKIE['fwo_gst_c']) ? (string) wp_unslash($_COOKIE['fwo_gst_c']) : '';
+        if (empty($d['c']) || $c === '' || !hash_equals((string) $d['c'], hash('sha256', $c))) { wp_safe_redirect(add_query_arg('token', rawurlencode($token), rest_url(FWO_GST_NS . '/login'))); exit; }
+        delete_transient($key); setcookie('fwo_gst_c', '', ['expires' => time() - 3600, 'path' => '/', 'secure' => is_ssl(), 'httponly' => true, 'samesite' => 'Strict']);
         $u = get_user_by('email', $d['email']);
-        if ($u && user_can($u, 'edit_posts')) { wp_safe_redirect($back . '#lien-expire'); exit; }
+        if ($u && !fwo_gst_is_member($u)) { wp_safe_redirect($back . '#lien-expire'); exit; }
         if (!$u) {
-            $login = sanitize_user(strstr($d['email'], '@', true) . '_' . wp_generate_password(6, false, false), true);
-            $id = wp_insert_user(['user_login' => $login, 'user_email' => $d['email'], 'user_pass' => wp_generate_password(32, true, true),
-                'display_name' => strstr($d['email'], '@', true), 'role' => 'subscriber']);
+            if (!fwo_gst_throttle('new_accounts', FWO_GST_MAX_NEW, DAY_IN_SECONDS)) { wp_safe_redirect($back . '#lien-expire'); exit; }
+            $login = 'gst_' . strtolower(wp_generate_password(14, false, false));
+            $id = wp_insert_user(['user_login' => $login, 'user_nicename' => $login, 'user_email' => $d['email'], 'user_pass' => wp_generate_password(40, true, true),
+                'display_name' => 'Compte calculateur', 'nickname' => $login, 'role' => FWO_GST_ROLE, 'show_admin_bar_front' => 'false']);
             if (is_wp_error($id)) { wp_safe_redirect($back . '#lien-expire'); exit; }
             $u = get_userdata($id);
         }
-        wp_set_current_user($u->ID); wp_set_auth_cookie($u->ID, true);
+        wp_set_current_user($u->ID); wp_set_auth_cookie($u->ID, false);
         wp_safe_redirect($back . (!empty($d['test']) ? '#test=' . (int) $d['test'] : '#compte')); exit;
     }]);
 
@@ -136,18 +258,20 @@ add_action('rest_api_init', function () {
     register_rest_route(FWO_GST_NS, '/tests', [
         ['methods' => 'GET', 'permission_callback' => 'fwo_gst_auth', 'callback' => function () {
             $u = wp_get_current_user(); $out = [];
-            $mine = get_posts(['post_type' => FWO_GST_CPT, 'post_status' => 'private', 'author' => $u->ID, 'numberposts' => FWO_GST_MAX_TESTS, 'orderby' => 'modified', 'order' => 'DESC']);
-            foreach ($mine as $p) { $out[] = fwo_gst_row($p, 'owner'); }
-            $theirs = get_posts(['post_type' => FWO_GST_CPT, 'post_status' => 'private', 'author__not_in' => [$u->ID], 'numberposts' => 200, 'orderby' => 'modified', 'order' => 'DESC',
+            $mine = get_posts(['post_type' => FWO_GST_CPT, 'post_status' => 'private', 'author' => $u->ID, 'numberposts' => FWO_GST_MAX_TESTS, 'orderby' => 'modified', 'order' => 'DESC', 'update_post_meta_cache' => false, 'update_post_term_cache' => false]);
+            $light = fwo_gst_meta_light(array_merge(wp_list_pluck($mine, 'ID'), []));
+            foreach ($mine as $p) { $out[] = fwo_gst_row($p, 'owner', $light); }
+            $theirs = get_posts(['post_type' => FWO_GST_CPT, 'post_status' => 'private', 'author__not_in' => [$u->ID], 'numberposts' => 50, 'orderby' => 'modified', 'order' => 'DESC', 'update_post_meta_cache' => false, 'update_post_term_cache' => false,
                 'meta_query' => [['key' => '_fwo_gst_share', 'value' => strtolower($u->user_email)]]]);
-            foreach ($theirs as $p) { $out[] = fwo_gst_row($p, 'guest'); }
+            $light2 = fwo_gst_meta_light(wp_list_pluck($theirs, 'ID'));
+            foreach ($theirs as $p) { $out[] = fwo_gst_row($p, 'guest', $light2); }
             return ['tests' => $out];
         }],
         ['methods' => 'POST', 'permission_callback' => 'fwo_gst_auth', 'callback' => function (WP_REST_Request $r) {
             $p = fwo_gst_payload($r); if (is_wp_error($p)) { return $p; }
             $n = count(get_posts(['post_type' => FWO_GST_CPT, 'post_status' => 'private', 'author' => get_current_user_id(), 'numberposts' => FWO_GST_MAX_TESTS + 1, 'fields' => 'ids']));
             if ($n >= FWO_GST_MAX_TESTS) { return new WP_Error('fwo_gst_quota', 'Nombre maximal de tests atteint.', ['status' => 409]); }
-            $id = wp_insert_post(['post_type' => FWO_GST_CPT, 'post_status' => 'private', 'post_title' => $p[0], 'post_author' => get_current_user_id()], true);
+            $id = wp_insert_post(['post_type' => FWO_GST_CPT, 'post_status' => 'private', 'post_title' => wp_slash($p[0]), 'post_author' => get_current_user_id()], true);
             if (is_wp_error($id)) { return $id; }
             update_post_meta($id, '_fwo_gst_state', wp_slash($p[1])); update_post_meta($id, '_fwo_gst_sum', wp_slash($p[2]));
             return fwo_gst_row(get_post($id), 'owner');
@@ -165,7 +289,7 @@ add_action('rest_api_init', function () {
             $post = get_post((int) $r['id']);
             if (fwo_gst_access($post) !== 'owner') { return new WP_Error('fwo_gst_404', 'Test introuvable.', ['status' => 404]); }
             $p = fwo_gst_payload($r); if (is_wp_error($p)) { return $p; }
-            wp_update_post(['ID' => $post->ID, 'post_title' => $p[0]]);
+            wp_update_post(['ID' => $post->ID, 'post_title' => wp_slash($p[0])]);
             update_post_meta($post->ID, '_fwo_gst_state', wp_slash($p[1])); update_post_meta($post->ID, '_fwo_gst_sum', wp_slash($p[2]));
             return fwo_gst_row(get_post($post->ID), 'owner');
         }],
@@ -186,11 +310,11 @@ add_action('rest_api_init', function () {
             $s = fwo_gst_shares($post->ID);
             if (!in_array($email, $s, true)) {
                 if (count($s) >= FWO_GST_MAX_SHARE) { return new WP_Error('fwo_gst_quota', 'Nombre maximal d\'invités atteint.', ['status' => 409]); }
-                if (!fwo_gst_throttle('sh' . get_current_user_id(), 30, HOUR_IN_SECONDS)) { return new WP_Error('fwo_gst_rate', 'Trop d\'invitations. Réessayez plus tard.', ['status' => 429]); }
+                if (!fwo_gst_throttle('sh' . get_current_user_id(), 10, HOUR_IN_SECONDS)) { return new WP_Error('fwo_gst_rate', 'Trop d\'invitations. Réessayez plus tard.', ['status' => 429]); }
                 add_post_meta($post->ID, '_fwo_gst_share', $email);
                 $me = wp_get_current_user();
-                wp_mail($email, $me->display_name . ' partage un test A/B avec vous',
-                    "Bonjour,\n\n" . $me->display_name . ' (' . $me->user_email . ") vous invite à suivre le test « " . $post->post_title . " ».\n\nOuvrez ce lien, puis connectez-vous avec cette adresse email (" . $email . ") :\n" . fwo_gst_tool_url() . '#test=' . $post->ID . "\n\nFWOptimisation");
+                fwo_gst_mail($email, 'Un test A/B est partagé avec vous',
+                    "Bonjour,\n\n" . $me->user_email . " vous invite à suivre un test A/B en lecture seule.\n\nOuvrez ce lien, puis connectez-vous avec cette adresse email (" . $email . ") :\n" . fwo_gst_tool_url() . '#test=' . $post->ID . "\n\nSi vous ne connaissez pas cette personne, ignorez ce message.\n\nFWOptimisation");
             }
             return ['shared' => fwo_gst_shares($post->ID)];
         }],
@@ -204,8 +328,9 @@ add_action('rest_api_init', function () {
 
     // Suppression du compte et de ses tests (comptes abonnés uniquement).
     register_rest_route(FWO_GST_NS, '/account', ['methods' => 'DELETE', 'permission_callback' => 'fwo_gst_auth', 'callback' => function () {
-        if (current_user_can('edit_posts')) { return new WP_Error('fwo_gst_admin', 'Compte d\'administration : suppression impossible ici.', ['status' => 403]); }
-        $id = get_current_user_id();
+        if (!fwo_gst_is_member()) { return new WP_Error('fwo_gst_admin', 'Compte du site : suppression impossible ici.', ['status' => 403]); }
+        $id = get_current_user_id(); global $wpdb;
+        $wpdb->delete($wpdb->postmeta, ['meta_key' => '_fwo_gst_share', 'meta_value' => strtolower(wp_get_current_user()->user_email)]);
         foreach (get_posts(['post_type' => FWO_GST_CPT, 'post_status' => 'any', 'author' => $id, 'numberposts' => -1, 'fields' => 'ids']) as $pid) { wp_delete_post($pid, true); }
         require_once ABSPATH . 'wp-admin/includes/user.php';
         wp_logout(); wp_delete_user($id);
