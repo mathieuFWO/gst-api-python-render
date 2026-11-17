@@ -1,0 +1,38 @@
+// v56.4 : saisie manuelle en assistant de 3 étapes (test, durée avec le tableau du Plan, chiffres de la semaine 1)
+const {chromium}=require('playwright');const path=require('path');
+const FILE=process.argv[2]||path.join(__dirname,'..','calculateur-sequentiel-v56-4.html');
+const THEME='button,input,optgroup,select,textarea{font-family:inherit;font-size:1rem;line-height:1.5;margin:0}[type="button"],[type="submit"],button{background-color:transparent;border:1px solid #c36;border-radius:3px;color:#c36;display:inline-block;font-size:1rem;font-weight:400;padding:.5rem 1rem;text-align:center;transition:.3s;user-select:none;white-space:nowrap}.elementor-kit-5072 button{background-color:#028D6A;font-size:16px;font-weight:700;color:#fff}ol,ul{margin:0 0 1em 2em}li{margin-bottom:6px}';
+let n=0,okc=0;const ok=(l,c,d)=>{n++;if(c)okc++;console.log((c?'✅ ':'❌ ')+l+(d!==undefined?' — '+JSON.stringify(d):''));};
+(async()=>{const b=await chromium.launch();
+for(const w of [360,1280]){const p=await b.newPage({viewport:{width:w,height:900}});const errs=[];p.on('pageerror',e=>errs.push(String(e)));
+  await p.goto('file://'+path.resolve(FILE));await p.evaluate(()=>document.body.classList.add('elementor-kit-5072'));await p.addStyleTag({content:THEME});await p.waitForSelector('.cta button');const ov=()=>p.evaluate(()=>document.documentElement.scrollWidth-innerWidth);const txt=()=>p.evaluate(()=>document.querySelector('#gst-app').innerText);
+  await p.click('[data-act=howto][data-v=manuel]');await p.waitForTimeout(200);
+  ok(`[${w}] étape 1 : 3 étapes annoncées, étape 1 active, pas de champ durée, plus de bloc « 2 · » ni « 3 · » autour, sans débordement`,(await p.locator('.wz-steps li').count())===3&&(await p.locator('.wz-steps li.on').innerText()).includes('Votre test')&&(await p.locator('[data-man=k]').count())===0&&(await p.locator('.imp-r,.imp-3').count())===0&&(await ov())<=0);
+  await p.click('[data-act=manstep]');await p.waitForTimeout(200);
+  ok(`[${w}] étape 1 : sans objectif principal, on ne passe pas et l'erreur est dite`,(await p.locator('.wz-steps li.on').innerText()).includes('Votre test')&&/Donnez un nom à l'objectif principal/.test(await txt()));
+  await p.fill('[data-man=name]','Nouvelle fiche produit');await p.fill('[data-man=m0name]','Visiteurs avec achat');await p.fill('[data-man=m1name]','Visiteurs avec rebond');await p.locator('[data-man=m1name]').blur();await p.click('[data-act=manstep]');await p.waitForTimeout(300);
+  const t2=await txt();
+  ok(`[${w}] étape 2 : tableau des 6 durées, aucune option « je connais déjà la durée », sans chiffres tant que le trafic manque`,(await p.locator('.wz .mr2').count())===6&&!/connais déjà/.test(t2)&&(await p.locator('.wz .mr2 b').allInnerTexts()).every(x=>x==='—')&&(await ov())<=0);
+  await p.fill('[data-mde=traffic]','20000');await p.keyboard.press('Tab');await p.waitForTimeout(100);await p.fill('[data-mde=conv]','1000');await p.keyboard.press('Tab');await p.waitForTimeout(1800);
+  const vals=await p.locator('.wz .mr2 b').allInnerTexts();
+  await p.click('[data-act=mank][data-v="8"]');await p.waitForTimeout(300);
+  const cols=await p.evaluate(()=>{const l=document.querySelector('.wz2-l').getBoundingClientRect(),r=document.querySelector('.wz2-r').getBoundingClientRect();return {same:Math.abs(l.top-r.top)<2,lw:Math.round(l.width),rw:Math.round(r.width),below:r.top>=l.bottom};});
+  ok(`[${w}] étape 2 : ${w===1280?'deux colonnes côte à côte':'une colonne, tableau sous le formulaire'}, durée choisie surlignée, phrase de lecture`,(w===1280?cols.same&&cols.lw>350&&cols.rw>350:cols.below)&&(await p.locator('.wz .mr2.on').innerText()).includes('8 semaines')&&/En 8 semaines, le test démontre un effet à partir de 5,72 %/.test(await p.textContent('.wz-say'))&&(await ov())<=0,cols);
+  await p.selectOption('[data-man=alpha]','0.1');await p.waitForTimeout(1800);const v90=await p.locator('.wz .mr2 b').allInnerTexts();await p.selectOption('[data-man=power]','0.9');await p.waitForTimeout(1800);const v9090=await p.locator('.wz .mr2 b').allInnerTexts();const num=x=>parseFloat(x.replace('≈','').replace(',','.'));
+  ok(`[${w}] étape 2 : confiance et puissance présentes ; confiance 90 % baisse l'effet détectable, puissance 90 % le remonte ; durée conservée`,num(v90[3])<num(vals[3])&&num(v9090[3])>num(v90[3])&&v9090.every(x=>!/≈/.test(x))&&(await p.locator('.wz .mr2.on').innerText()).includes('8 semaines')&&(await ov())<=0,{base:vals[3],c90:v90[3],c90p90:v9090[3]});
+  await p.click('[data-act=manstep][data-v="1"]');await p.waitForTimeout(200);const back=await p.inputValue('[data-man=m0name]');await p.click('[data-act=manstep]');await p.waitForTimeout(300);
+  ok(`[${w}] retour à l'étape 1 puis 2 : saisies conservées (nom, trafic, durée)`,back==='Visiteurs avec achat'&&(await p.inputValue('[data-mde=traffic]'))==='20000'&&(await p.locator('.wz .mr2.on').innerText()).includes('8 semaines'));
+  await p.click('[data-act=manstart]');await p.waitForTimeout(400);
+  ok(`[${w}] étape 3 : tableau de la semaine 1 (visiteurs + 2 métriques), cumul rappelé, sans débordement`,(await p.locator('.card.wz [data-mw]').count())===6&&/cumuls depuis le premier jour/.test(await txt())&&(await p.locator('.wz-steps li.on').innerText()).includes('Chiffres')&&(await ov())<=0);
+  const inW=await p.evaluate(()=>[...document.querySelectorAll('.card.wz [data-mw]')].map(e=>Math.round(e.getBoundingClientRect().width)));
+  ok(`[${w}] étape 3 : champs de saisie d'au moins 70 px`,inW.every(x=>x>=70),inW);
+  await p.click('[data-act=manback]');await p.waitForTimeout(300);ok(`[${w}] retour depuis l'étape 3 : étape 2 retrouvée`,(await p.locator('.wz-steps li.on').innerText()).includes('Durée')&&(await p.locator('.wz .mr2.on').innerText()).includes('8 semaines'));
+  await p.click('[data-act=manstart]');await p.waitForTimeout(400);
+  await p.click('[data-act=addweek]');await p.waitForTimeout(300);ok(`[${w}] étape 3 : chiffres vides refusés`,/visiteurs invalides/.test(await txt())&&(await p.locator('.card.wz').count())===1);
+  const ins=p.locator('.card.wz [data-mw]');const v=['10062','10069','520','541','4010','3990'];for(let i=0;i<6;i++)await ins.nth(i).fill(v[i]);await p.click('[data-act=addweek]');await p.waitForTimeout(900);
+  const t3=await txt();ok(`[${w}] décision affichée après la semaine 1, sans débordement`,/Continuer/.test(t3)&&(await p.locator('.card.wz').count())===0&&(await ov())<=0);
+  await p.click('[data-act=tab][data-v=plan]');await p.waitForTimeout(1500);
+  const planVals=await p.locator('.pmde .mr2 b').allInnerTexts();
+  ok(`[${w}] le plan créé reprend la durée (8), le trafic (20 000), la confiance (90 %), la puissance (90 %) et les mêmes effets détectables que l'assistant`,(await p.inputValue('[data-p=k]'))==='8'&&/20.000 visiteurs par semaine/.test(await txt())&&JSON.stringify(planVals)===JSON.stringify(v9090)&&(await p.inputValue('[data-p=alpha]'))==='0.1'&&(await p.inputValue('[data-p=power]'))==='0.9',{assistant:v9090,plan:planVals});
+  ok(`[${w}] aucune erreur JS`,errs.length===0,errs);await p.close();}
+console.log('\n'+okc+'/'+n+' OK');await b.close();process.exit(okc===n?0:1);})();
