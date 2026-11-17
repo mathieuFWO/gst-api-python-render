@@ -1,0 +1,1045 @@
+<!-- v45.0 - Interface éclaircie, écran d'accueil pédagogique, métriques déplacées dans Données, lien de partage en lecture seule, liste « Mes tests ». v44.0 - Bornes calculées sur le trafic réel de chaque semaine (corrélations entre lectures), dépense des risques selon le calendrier du plan, futilité située par rapport au trafic prévu quand il est renseigné. v43.0 - Bornes séquentielles calculées dans le navigateur (plus d'appel au serveur, sauf secours). v42.0 - Fiabilité : garde-fous corrigés entre eux (régression à alpha/g), intervalle sur le log-ratio aux bornes d'efficacité seule, alerte « À surveiller » à Z <= -1,90, contrôle du trafic irrégulier, marge démontrable. Interface allégée : axe commun, détail au survol, vert #1D9E75. v41.1 - Vérification indépendante : secondaires à alpha/(2m), variance de la non-infériorité corrigée. v41.0 - Passe design validée sur maquette ; bornes d'efficacité seule pour les garde-fous, Bonferroni pour les secondaires -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Raleway:ital,wght@0,600;0,700;1,600&family=Open+Sans:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+#gst-app{--green:#1D9E75;--green2:#1D9E75;--ink:#1A1D1F;--charcoal:#464849;--gray:#9FA1A1;--blue:#0082C3;--coral:#E46454;--amber:#D79A2A;--card:#FFFFFF;--bg:#F8FBFA;--border:#D9D9D9;--line:#ECEEEE;--tg:#E6F4F0;--tb:#E6F2F9;--tc:#F2D4D0;--wash:#ECF7F4;--ft:'Raleway','Segoe UI',Arial,sans-serif;--fb:'Open Sans','Segoe UI',Arial,sans-serif;
+  color-scheme:light;font-family:var(--fb);color:var(--ink);background:var(--bg);font-size:14px;line-height:1.45;padding:16px;border-radius:6px;box-sizing:border-box;width:100%;text-align:left}
+#gst-app *,#gst-app *::before,#gst-app *::after{box-sizing:border-box}
+#gst-app h2,#gst-app h3,#gst-app h4{font-family:var(--ft);font-weight:600;color:var(--ink);margin:0;line-height:1.25}
+#gst-app h2{font-size:20px}#gst-app h3{font-size:16px}#gst-app h4{font-size:14px}
+#gst-app p{margin:0}
+#gst-app button,#gst-app button:hover,#gst-app button:focus{font-family:var(--fb);font-size:14px;line-height:1.2;border-radius:6px;cursor:pointer;margin:0;text-transform:none;letter-spacing:0;box-shadow:none;text-decoration:none;font-weight:600;padding:9px 14px;min-height:38px;border:1px solid var(--border);background:var(--card);color:var(--ink)}
+#gst-app button:hover{border-color:var(--charcoal)}
+#gst-app button:focus-visible,#gst-app input:focus-visible,#gst-app select:focus-visible,#gst-app [tabindex]:focus-visible{outline:2px solid var(--blue);outline-offset:1px}
+#gst-app button.pri,#gst-app button.pri:focus{background:var(--green);border-color:var(--green);color:#fff}
+#gst-app button.pri:hover{background:var(--green2);border-color:var(--green2);color:#fff}
+#gst-app button.link,#gst-app button.link:hover,#gst-app button.link:focus{border:0;background:none;color:var(--green);padding:4px 2px;min-height:0;text-decoration:underline;font-weight:600}
+#gst-app button.danger,#gst-app button.danger:focus{color:var(--coral)}
+#gst-app button:disabled{opacity:.5;cursor:not-allowed}
+#gst-app input,#gst-app select{font-family:var(--fb);font-size:14px;color:var(--ink);background:#fff;border:1px solid var(--border);border-radius:6px;padding:8px 10px;min-height:38px;width:100%;max-width:100%;margin:0;box-shadow:none}
+#gst-app input[type=checkbox]{width:18px;min-height:18px;height:18px;padding:0;accent-color:var(--green)}
+#gst-app label{font-size:12px;color:var(--charcoal);font-weight:600;display:block;margin:0 0 4px}
+#gst-app .num{font-variant-numeric:tabular-nums}
+#gst-app .muted{color:var(--charcoal)}#gst-app .hint{color:var(--charcoal);font-size:12px}
+#gst-app .kicker{font-family:var(--ft);font-weight:600;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--charcoal)}
+#gst-app .card{background:var(--card);border:1px solid var(--border);border-radius:6px;padding:16px;margin-top:12px}
+#gst-app .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+#gst-app .grow{flex:1 1 180px;min-width:0}
+#gst-app .head{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+#gst-app .head input.name{font-family:var(--ft);font-weight:700;font-size:18px;flex:1 1 220px;min-width:0}
+#gst-app .head select{flex:0 1 220px;width:auto}
+#gst-app .tabs{display:flex;gap:4px;border-bottom:1px solid var(--border);margin-top:14px;overflow-x:auto}
+#gst-app .tabs button,#gst-app .tabs button:hover,#gst-app .tabs button:focus{border:0;border-bottom:3px solid transparent;border-radius:0;background:none;color:var(--charcoal);padding:10px 14px;white-space:nowrap}
+#gst-app .tabs button.on{color:var(--green);border-bottom-color:var(--green)}
+#gst-app .pill{display:inline-block;font-size:12px;font-weight:600;padding:3px 9px;border-radius:999px;border:1px solid var(--border);background:#fff;color:var(--charcoal);white-space:nowrap}
+#gst-app .pill.g{background:var(--tg);border-color:var(--green);color:#0E7C5D}
+#gst-app .pill.c{background:var(--tc);border-color:var(--coral);color:#8f2c20}
+#gst-app .pill.a{background:#FBF1DC;border-color:var(--amber);color:#7a5410}
+#gst-app .pill.b{background:var(--tb);border-color:var(--blue);color:#005a88}
+#gst-app .banner{border:1px solid var(--border);border-left:5px solid var(--gray);background:#fff;border-radius:6px;padding:14px 16px;margin-top:12px}
+#gst-app .banner.win{border-left-color:var(--green);background:var(--wash)}
+#gst-app .banner.critical,#gst-app .banner.stop{border-left-color:var(--coral)}
+#gst-app .banner.critical{background:#FCF1EF}
+#gst-app .banner.discuss,#gst-app .banner.continue{border-left-color:var(--amber)}
+#gst-app .banner h3{font-size:17px;margin-bottom:4px}
+#gst-app .kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:12px}
+#gst-app .kpi{background:#fff;border:1px solid var(--border);border-radius:6px;padding:10px 12px;min-width:0}
+#gst-app .kpi b{font-family:var(--ft);font-size:18px;font-weight:700;display:block;overflow-wrap:anywhere}
+#gst-app .bar{height:6px;background:var(--line);border-radius:3px;overflow:hidden;margin-top:6px}
+#gst-app .bar i{display:block;height:100%;background:var(--green)}
+#gst-app .weeks{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px;align-items:center}
+#gst-app .weeks button,#gst-app .weeks button:focus{padding:6px 10px;min-height:32px;font-size:13px}
+#gst-app .weeks button.on{background:var(--ink);border-color:var(--ink);color:#fff}
+#gst-app .weeks button.dec{border-color:var(--green)}
+#gst-app .sc{margin-top:12px;background:#fff;border:1px solid var(--border);border-radius:6px;overflow:hidden}
+#gst-app .sc .grp{background:var(--bg);padding:8px 14px;border-top:1px solid var(--border)}
+
+#gst-app .sc .hd,#gst-app .sc .mr{display:grid;grid-template-columns:minmax(0,2.3fr) minmax(0,1fr) minmax(0,1fr) minmax(0,.9fr) minmax(0,2fr) minmax(0,.8fr) minmax(0,1.7fr);gap:10px;align-items:center;padding:10px 14px}
+#gst-app .sc .hd{font-size:11px;font-weight:600;color:var(--charcoal);text-transform:uppercase;letter-spacing:.04em;padding-top:10px;padding-bottom:10px}
+#gst-app .sc .mr{border-top:1px solid var(--line);cursor:pointer}
+#gst-app .sc .mr:hover{background:var(--bg)}
+#gst-app .sc .mr.sel{background:var(--wash);box-shadow:inset 3px 0 0 var(--green)}
+#gst-app .sc .mn{font-weight:600;overflow-wrap:anywhere}
+#gst-app .sc .lift{font-family:var(--ft);font-weight:700;font-size:15px}
+#gst-app .pos{color:#1D9E75}#gst-app .neg{color:#c9402f}
+#gst-app .sc .lbl{display:none;font-size:11px;color:var(--charcoal)}
+#gst-app .sc svg{display:block;width:100%;height:26px}
+#gst-app .detail svg{display:block;width:100%;height:auto;background:#fff}
+#gst-app table{border-collapse:collapse;width:100%;font-size:13px;background:#fff;margin:0;border:0}
+#gst-app th,#gst-app td{border:0;border-bottom:1px solid var(--line);padding:7px 10px;text-align:right;white-space:nowrap;background:#fff;color:var(--ink)}
+#gst-app th{font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--charcoal);font-weight:600;border-bottom:1px solid var(--border)}
+#gst-app th:first-child,#gst-app td:first-child,#gst-app th.l,#gst-app td.l{text-align:left}
+#gst-app .scroll{overflow-x:auto;max-width:100%}
+#gst-app .drop{border:2px dashed var(--green);background:var(--wash);border-radius:6px;padding:26px 16px;text-align:center;cursor:pointer}
+#gst-app .drop.over{background:var(--tg)}
+#gst-app .drop h3{margin-bottom:6px}
+#gst-app .form{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:12px}
+#gst-app .mrow{display:grid;grid-template-columns:22px minmax(0,2.2fr) minmax(0,1.3fr) minmax(0,1.3fr) minmax(0,.9fr) auto;gap:8px;align-items:center;padding:8px 0;border-top:1px solid var(--line)}
+#gst-app .err{background:#FCF1EF;border:1px solid var(--coral);color:#8f2c20;border-radius:6px;padding:10px 12px;margin-top:12px}
+#gst-app .ok{background:var(--wash);border:1px solid var(--green);color:#0E7C5D;border-radius:6px;padding:10px 12px;margin-top:12px}
+#gst-app .foot{display:flex;justify-content:space-between;gap:10px;margin-top:14px;font-size:12px;color:var(--charcoal);flex-wrap:wrap}
+#gst-app .logo{font-family:var(--ft);color:var(--green2)}#gst-app .logo b{color:var(--green);font-weight:700}
+#gst-app .steps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:12px}
+#gst-app .steps .n{font-family:var(--ft);font-weight:700;font-size:26px;color:var(--green)}
+#gst-app tr.pick{cursor:pointer}#gst-app tr.pick:hover td{background:var(--bg)}#gst-app tr.on td{background:var(--wash);font-weight:600}
+@media (max-width:760px){
+  #gst-app{padding:12px}
+  #gst-app .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+  #gst-app .form{grid-template-columns:repeat(2,minmax(0,1fr))}
+  #gst-app .steps{grid-template-columns:1fr}
+  #gst-app .sc .hd{display:none}
+  #gst-app .sc .mr{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:6px 10px}
+  #gst-app .sc .mr .c-name{grid-column:1/-1}
+  #gst-app .sc .mr .c-ci{grid-column:1/-1}
+  #gst-app .sc .mr .c-ci{order:1}
+  #gst-app .sc .mr .c-st{grid-column:1/-1;order:2}
+  #gst-app .sc .lbl{display:block}
+  #gst-app .mrow{grid-template-columns:22px minmax(0,1fr) minmax(0,1fr);}
+  #gst-app .mrow .mname{grid-column:2/-1}
+  #gst-app .head select{flex:1 1 100%}
+}
+#gst-app .pill{font-weight:700;padding:5px 12px;font-size:13px}
+#gst-app .pill.sg{background:#1D9E75;border-color:#1D9E75;color:#fff}#gst-app .pill.sc{background:#c9402f;border-color:#c9402f;color:#fff}#gst-app .pill.w{background:#fff;border:1.5px solid #c9402f;color:#8f2c20}
+#gst-app .verdict{display:flex;flex-wrap:wrap;background:#fff;border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-top:14px}
+#gst-app .v-main{flex:999 1 480px;min-width:0;padding:22px 24px;display:flex;gap:16px;align-items:flex-start}
+#gst-app .v-main.t-a{background:#FBF4E4}#gst-app .v-main.t-g{background:var(--wash)}#gst-app .v-main.t-c{background:#FCF1EF}
+#gst-app .v-main h3{font-size:26px;font-weight:700;margin:4px 0;line-height:1.2}#gst-app .v-main p{font-size:15px;max-width:62ch}
+#gst-app .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+#gst-app .v-side{flex:1 1 320px;min-width:0;padding:18px 22px;display:flex;flex-direction:column;gap:8px;border-left:1px solid var(--line)}
+#gst-app .big{font-family:var(--ft);font-size:16px}
+#gst-app .segs,#gst-app .seglab{display:grid;gap:4px}#gst-app .segs span{height:10px;border-radius:5px}#gst-app .segs .done{background:var(--green)}#gst-app .segs .todo{background:var(--line);border:1px solid var(--border)}#gst-app .segs .dec{outline:3px solid var(--amber);outline-offset:1px}
+#gst-app .seglab{text-align:center;font-size:11px;color:var(--charcoal)}
+#gst-app .chk{display:flex;gap:10px;align-items:flex-start;margin-top:8px}
+#gst-app .tools{display:flex;flex-wrap:wrap;gap:10px;justify-content:space-between;align-items:center;margin-top:14px}
+#gst-app .tools button{display:inline-flex;align-items:center;gap:8px;min-height:44px}
+#gst-app .hist{display:inline-flex;align-items:center;gap:8px;margin:0;font-size:13px}#gst-app .hist select{width:auto;min-height:44px}
+#gst-app .legend>div{margin-top:8px}#gst-app .legend>div:first-child{margin-top:0}
+#gst-app .grp{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px;margin-top:22px}#gst-app .grp h3{font-size:17px;font-weight:700}
+#gst-app .ml{background:#fff;border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-top:8px}
+#gst-app .ml.prim{border-width:1.5px}#gst-app .ml.prim:has(.t-g){border-color:var(--green)}#gst-app .ml.prim:has(.t-c){border-color:#c9402f}
+#gst-app .mrw{display:grid;grid-template-columns:26px minmax(0,2.2fr) minmax(0,1.5fr) minmax(0,3fr) minmax(0,.9fr) minmax(150px,auto);gap:10px 20px;align-items:center;padding:12px 18px;border-top:1px solid var(--line);cursor:pointer}
+#gst-app .mrw:first-child{border-top:0}#gst-app .mrw .ic{width:26px;height:26px;display:block}
+#gst-app .mrw.big{padding:18px 20px;grid-template-columns:32px minmax(0,2.2fr) minmax(0,1.5fr) minmax(0,3fr) minmax(0,.9fr) minmax(150px,auto)}#gst-app .mrw.big .ic{width:32px;height:32px}
+#gst-app .mrw.t-g{background:var(--tg)}#gst-app .mrw.t-c{background:#F7DAD5}#gst-app .mrw.t-w{background:#FCF1EF}
+#gst-app .mrw.sel{box-shadow:inset 4px 0 0 var(--blue)}
+#gst-app .mn{font-weight:700;overflow-wrap:anywhere}#gst-app .mrw.big .mn{font-size:16px}
+#gst-app .lift{font-family:var(--ft);font-weight:700;font-size:20px}#gst-app .mrw.big .lift{font-size:30px;line-height:1.05}
+#gst-app .t-g .lift{color:#0E7C5D}#gst-app .t-c .lift,#gst-app .t-w .lift{color:#8f2c20}
+#gst-app .int{font-size:13px}#gst-app .ci{display:block;width:100%;height:30px}
+#gst-app .scale{display:flex;justify-content:space-between;font-size:11px;color:var(--charcoal)}
+#gst-app .c-z{font-size:13px}#gst-app .c-st{justify-self:end}
+#gst-app .toggle{display:inline-flex;border:1px solid var(--border);border-radius:8px;overflow:hidden}
+#gst-app .toggle button,#gst-app .toggle button:hover,#gst-app .toggle button:focus{border:0;border-radius:0;min-height:40px}#gst-app .toggle button.on{background:var(--ink);color:#fff}
+#gst-app .hero{padding:14px 0 0}#gst-app .hero h2{font-size:32px;font-weight:700;max-width:24ch;line-height:1.15;margin-top:6px}#gst-app .lead{font-size:16px;color:var(--charcoal);max-width:68ch;margin-top:8px}
+#gst-app .steps{gap:16px;margin-top:18px}#gst-app .steps .card{margin-top:0;border-radius:12px}#gst-app .sh{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}#gst-app .sh .n{font-size:30px}#gst-app .steps h4{font-size:17px;font-weight:700;margin-bottom:4px}
+#gst-app .mini{display:flex;flex-direction:column;gap:4px;width:132px}#gst-app .mini span{padding:3px 10px;border-radius:999px;border:1px solid var(--border);font-size:11px;font-weight:600;text-align:center;color:var(--charcoal)}#gst-app .mini .on{background:#1D9E75;border-color:#1D9E75;color:#fff;font-size:12px}
+#gst-app .two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-top:16px}
+#gst-app .drop{border-radius:12px}#gst-app .drop.big{padding:32px 20px}#gst-app .drop h3{font-size:20px;font-weight:700;margin:8px 0 4px}#gst-app .drop p{margin-top:10px}
+#gst-app button.sec,#gst-app button.sec:focus{display:inline-flex;gap:8px;align-items:center;border-color:var(--green);color:#0E7C5D}
+#gst-app .privacy{display:flex;gap:10px;align-items:flex-start;margin-top:10px;padding:12px 14px;background:#fff;border:1px solid var(--border);border-radius:10px}
+#gst-app .stp{display:flex;gap:12px;margin-top:12px;align-items:flex-start}#gst-app .nb{flex:none;width:28px;height:28px;border-radius:50%;background:#1D9E75;color:#fff;font-weight:700;display:inline-flex;align-items:center;justify-content:center}
+#gst-app code{background:var(--bg);border:1px solid var(--line);border-radius:4px;padding:1px 5px;font-size:13px;color:var(--ink)}
+#gst-app .pcard{padding:0 0 16px;overflow:hidden;border-radius:12px}#gst-app .phead{display:flex;gap:14px;align-items:center;padding:16px 20px;border-bottom:1px solid var(--line)}#gst-app .phead .n{font-family:var(--ft);font-weight:700;font-size:26px;color:var(--green)}#gst-app .phead h3{font-size:18px;font-weight:700}
+#gst-app .psplit{display:flex;flex-wrap:wrap;margin-bottom:-16px}#gst-app .pform{flex:1 1 400px;min-width:0;padding:18px 20px;display:flex;flex-direction:column;gap:14px}#gst-app .pmde{flex:1 1 400px;min-width:0;padding:18px 20px;background:var(--wash);display:flex;flex-direction:column;gap:12px}
+#gst-app .form2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+#gst-app label.opt{display:flex;gap:12px;align-items:flex-start;padding:12px 14px;border:1px solid var(--border);border-radius:10px;background:#fff;margin:8px 0 0;font-weight:400;font-size:14px;color:var(--ink);cursor:pointer}#gst-app label.opt.on{border:1.5px solid var(--green);background:var(--tg)}
+#gst-app input[type=radio]{width:18px;min-height:18px;height:18px;margin-top:3px;padding:0;accent-color:#1D9E75;flex:none}
+#gst-app .mdebig{display:flex;flex-wrap:wrap;gap:8px 18px;align-items:flex-end}#gst-app .mdebig .num{font-family:var(--ft);font-weight:700;font-size:52px;line-height:1;color:#0E7C5D}
+#gst-app .mdetab{background:#fff;border:1px solid var(--border);border-radius:10px;overflow:hidden}#gst-app .mh{padding:10px 14px;font-weight:600;font-size:13px;color:var(--charcoal)}
+#gst-app button.mr2,#gst-app button.mr2:focus{display:grid;grid-template-columns:100px minmax(0,1fr) 92px;gap:10px;align-items:center;width:100%;border:0;border-top:1px solid var(--line);border-radius:0;padding:8px 14px;min-height:44px;font-weight:400;text-align:left;background:#fff}
+#gst-app .mr2 .b{height:10px;border-radius:5px;background:var(--line);display:block}#gst-app .mr2 .b i{display:block;height:100%;border-radius:5px;background:#9FA1A1}#gst-app button.mr2.on{background:var(--tg);font-weight:700}#gst-app .mr2.on .b i{background:#1D9E75}#gst-app .mr2 b{text-align:right}
+#gst-app .mtab{min-width:780px}#gst-app .mt{display:grid;grid-template-columns:minmax(0,2.6fr) minmax(0,.8fr) minmax(0,1.4fr) minmax(0,1.3fr) minmax(0,.9fr);gap:12px;align-items:center;padding:10px 20px;border-top:1px solid var(--line)}#gst-app .mt.h{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--charcoal);background:var(--bg);border-top:0}#gst-app .mt.on{background:var(--tg)}
+@media (max-width:760px){
+  #gst-app .v-main{padding:18px 16px}#gst-app .v-main h3{font-size:22px}#gst-app .v-side{border-left:0;border-top:1px solid var(--line);padding:14px 16px}
+  #gst-app .mrw,#gst-app .mrw.big{grid-template-columns:28px minmax(0,1fr) auto;padding:12px 14px;gap:8px 10px}
+  #gst-app .mrw .ic{grid-row:1;grid-column:1}#gst-app .c-name{grid-row:1;grid-column:2/-1}#gst-app .c-lift{grid-row:2;grid-column:1/3}#gst-app .c-st{grid-row:2;grid-column:3}#gst-app .c-ci{grid-row:3;grid-column:1/-1}#gst-app .c-z{grid-row:4;grid-column:1/-1}#gst-app .c-z br{display:none}
+  #gst-app .two{grid-template-columns:minmax(0,1fr)}#gst-app .steps{grid-template-columns:minmax(0,1fr)}#gst-app .hero h2{font-size:26px}#gst-app .mdebig .num{font-size:42px}
+  #gst-app .pill{font-size:12px;padding:4px 10px}
+}
+#gst-app .pill.sg{background:#DDF3EC;border-color:#8FD3BC;color:#0E7C5D}#gst-app .pill.sc{background:#FBE4E0;border-color:#F2A99F;color:#8f2c20}#gst-app .pill.w{border:1px solid #E46454}
+#gst-app .ml{overflow:visible}#gst-app .ml>.mrw:first-child{border-radius:11px 11px 0 0}#gst-app .ml>.mrw:last-child{border-radius:0 0 11px 11px}
+#gst-app .ml.prim:has(.t-g){border-color:#1D9E75}#gst-app .ml.prim:has(.t-c){border-color:#E46454}
+#gst-app .mrw,#gst-app .mrw.big{position:relative;grid-template-columns:24px minmax(0,2.2fr) 84px 84px 92px minmax(0,3.8fr) 176px;gap:0 16px;padding:0 18px;min-height:54px}
+#gst-app .mrw.big{min-height:66px}#gst-app .mrw .ic,#gst-app .mrw.big .ic{width:24px;height:24px}
+#gst-app .mrw.t-g,#gst-app .mrw.t-c,#gst-app .mrw.t-w{background:none}#gst-app .ml.prim .mrw.t-g{background:var(--wash)}#gst-app .ml.prim .mrw.t-c{background:#FCF1EF}
+#gst-app .mrw:not(.hd):hover{background:var(--bg)}
+#gst-app .c-name{padding:8px 0}#gst-app .c-a,#gst-app .c-b,#gst-app .c-lift{text-align:right}#gst-app .mob{display:none}
+#gst-app .lift{font-size:16px}#gst-app .mrw.big .lift{font-size:22px}#gst-app .t-g .lift{color:#0E7C5D}
+#gst-app .c-ci{align-self:stretch;min-width:0;position:relative;min-height:34px}#gst-app .ci{position:absolute;left:0;top:0;width:100%;height:100%}
+#gst-app .mrw.hd{min-height:34px;cursor:default;background:var(--bg);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--charcoal)}
+#gst-app .mrw.hd>span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#gst-app .axis{position:absolute;left:0;right:0;top:0;height:34px;font-size:11px;font-weight:400;text-transform:none;letter-spacing:0}#gst-app .axis span{position:absolute;top:50%;transform:translate(-50%,-50%);white-space:nowrap}#gst-app .axis span.y{display:none}
+#gst-app .tip{display:none;position:absolute;z-index:6;top:calc(100% - 6px);right:16px;width:360px;background:#fff;border:1px solid var(--border);border-radius:10px;box-shadow:0 8px 24px rgba(26,29,31,.10);padding:14px 16px;cursor:default;font-size:13px}
+@media (hover:hover){#gst-app .mrw:hover>.tip,#gst-app .mrw:focus-visible>.tip{display:block}}
+#gst-app .tt{display:flex;justify-content:space-between;gap:10px;align-items:center}#gst-app .td{margin-top:6px}
+#gst-app table.tv{margin:8px 0;font-size:12px}#gst-app table.tv th,#gst-app table.tv td{padding:5px 8px}
+#gst-app .fiche{border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-top:12px;max-width:480px;font-size:13px}
+@media (max-width:760px){
+  #gst-app .mrw,#gst-app .mrw.big{grid-template-columns:24px minmax(0,1fr) auto;padding:10px 14px 0;gap:4px 10px;min-height:0}
+  #gst-app .c-name{padding:0}#gst-app .c-a,#gst-app .c-b{display:none}#gst-app .mob{display:inline}
+  #gst-app .c-lift{grid-row:2;grid-column:1/3;text-align:left}#gst-app .c-st{grid-row:2;grid-column:3}
+  #gst-app .c-ci{grid-row:3;grid-column:1/-1;height:34px}
+  #gst-app .mrw.hd{padding:0 14px}#gst-app .mrw.hd>span{display:none}#gst-app .mrw.hd .c-ci{grid-row:1}
+  #gst-app .axis span.y{display:block}#gst-app .axis span.x{display:none}#gst-app .tip{display:none!important}
+}
+#gst-app .mrw.sel{box-shadow:none}#gst-app .pill.sc{margin-top:0;border-radius:999px;overflow:visible}
+#gst-app .vkey{display:flex;flex-wrap:wrap;gap:4px 14px;align-items:center;margin:6px 0 8px}#gst-app .vlift{font-family:var(--ft);font-weight:700;font-size:34px;line-height:1.1}#gst-app .vlift.k-g{color:#0E7C5D}#gst-app .vlift.k-c{color:#8f2c20}
+#gst-app .segs span.dec{outline:none;box-shadow:none;border:0}#gst-app .segs span.post{background:repeating-linear-gradient(135deg,#8FD3BC 0 4px,#DDF3EC 4px 8px)}
+#gst-app button.pri,#gst-app button.pri:focus{background:#028D6A;border-color:#028D6A}#gst-app button.pri:hover{background:#1D9E75;border-color:#1D9E75}
+#gst-app a.btn{display:inline-flex;align-items:center;min-height:40px;padding:0 14px;border:1px solid var(--border);border-radius:6px;background:#fff;color:var(--ink);font-weight:600;font-size:14px;text-decoration:none}#gst-app a.btn:hover{border-color:var(--charcoal)}
+#gst-app .tabs button.on{color:#0E7C5D}
+#gst-app .vkey{gap:6px 18px;margin:0 0 10px;align-items:center}#gst-app .vlift{font-size:46px;line-height:1}#gst-app .vlift.k-g{color:#1D9E75}#gst-app .vlift.k-c{color:#E46454}
+#gst-app .vname b{font-family:var(--ft);font-size:18px;font-weight:700;margin-right:10px}#gst-app .vname .pill{vertical-align:2px}
+#gst-app .v-main h3{font-size:22px}
+#gst-app .mdebig .num{color:#1D9E75}#gst-app .mr2.on .b i{background:#1D9E75}#gst-app .mr2 .b i{background:#C5CBCF}#gst-app button.mr2.on{background:#ECF7F4}
+#gst-app button.mr2,#gst-app button.mr2:focus{grid-template-columns:18px 100px minmax(0,1fr) 92px}
+#gst-app .rd{width:18px;height:18px;border-radius:50%;border:2px solid #9FA1A1;background:#fff;display:block;box-sizing:border-box}#gst-app .mr2.on .rd{border:5px solid #1D9E75}
+#gst-app .pc{display:flex;flex-direction:column;gap:2px;margin-top:6px;font-size:13px}#gst-app .pc span{display:block;padding-left:20px;position:relative}#gst-app .pro::before{content:"+";position:absolute;left:2px;font-weight:700;color:#1D9E75}#gst-app .con::before{content:"−";position:absolute;left:2px;font-weight:700;color:#c9402f}
+#gst-app label.opt.on{border-color:#1D9E75;background:#F1FAF7}
+#gst-app .t-g .lift{color:#168A66}#gst-app .mrw.big .lift{font-size:24px}#gst-app .mrw.big.t-g .lift{color:#1D9E75}
+#gst-app .hero2{display:flex;flex-wrap:wrap;gap:24px 36px;align-items:center;padding:10px 0 4px}#gst-app .h-txt{flex:1 1 380px;min-width:0}#gst-app .h-viz{flex:1 1 380px;min-width:0;max-width:560px}
+#gst-app .hero2 h2{font-size:32px;font-weight:700;line-height:1.15;margin-top:6px;max-width:22ch}#gst-app .pts{list-style:none;margin:14px 0 0;padding:0;display:flex;flex-direction:column;gap:8px}#gst-app .pts li{display:flex;gap:10px;align-items:flex-start}
+#gst-app .sech{font-size:18px;font-weight:700;margin-top:28px}
+#gst-app .faq{background:#fff;border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-top:10px}#gst-app .fq+.fq{border-top:1px solid var(--line)}
+#gst-app button.fqh,#gst-app button.fqh:hover,#gst-app button.fqh:focus{display:flex;justify-content:space-between;align-items:center;gap:12px;width:100%;border:0;border-radius:0;background:#fff;padding:14px 18px;min-height:52px;font-family:var(--ft);font-weight:700;font-size:15px;text-align:left;color:var(--ink)}#gst-app .fq.on button.fqh{background:#F1FAF7}
+#gst-app .fqb{padding:4px 18px 18px}#gst-app .fqb p{color:var(--charcoal);max-width:76ch}
+#gst-app .share{border-color:#1D9E75;border-radius:12px}#gst-app .share input{min-width:0}
+#gst-app .robar{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;background:var(--tb);border:1px solid #A6CFEA;color:#005a88;border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:14px}#gst-app .robar .link{margin-left:auto}#gst-app .roname{font-size:22px;font-weight:700}
+#gst-app .tl{padding:0;overflow:hidden;border-radius:12px;margin-top:14px;margin-bottom:8px}
+#gst-app button.tlr,#gst-app button.tlr:focus{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:14px;align-items:center;width:100%;border:0;border-top:1px solid var(--line);border-radius:0;background:#fff;padding:12px 18px;min-height:56px;text-align:left;font-weight:400}#gst-app button.tlr:hover{background:var(--bg)}#gst-app .tll{font-family:var(--ft);font-weight:700;font-size:16px}
+#gst-app .segs .done{background:#1D9E75}#gst-app .phead .n{color:#1D9E75}
+@media (max-width:760px){
+  #gst-app .hero2 h2{font-size:26px}#gst-app .vlift{font-size:38px}#gst-app .vname b{display:block;margin:0 0 4px}
+  #gst-app button.mr2,#gst-app button.mr2:focus{grid-template-columns:18px 84px minmax(0,1fr) 76px}
+  #gst-app button.tlr,#gst-app button.tlr:focus{grid-template-columns:minmax(0,1fr) auto}#gst-app .tlr .pill{grid-column:1/-1;justify-self:start;white-space:normal}
+  #gst-app .robar .link{margin-left:0}
+}
+#gst-app .hero2{padding:36px 0 8px;gap:32px 48px}#gst-app .hero2 h2{font-size:36px;max-width:20ch}#gst-app .hero2 h2 em{color:#1D9E75;font-style:normal}#gst-app .lead{margin-top:14px}#gst-app .pts{margin-top:20px;gap:10px}
+#gst-app .cta{margin-top:26px;gap:12px}#gst-app button.big{min-height:50px;padding:0 22px;font-size:15px}
+#gst-app .sec{margin-top:72px}#gst-app .sech{font-size:24px;margin-top:0}#gst-app .secl{color:var(--charcoal);font-size:15px;margin-top:8px;max-width:70ch}
+#gst-app .imp{display:flex;flex-wrap:wrap;gap:28px 40px;margin-top:24px;background:#fff;border:1px solid var(--border);border-radius:16px;padding:28px}#gst-app .imp-l{flex:1 1 380px;min-width:0}#gst-app .imp-r{flex:1 1 340px;min-width:0}
+#gst-app .tools2{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}#gst-app .tools2 button,#gst-app .tools2 button:focus{border-radius:999px;min-height:40px;padding:0 16px;font-weight:600}#gst-app .tools2 button.on{background:#ECF7F4;border-color:#1D9E75;color:#0E7C5D}
+#gst-app .tuto{margin-top:16px}#gst-app .imp .drop{margin-top:12px;padding:28px 18px}#gst-app .imp .privacy{border:0;padding:12px 0 0;background:none}
+#gst-app .sec .steps{margin-top:24px}#gst-app .sec .faq{margin-top:24px}
+#gst-app .v-main{flex:3 1 460px}#gst-app .v-side{flex:2 1 380px}
+#gst-app .head button.link{min-height:40px}#gst-app .dsub{margin-top:14px}
+#gst-app .foot{margin-top:56px}
+@media (max-width:760px){
+  #gst-app .hero2{padding-top:20px}#gst-app .hero2 h2{font-size:28px}#gst-app .sec{margin-top:48px}#gst-app .sech{font-size:21px}#gst-app .imp{padding:18px}
+  #gst-app .cta button{flex:1 1 100%}
+}
+#gst-app .imp .drop{padding:20px 16px}#gst-app .imp .drop svg{width:38px;height:38px}#gst-app .imp .drop h3{font-size:17px}
+#gst-app .fmth{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:8px 12px;margin-top:20px}#gst-app .fmt{margin-top:10px;border:1px solid var(--border);border-radius:8px}
+#gst-app .man input:disabled{background:var(--bg);color:var(--charcoal)}
+#gst-app .man{margin-top:16px}#gst-app .imp-r{display:flex;flex-direction:column}#gst-app .imp-r .privacy{order:9;margin-top:16px}#gst-app .fmth{margin-top:22px}#gst-app .fmth button{margin:0}#gst-app .imp-r .chk{margin-top:10px}
+#gst-app .imp .drop.dz2{padding:24px 18px 16px}#gst-app .imp .drop.dz2 h3{margin:0;font-size:18px}#gst-app .imp .drop.dz2 p{margin-top:12px}
+#gst-app .file{margin:18px auto 0;max-width:440px;background:#fff;border:1px solid var(--border);border-radius:10px;overflow:hidden;text-align:left}#gst-app .file.solo{margin:12px 0 0;max-width:none}
+#gst-app .fileh{display:flex;align-items:center;gap:8px;padding:8px 12px;border-bottom:1px solid var(--border);background:#F8FBFA;font-size:12px;font-weight:600;color:var(--charcoal)}
+#gst-app .imp .drop .fileh svg{width:14px;height:14px;flex:none}#gst-app .file table{width:100%;font-size:13px}#gst-app .file th,#gst-app .file td{padding:7px 12px}#gst-app .file tr:last-child td{border-bottom:0}
+#gst-app .cap{font-size:13px;color:var(--charcoal)}#gst-app .imp-r>.cap{margin-top:12px}
+#gst-app .lock{display:flex;align-items:center;gap:8px;margin-top:14px;font-size:13px;color:var(--charcoal)}
+@media (max-width:480px){#gst-app .file .hx{display:none}#gst-app .file th,#gst-app .file td{padding:7px 8px}}
+#gst-app .head.home{justify-content:flex-end;align-items:center;gap:10px}#gst-app .head.home select{flex:0 1 260px}
+#gst-app .imp-3{flex:1 1 100%;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:14px 32px;border-top:1px solid var(--border);padding-top:22px}#gst-app .imp-3>div:first-child{flex:1 1 300px;min-width:0}#gst-app .imp-3 p{margin-top:8px;max-width:62ch}
+#gst-app .imp-3 .mini{flex-direction:row;width:auto;gap:6px}#gst-app .imp-3 .mini span{padding:5px 14px;font-size:12px}
+#gst-app .help{margin-top:28px;font-size:14px;color:var(--charcoal)}#gst-app .help a,#gst-app .foot a{color:#0E7C5D;font-weight:600;text-decoration:underline;text-underline-offset:3px}
+#gst-app .ci0{margin-top:8px;max-width:62ch}
+#gst-app .mrw .lift{white-space:nowrap}#gst-app .mrw.big .lift{font-size:21px}
+#gst-app .rythme{margin-top:14px}#gst-app .rythme select{max-width:320px;display:block}#gst-app .rythme .hint{display:block;margin-top:6px;max-width:60ch}
+#gst-app .vw{display:flex;gap:8px;align-items:flex-start;margin-top:10px;max-width:64ch}#gst-app .vw svg{flex:none;width:18px;height:18px;margin-top:1px}
+</style>
+<div id="gst-app"><p>Chargement de l'outil…</p></div>
+<script>
+(function(){
+'use strict';
+var API='https://my-gst-api.onrender.com/api/calculate-boundaries';
+var NEW_PREFIX='gstSeq_v40_',OLD_PREFIX='gstSequentialAnalysis_v321_',MAX_METRICS=15,VERSION='v51.0';
+var root=document.getElementById('gst-app');
+var EXEMPLE="Semaine;Date de début;Date de fin;Variation;Visiteurs;Visiteurs avec achat;Visiteurs avec rebond;Visiteurs avec ajout panier;Visiteurs fiche produit vue;Visiteurs inscrits newsletter;Visiteurs contact service client;CA (€) [somme];CA (€) [somme carrés]\n1;2026-10-05;2026-10-11;A - Contrôle;9862;495;3937;1212;5483;179;152;28604,98;2238859,44\n1;2026-10-05;2026-10-11;B - Variante;10197;517;4125;1264;5661;215;156;29274,97;2288280,78\n2;2026-10-05;2026-10-18;A - Contrôle;20124;1041;8019;2457;11114;383;302;60597,00;4878927,63\n2;2026-10-05;2026-10-18;B - Variante;20139;1082;8105;2514;11189;402;299;61509,76;4751805,20\n3;2026-10-05;2026-10-25;A - Contrôle;30011;1542;11992;3619;16555;577;473;89955,78;7285282,51\n3;2026-10-05;2026-10-25;B - Variante;29969;1610;11976;3750;16641;601;445;92128,15;7124589,83\n4;2026-10-05;2026-11-01;A - Contrôle;39984;2049;15857;4822;22041;773;611;118445,83;9399245,52\n4;2026-10-05;2026-11-01;B - Variante;39881;2136;15989;5044;22217;808;593;122493,11;9423902,14\n5;2026-10-05;2026-11-08;A - Contrôle;50089;2498;19872;6047;27648;987;741;144548,18;11467542,98\n5;2026-10-05;2026-11-08;B - Variante;49909;2688;19982;6268;27837;1016;733;153297,46;11698785,47\n6;2026-10-05;2026-11-15;A - Contrôle;60132;2962;23896;7259;33249;1176;891;171483,57;13527391,46\n6;2026-10-05;2026-11-15;B - Variante;60016;3240;24013;7544;33469;1230;872;185493,03;14310408,44\n";
+
+/* ---------- utilitaires ---------- */
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}).replace(/(s)(emaine)/gi,'$1\u0001$2');}
+function todayISO(){var d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function frDate(iso){var m=/^(\d{4})-(\d{2})-(\d{2})/.exec(iso||'');return m?m[3]+'/'+m[2]+'/'+m[1]:'—';}
+function addDays(iso,n){var m=/^(\d{4})-(\d{2})-(\d{2})/.exec(iso||'');if(!m)return '';var d=new Date(+m[1],+m[2]-1,+m[3]+n);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function nf(v,d){return (typeof v==='number'&&isFinite(v))?v.toLocaleString('fr-FR',{minimumFractionDigits:d||0,maximumFractionDigits:d||0}):'—';}
+function pct(v,d){if(typeof v!=='number'||!isFinite(v))return '—';d=d==null?2:d;var r=Math.round(v*100*Math.pow(10,d))/Math.pow(10,d);if(r===0)r=0;return (r>0?'+':'')+nf(r,d)+' %';}
+function norm(s){return String(s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').trim();}
+function uid(){return 'm'+Math.random().toString(36).slice(2,8);}
+function normInv(p){var a=[-39.69683028665376,220.9460984245205,-275.9285104469687,138.357751867269,-30.66479806614716,2.506628277459239],b=[-54.47609879822406,161.5858368580409,-155.6989798598866,66.80131188771972,-13.28068155288572],c=[-0.007784894002430293,-0.3223964580411365,-2.400758277161838,-2.549732539343734,4.374664141464968,2.938163982698783],d=[0.007784695709041462,0.3224671290700398,2.445134137142996,3.754408661907416],q,r;if(p<0.02425){q=Math.sqrt(-2*Math.log(p));return(((((c[0]*q+c[1])*q+c[2])*q+c[3])*q+c[4])*q+c[5])/((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1);}if(p>1-0.02425){q=Math.sqrt(-2*Math.log(1-p));return-(((((c[0]*q+c[1])*q+c[2])*q+c[3])*q+c[4])*q+c[5])/((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1);}q=p-0.5;r=q*q;return(((((a[0]*r+a[1])*r+a[2])*r+a[3])*r+a[4])*r+a[5])*q/(((((b[0]*r+b[1])*r+b[2])*r+b[3])*r+b[4])*r+1);}
+
+/* ---------- état ---------- */
+function freshState(){return {v:40,name:'',plan:{k:4,alpha:0.05,power:0.8,beta:0.2,testType:3,sfu:'KimDeMets',sfl:'HSD',startDate:todayISO(),unit:'semaine'},metrics:[],labels:{A:'Contrôle',B:'Variante'},weeks:[],bounds:null,boundsKey:'',boundsG:null,boundsS:null,auxKey:''};}
+var state=freshState();
+var ui={tab:'resultats',week:null,sel:null,draft:null,manual:false,busy:false,error:'',notice:'',planDraft:null,mde:{traffic:'',conv:'',auto:false},adv:false,unit:'pct',legend:false,detail:false,ifc:{},howto:'piano',faq:'',share:false,shareUrl:'',shareTo:'',dsub:'donnees',copied:false,man:{name:'',k:4,ms:[{name:'',role:'principale'},{name:'',role:'garde-fou'}]},ro:false,roDate:''};
+var LOWC=40;
+function U(){return state.plan.unit==='jour';}
+function perLook(v){return U()?v/7:v;}
+var DAY_RULES=[[/semaine par semaine/g,'jour par jour'],[/^Sem\.$/,'Jour'],[/semaine\(s\) de données chargée\(s\)/g,'jour(s) de données chargé(s)'],[/par semaine/g,'par \u0002'],[/acquise en semaine/g,'acquise au jour'],[/atteint en semaine/g,'atteint au jour'],[/depuis la semaine/g,'depuis le jour'],
+  [/les semaines (\d+)( à | et )(\d+) ont été importées/g,'les jours $1$2$3 ont été importés'],[/la semaine (\d+) a été importée/g,'le jour $1 a été importé'],
+  [/Elles ne peuvent plus la modifier/g,'Ils ne peuvent plus la modifier'],[/Elle ne peut plus la modifier/g,'Il ne peut plus la modifier'],
+  [/Vous relisez la semaine (\d+) : elle/g,'Vous relisez le jour $1 : il'],[/Semaines importées/g,'Jours importés'],[/semaine\(s\) détectée\(s\)/g,'jour(s) détecté(s)'],
+  [/semaines déjà saisies/g,'jours déjà saisis'],[/les semaines suivantes ne sont pas analysées/g,'les jours suivants ne sont pas analysés'],
+  [/dans 7 % \(4 semaines\) à 12 % \(12 semaines\) des tests/g,'d\'autant plus souvent que les lectures sont nombreuses'],
+  [/de la semaine/g,'du jour'],[/la semaine/g,'le jour'],[/La semaine/g,'Le jour'],[/une semaine/g,'un jour'],[/Semaines/g,'Jours'],[/semaines/g,'jours'],[/Semaine/g,'Jour'],[/semaine/g,'jour'],[/^S(\d+)$/,'J$1'],[/\u0002/g,'semaine']];
+function dayText(t){for(var i=0;i<DAY_RULES.length;i++)t=t.replace(DAY_RULES[i][0],DAY_RULES[i][1]);return t;}
+function finalize(h,day){if(day)h=h.replace(/>([^<]+)</g,function(m,t){return '>'+dayText(t)+'<';});return h.replace(/\u0001/g,'').replace(/\u0002/g,'semaine');}
+function T(s){return U()?dayText(s):s;}
+function Tq(s){return U()?dayText(String(s).replace(/«[^»]*»/g,function(m){return m.replace(/(s)(emaine)/gi,'$1\u0001$2');})):s;}
+function planKey(p){return [p.k,p.alpha,p.beta,p.testType,p.sfu,p.sfl].join('|');}
+function summary(){try{if(!state.bounds||!state.weeks.length)return state.sum||null;var c=compute(),n=state.weeks.length,dw=c.decisionWeek,w=c.weeks[dw!=null?dw:n-1],pr=w.rows.filter(function(r){return r.metric.role==='principale';})[0];return {t:w.dec.title,c:w.dec.cls,n:n,k:state.plan.k,dw:dw,lift:pr&&pr.st?pr.st.lift:null,m:pr?pr.metric.name:'',d:todayISO()};}catch(e){return state.sum||null;}}
+function autosave(){if(ui.ro)return;if(state.name){try{state.sum=summary();localStorage.setItem(NEW_PREFIX+state.name,JSON.stringify(state));}catch(e){ui.error='Sauvegarde impossible : '+e.message;}}}
+
+/* ---------- statistiques ---------- */
+function stat(m,a,b,crit){
+  if(!a||!b||!(a.n>0)||!(b.n>0))return null;var va=a.m[m.id],vb=b.m[m.id];if(!va||!vb)return null;
+  var mA,mB,seP,seU,vA,vB;
+  if(m.type==='continue'){mA=va.s/a.n;mB=vb.s/b.n;var sA=(va.ss-va.s*va.s/a.n)/(a.n-1),sB=(vb.ss-vb.s*vb.s/b.n)/(b.n-1);if(!(sA>=0)||!(sB>=0))return null;seU=Math.sqrt(sA/a.n+sB/b.n);seP=seU;vA=sA;vB=sB;}
+  else{mA=va.c/a.n;mB=vb.c/b.n;var pp=(va.c+vb.c)/(a.n+b.n);seP=Math.sqrt(pp*(1-pp)*(1/a.n+1/b.n));seU=Math.sqrt(mA*(1-mA)/a.n+mB*(1-mB)/b.n);vA=mA*(1-mA);vB=mB*(1-mB);}
+  var d=mB-mA,sg=m.sens==='baisse'?-1:1,ok=seP>1e-15;
+  var z=ok?d/seP:(Math.abs(d)<1e-15?0:null);
+  var marge=(isFinite(m.marge)&&m.marge>0?m.marge:1)/100,seNi=Math.sqrt(vB/b.n+Math.pow(1-sg*marge,2)*vA/a.n);/* non-inferiorite a marge relative : variance de mB-(1-sg*marge)*mA, non poolee */
+  var r={mA:mA,mB:mB,d:d,se:seP,z:z,zAdj:z==null?null:sg*z,zNi:seNi>1e-15?(sg*d+marge*Math.abs(mA))/seNi:null,seNi:seNi,lift:mA!==0?d/Math.abs(mA):null,lo:null,hi:null};
+  /* intervalle sur le rapport mB/mA (log-ratio) : tient compte de l'incertitude du denominateur */
+  if(isFinite(crit)&&mA!==0){var seL=(mA>0&&mB>0)?Math.sqrt(vB/(b.n*mB*mB)+vA/(a.n*mA*mA)):0;
+    if(seL>0){var lr=Math.log(mB/mA);r.lo=Math.exp(lr-crit*seL)-1;r.hi=Math.exp(lr+crit*seL)-1;}
+    else if(seU>0){r.lo=(d-crit*seU)/Math.abs(mA);r.hi=(d+crit*seU)/Math.abs(mA);}}
+  return r;
+}
+var WATCH_Z=-1.9;
+function statusOf(m,st,eff,fut,effNi){
+  if(!st||st.zAdj==null||!isFinite(eff))return 'NA';var z=st.zAdj;
+  if(m.role==='principale')return z>=eff?'POSITIF':z<=-eff?'NEGATIF':(Number.isFinite(fut)&&z<=fut)?'FUTILE':'NEUTRE';
+  if(m.role==='garde-fou')return z<=-eff?'REGRESSION':(st.zNi!=null&&isFinite(effNi)&&st.zNi>=effNi)?'SECURITE':z<=WATCH_Z?'WATCH':'AUCUN_SIGNAL';
+  return z>=eff?'SIGNAL_POS':z<=-eff?'SIGNAL_NEG':'NEUTRE';
+}
+var STATUS={POSITIF:['Gain démontré','sg'],NEGATIF:['Effet négatif démontré','sc'],FUTILE:['Futilité',''],NEUTRE:['Non conclusif',''],REGRESSION:['Régression démontrée','sc'],SECURITE:['Non-régression démontrée','sg'],WATCH:['À surveiller','w'],AUCUN_SIGNAL:['Non conclusif',''],SIGNAL_POS:['Signal positif','sg'],SIGNAL_NEG:['Signal négatif','sc'],NA:['En attente','']};
+var TONE={POSITIF:'g',SECURITE:'g',SIGNAL_POS:'g',NEGATIF:'c',REGRESSION:'c',SIGNAL_NEG:'c',WATCH:'w'};
+/* Bornes par rôle. Principale : plan. Garde-fou : régression sur efficacité seule à alpha/g (g garde-fous, un seul suffit à bloquer), non-régression sur efficacité seule à alpha (tous doivent passer). Secondaires : efficacité seule à alpha/(2m), lues dans les deux sens. Intervalles : efficacité seule (alpha, ou alpha/(2m) pour les secondaires). */
+function bAt(b,i){return b&&b.eff[i]!=null?b.eff[i]:NaN;}
+function effFor(role,i){return bAt(role==='principale'?state.bounds:role==='garde-fou'?(state.boundsR||state.boundsG||state.bounds):(state.boundsS||state.boundsG||state.bounds),i);}
+function niFor(i){return bAt(state.boundsG||state.bounds,i);}
+function ciFor(role,i){return bAt(role==='secondaire'?(state.boundsS||state.boundsG||state.bounds):(state.boundsG||state.bounds),i);}
+function ciLevel(role){var a=state.plan.alpha,ns=nRole('secondaire');return role==='secondaire'&&ns?1-a/ns:1-2*a;}
+function names(rows){return rows.map(function(r){return '« '+r.metric.name+' »';}).join(', ');}
+function decide(i,rows){
+  var k=state.plan.k,stage=i+1,prim=rows.filter(function(r){return r.metric.role==='principale';})[0],guards=rows.filter(function(r){return r.metric.role==='garde-fou';});
+  if(!prim||prim.status==='NA')return {cls:'continue',stop:false,title:'En attente',text:!prim?'Aucune métrique principale définie.':(state.bounds&&state.bounds.end!=null&&i>state.bounds.end?'Le volume prévu a été atteint en semaine '+(state.bounds.end+1)+' : c\'est la dernière lecture du test, les semaines suivantes ne sont pas analysées.':'Bornes ou données indisponibles pour cette semaine.')};
+  var ps=prim.status,reg=guards.filter(function(g){return g.status==='REGRESSION';}),noSec=guards.filter(function(g){return g.status!=='SECURITE';});
+  var gs=!guards.length?'NON_APPLICABLE':reg.length?'REGRESSION':!noSec.length?'SECURITE':'AUCUN_SIGNAL';
+  var complG={SECURITE:' Garde-fous : non-régression démontrée.',AUCUN_SIGNAL:' Garde-fous : aucune régression détectée, non-régression non démontrée pour '+names(noSec)+'.',REGRESSION:'',NON_APPLICABLE:''}[gs];
+  var complP=ps==='POSITIF'?' Objectif principal : gain démontré.':ps==='NEGATIF'?' Objectif principal : effet négatif démontré.':' Objectif principal : non conclusif.';
+  if(gs==='REGRESSION')return {cls:'critical',stop:true,title:'Arrêter : ne pas déployer',text:'Régression démontrée sur '+names(reg)+' (z ≤ −borne d\'efficacité).'+complP};
+  if(ps==='POSITIF'){
+    if(gs==='NON_APPLICABLE'||gs==='SECURITE')return {cls:'win',stop:true,title:'Arrêter : déploiement recommandé',text:'Gain démontré sur l\'objectif principal.'+(gs==='SECURITE'?' La non-régression des garde-fous est démontrée.':'')};
+    return {cls:'discuss',stop:true,title:'Arrêter : discussion requise',text:'Gain démontré sur l\'objectif principal, mais la non-régression n\'est pas démontrée pour '+names(noSec)+' (aucune régression détectée non plus).'};
+  }
+  if(ps==='NEGATIF')return {cls:'stop',stop:true,title:'Arrêter : ne pas déployer',text:'Effet négatif démontré sur l\'objectif principal.'+complG};
+  if(ps==='FUTILE')return {cls:'stop',stop:true,title:'Arrêter : non concluant',text:'Borne de futilité franchie : l\'effet recherché ne sera pas démontré sur ce test. L\'effet observé n\'est pas pour autant démontré négatif.'+complG};
+  if(stage<k)return {cls:'continue',stop:false,title:'Continuer',text:'Analyse pour la semaine '+(stage+1)+' nécessaire. Objectif principal non conclusif à ce stade.'+complG};
+  return {cls:'stop',stop:true,title:'Arrêter : test terminé, non concluant',text:'Aucun résultat démontré après '+k+' semaines.'+complG};
+}
+function compute(){
+  var b=state.bounds,out={weeks:[],decisionWeek:null};
+  state.weeks.forEach(function(w,i){
+    var eff=effFor('principale',i),fut=b?b.fut[i]:null;
+    var rows=state.metrics.map(function(m){var e=effFor(m.role,i),ni=m.role==='garde-fou'?niFor(i):NaN,st=stat(m,w.A,w.B,ciFor(m.role,i));return {metric:m,st:st,eff:e,effNi:ni,status:(b&&b.end!=null&&i>b.end)?'NA':statusOf(m,st,e,fut,ni)};});
+    var dec=decide(i,rows);out.weeks.push({rows:rows,dec:dec,eff:eff,fut:fut});
+    if(out.decisionWeek==null&&dec.stop)out.decisionWeek=i;
+  });
+  return out;
+}
+
+/* ---------- API des bornes ---------- */
+/* ---------- bornes séquentielles calculées dans le navigateur (remplace l'API gsDesign) ----------
+   Dépense d'erreur de Lan-DeMets, intégration numérique par récurrence (Armitage-McPherson-Rowe) sur noeuds de Gauss-Legendre.
+   testType 1 : efficacité seule. testType 3 : efficacité + futilité contraignante (dépense de beta), dérive ajustée pour que les deux bornes se rejoignent à la fin. */
+var GS=(function(){
+  var NG=100,GX=[],GW=[],GL={};
+  /* noeuds de Gauss-Legendre ; leur nombre s'adapte à la plus petite avancée d'information entre deux lectures */
+  function nodes(n){if(!GL[n]){var X=[],W=[];for(var i=0;i<n;i++){var x=Math.cos(Math.PI*(i+0.75)/(n+0.5)),pp,j,it;for(it=0;it<100;it++){var p1=1,p2=0;for(j=1;j<=n;j++){var p3=p2;p2=p1;p1=((2*j-1)*x*p2-(j-1)*p3)/j;}pp=n*(x*p1-p2)/(x*x-1);var dx=p1/pp;x-=dx;if(Math.abs(dx)<1e-15)break;}X.push(x);W.push(2/((1-x*x)*pp*pp));}GL[n]={x:X,w:W};}NG=n;GX=GL[n].x;GW=GL[n].w;}
+  function tune(info){var r=0;for(var i=1;i<info.length;i++)r=Math.max(r,Math.min(Math.sqrt(info[i-1]/info[i]),RMAX));nodes(Math.min(400,Math.max(100,Math.ceil(14/(1.5*Math.sqrt(1-r*r))))));}
+  var RMAX=0.9982;
+  function erfc(x){var z=Math.abs(x),t=1/(1+0.5*z),r=t*Math.exp(-z*z-1.26551223+t*(1.00002368+t*(0.37409196+t*(0.09678418+t*(-0.18628806+t*(0.27886807+t*(-1.13520398+t*(1.48851587+t*(-0.82215223+t*0.17087277)))))))));return x>=0?r:2-r;}
+  function sf(x){return 0.5*erfc(x/Math.SQRT2);}
+  function cdf(x){return 0.5*erfc(-x/Math.SQRT2);}
+  var C=1/Math.sqrt(2*Math.PI);
+  function qn(p){return normInv(p);}
+  function root(f,lo,hi,tol){var flo=f(lo),fhi=f(hi);if(!(flo*fhi<=0))return NaN;if(flo===0)return lo;if(fhi===0)return hi;tol=tol||1e-9;
+    for(var i=0;i<80;i++){var m=(lo*fhi-hi*flo)/(fhi-flo);if(!(m>Math.min(lo,hi)&&m<Math.max(lo,hi)))m=(lo+hi)/2;var fm=f(m);if(fm===0)return m;
+      if(fm*fhi<0){lo=hi;flo=fhi;}else{flo*=0.5;}hi=m;fhi=fm;if(Math.abs(hi-lo)<tol)break;}
+    return Math.abs(flo)<Math.abs(fhi)?lo:hi;}
+  /* Z_i : moyenne m[i], corrélation entre deux lectures = racine du rapport des informations cumulées. */
+  /* bissection : sûre même quand la probabilité visée est infime (premières lectures) */
+  function bis(f,lo,hi){var flo=f(lo),fhi=f(hi);if(!(flo*fhi<=0))return NaN;for(var i=0;i<60;i++){var m=(lo+hi)/2,fm=f(m);if(flo*fm<=0){hi=m;}else{lo=m;flo=fm;}if(hi-lo<1e-10)break;}return (lo+hi)/2;}
+  function Path(info,m){this.I=info;this.m=m;this.i=0;this.x=null;this.g=null;}
+  Path.prototype.step=function(){var I=this.I,i=this.i,r=Math.min(Math.sqrt(I[i-1]/I[i]),RMAX);return {a:r,s:Math.sqrt(1-r*r),d:this.m[i]-r*this.m[i-1]};};
+  Path.prototype.tail=function(z,up){
+    var i=this.i;if(i===0){var m=this.m[0];return up?sf(z-m):cdf(z-m);}
+    var c=this.step(),x=this.x,g=this.g,sum=0;
+    for(var j=0;j<x.length;j++){var v=(z-c.a*x[j]-c.d)/c.s;sum+=g[j]*(up?sf(v):cdf(v));}return sum;};
+  Path.prototype.advance=function(l,u){
+    var i=this.i,m=this.m[i],lo=Math.min(-7,m-7),hi=Math.max(7,m+7);if(isFinite(l))lo=Math.max(l,lo);if(isFinite(u))hi=Math.min(u,hi);if(hi<=lo)hi=lo+1e-9;
+    var nx=new Float64Array(NG),ng=new Float64Array(NG),h=0.5*(hi-lo),c=0.5*(hi+lo),j,q;
+    if(i===0){for(j=0;j<NG;j++){nx[j]=h*GX[j]+c;var e=nx[j]-m;ng[j]=C*Math.exp(-0.5*e*e)*h*GW[j];}}
+    else{var k=this.step(),x=this.x,g=this.g;
+      for(j=0;j<NG;j++){nx[j]=h*GX[j]+c;var sum=0;for(q=0;q<NG;q++){var v=(nx[j]-k.a*x[q]-k.d)/k.s;sum+=g[q]*Math.exp(-0.5*v*v);}ng[j]=sum*C/k.s*h*GW[j];}}
+    this.x=nx;this.g=ng;this.i++;};
+  function drift(th,fr){return fr.map(function(f){return th*Math.sqrt(f);});}
+  function zeros(n){var o=[];for(var i=0;i<n;i++)o.push(0);return o;}
+  function spend(name,tot,t,par){
+    if(name==='OF')return 2*sf(qn(1-tot/2)/Math.sqrt(t));
+    if(name==='HSD'){var gm=par==null?-2:par;return gm===0?tot*t:tot*(1-Math.exp(-gm*t))/(1-Math.exp(-gm));}
+    if(name==='Pocock')return tot*Math.log(1+(Math.E-1)*t);
+    return tot*Math.pow(t,par==null?3:par);}
+  function incs(name,tot,t,par){var o=[],prev=0;for(var i=0;i<t.length;i++){var c=i===t.length-1?tot:spend(name,tot,t[i],par);o.push(Math.max(c-prev,0));prev=c;}return o;}
+  function type1(t,ia){var P=new Path(t,zeros(t.length)),u=[];for(var i=0;i<t.length;i++){var ui=ia[i]>0?bis(function(z){return P.tail(z,true)-ia[i];},-3,40):40;if(!isFinite(ui))ui=40;u.push(ui);if(i<t.length-1)P.advance(-Infinity,ui);}return u;}
+  /* atot : alpha total. Si la futilité rejoint l'efficacité avant la fin (volume prévu déjà atteint), cette lecture devient la dernière :
+     sa borne d'efficacité reste celle du calendrier (l'alpha restant n'est pas dépensé, choix prudent) et les lectures suivantes n'ont plus de borne (end = indice de cette lecture). */
+  function type3(t,ia,ib,m,atot){var k=t.length,P0=new Path(t,zeros(k)),P1=new Path(t,m),u=[],l=[],end=null;
+    for(var i=0;i<k;i++){
+      if(end!==null){u.push(null);l.push(null);continue;}
+      var ui=bis(function(z){return P0.tail(z,true)-ia[i];},-40,40);if(!isFinite(ui))ui=P0.tail(40,true)>ia[i]?40:-40;
+      var li=bis(function(z){return P1.tail(z,false)-ib[i];},-40,40);if(!isFinite(li))li=P1.tail(40,false)<ib[i]?40:-40;
+      if(atot!=null&&i>0&&ui<=-39){ui=u[i-1];li=ui;end=i;u.push(ui);l.push(li);continue;} /* presque plus de tests en cours sous H0 : on garde la borne précédente */
+      if(i<k-1&&atot!=null&&li>=ui-1e-6){li=ui;end=i;u.push(ui);l.push(li);continue;}
+      if(i<k-1)li=Math.min(li,ui-1e-6);u.push(ui);l.push(li);if(i<k-1){P0.advance(li,ui);P1.advance(li,ui);}}
+    return {u:u,l:l,end:end};}
+  function design(p){
+    var k=p.k,a=p.alpha,b=p.beta,i,t=[];for(i=1;i<=k;i++)t.push(i/k);tune(t);
+    if(k===1){var z=qn(1-a);return {eff:[z],fut:[p.testType===1?null:z],IF:1};}
+    var ia=incs(p.sfu,a,t,null);
+    if(p.testType===1){var u1=type1(t,ia),z0=qn(1-a)+qn(1-b);
+      /* inflation : dérive telle que la puissance vaut 1-beta */
+      var pw=function(th){var P=new Path(t,drift(th,t)),s=0;for(var j=0;j<k;j++){s+=P.tail(u1[j],true);if(j<k-1)P.advance(-Infinity,u1[j]);}return s;};
+      var th1=root(function(th){return pw(th)-(1-b);},0.8*z0,1.6*z0);
+      return {eff:u1,fut:u1.map(function(){return null;}),IF:isFinite(th1)?Math.pow(th1/z0,2):NaN};}
+    var ib=incs(p.sfl,b,t,p.sfl==='HSD'?-2:null),zz=qn(1-a)+qn(1-b),gap=function(th){var r=type3(t,ia,ib,drift(th,t));return r.l[k-1]-r.u[k-1];};
+    var th=root(gap,0.9*zz,1.6*zz);if(!isFinite(th))throw new Error('plan non calculable');
+    var r=type3(t,ia,ib,drift(th,t));r.l[k-1]=r.u[k-1];return {eff:r.u,fut:r.l,IF:Math.pow(th/zz,2),th:th};}
+  /* Bornes sur le trafic réel. info : information cumulée par semaine (visiteurs), sert aux corrélations entre lectures.
+     Les risques alpha et beta restent dépensés selon le calendrier du plan (i/k), donc indépendamment des données.
+     frac (facultatif) : information de chaque semaine rapportée au total prévu ; sert à situer l'effet attendu pour la futilité. Sans frac, on suppose le test dans les temps (i/k). */
+  function actual(p,info,frac){
+    var k=p.k,t=[],i;for(i=1;i<=k;i++)t.push(i/k);
+    if(k===1||!info||info.length!==k)return design(p);
+    for(i=0;i<k;i++)if(!(info[i]>0)||(i&&info[i]<info[i-1]))return design(p);
+    var ia=incs(p.sfu,p.alpha,t,null),d0=design(p);tune(info);
+    if(p.testType===1)return {eff:type1(info,ia),fut:t.map(function(){return null;}),IF:d0.IF};
+    var d=d0,ib=incs(p.sfl,p.beta,t,p.sfl==='HSD'?-2:null),r=type3(info,ia,ib,drift(d.th,frac&&frac.length===k?frac:t),p.alpha);
+    if(r.end===null)r.l[k-1]=r.u[k-1];return {eff:r.u,fut:r.l,IF:d.IF,th:d.th,end:r.end};}
+  return {design:design,actual:actual};
+})();
+var bcache={};
+function apiBounds(p){
+  return fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({k:p.k,alpha:p.alpha,power:p.power,beta:p.beta,sfu:p.sfu,sfl:p.sfl,testType:p.testType})})
+    .then(function(r){return r.json().then(function(j){if(!r.ok||j.error===true||!j.boundaries)throw new Error(j.message||('Erreur API ('+r.status+')'));var bd=j.boundaries;return {eff:bd.map(function(x){return x.efficacyZ;}),fut:bd.map(function(x){return x.futilityZ;}),IF:bd[bd.length-1].infoFraction};});});
+}
+/* Calcul local ; l'ancien serveur ne sert plus que de secours si le calcul local échoue. */
+function infoVec(){
+  var n=Math.min(state.weeks.length,state.plan.k),k=state.plan.k,N=[],i;if(!n||k<2)return null;
+  for(i=0;i<n;i++)N.push(state.weeks[i].A.n+state.weeks[i].B.n);
+  var rate=state.plan.traffic>0?perLook(state.plan.traffic):N[n-1]/n;for(i=n;i<k;i++)N.push(N[i-1]+rate);
+  for(i=0;i<k;i++)if(!(N[i]>0)||(i&&N[i]<N[i-1]))return null;
+  return N;
+}
+function fracVec(N){var T=state.plan.traffic,k=state.plan.k;return N&&T>0?N.map(function(v){return v/(k*perLook(T));}):null;}
+function infoKey(){var N=infoVec();return N?N.map(function(v){return Math.round(v);}).join(',')+'|'+(state.plan.traffic||0):'';}
+function fetchBounds(p,info,frac){
+  var key=planKey(p)+(info?'|'+info.join(',')+'|'+(frac?frac.join(','):''):'');if(bcache[key])return Promise.resolve(bcache[key]);
+  return new Promise(function(res,rej){setTimeout(function(){
+    try{var d=info?GS.actual(p,info,frac):GS.design(p);if(!d.eff.every(function(v){return isFinite(v);}))throw new Error('bornes non finies');d.src='local';bcache[key]=d;res(d);}
+    catch(e){apiBounds(p).then(function(d){d.src='api';res(d);},rej);}
+  },0);});
+}
+function nRole(r){return state.metrics.filter(function(m){return m.role===r;}).length;}
+function ensureBounds(){
+  var p=state.plan,key=planKey(p),ng=nRole('garde-fou'),ns=nRole('secondaire'),N=infoVec(),F=fracVec(N),ak='v44|'+key+'|'+ng+'|'+ns+'|'+infoKey();
+  if(state.bounds&&state.boundsKey===key&&state.auxKey===ak)return Promise.resolve();
+  ui.busy=true;ui.error='';render();
+  var p1=Object.assign({},p,{testType:1}),needG=p.testType!==1;
+  return Promise.all([fetchBounds(p,N,F),needG?fetchBounds(p1,N):null,ns>0?fetchBounds(Object.assign({},p1,{alpha:p.alpha/(2*ns)}),N):null,ng>1?fetchBounds(Object.assign({},p1,{alpha:p.alpha/ng}),N):null]).then(function(r){
+    state.bounds=r[0];state.boundsKey=key;state.boundsG=r[1]||(p.testType===1?r[0]:null);state.boundsS=r[2]||state.boundsG;state.boundsR=r[3]||state.boundsG;state.auxKey=ak;ui.bfail='';ui.ifc[key]=r[0].IF;
+  }).catch(function(e){state.bounds=state.boundsG=state.boundsS=state.boundsR=null;state.boundsKey='';state.auxKey='';ui.bfail=ak;ui.error='Calcul des bornes impossible : '+e.message+' Rechargez la page et réessayez.';}).then(function(){ui.busy=false;autosave();render();});
+}
+
+/* ---------- CSV ---------- */
+function parseCSV(text){
+  text=text.replace(/^﻿/,'');var first=(text.split(/\r?\n/).filter(function(l){return l.trim();})[0])||'';
+  var delim=[';','\t',','].sort(function(a,b){return first.split(b).length-first.split(a).length;})[0];
+  var rows=[],row=[],cur='',q=false;
+  for(var i=0;i<text.length;i++){var ch=text[i];
+    if(q){if(ch==='"'){if(text[i+1]==='"'){cur+='"';i++;}else q=false;}else cur+=ch;}
+    else if(ch==='"')q=true;
+    else if(ch===delim){row.push(cur);cur='';}
+    else if(ch==='\n'||ch==='\r'){if(ch==='\r'&&text[i+1]==='\n')i++;row.push(cur);cur='';if(row.some(function(c){return c.trim()!=='';}))rows.push(row);row=[];}
+    else cur+=ch;}
+  row.push(cur);if(row.some(function(c){return c.trim()!=='';}))rows.push(row);
+  return rows;
+}
+function toNum(s){s=String(s==null?'':s).trim().replace(/[\s  €%]/g,'');if(s==='')return NaN;if(/^-?\d{1,3}(,\d{3})+$/.test(s))s=s.replace(/,/g,'');else s=s.replace(',','.');return Number(s);}
+function toCSV(rows){return '﻿'+rows.map(function(r){return r.map(function(c){c=String(c);return /[;"\n]/.test(c)?'"'+c.replace(/"/g,'""')+'"':c;}).join(';');}).join('\r\n')+'\r\n';}
+function download(name,text){var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type:'text/csv;charset=utf-8'}));a.download=name;document.body.appendChild(a);a.click();setTimeout(function(){URL.revokeObjectURL(a.href);a.remove();},500);}
+var RE_SUM=/^(.*?)\s*[\[(]\s*(somme des carres|somme carres|somme2|sumsq|sum2|somme|sum)\s*[\])]$/;
+function analyze(table,fileName,keep){
+  var H=table[0].map(function(h){return h.trim();}),N=H.map(norm),data=table.slice(1);
+  var find=function(re,not){for(var i=0;i<N.length;i++)if(re.test(N[i])&&!(not&&not.test(N[i])))return i;return -1;};
+  var d={file:fileName,H:H,data:data,errors:[],cumulate:false};
+  d.cTest=find(/^(test|mv_test|nom du test|experience|experiment)/);
+  d.cWeek=find(/semaine|^week|^jour|^day/);
+  d.cEnd=find(/date de fin|^fin|end/);d.cStart=find(/date de debut|^debut|start/);
+  d.cVar=keep&&keep.cVar!=null?keep.cVar:find(/variation|variante|variant|mv_creation|creation|version|groupe/);
+  d.cVis=keep&&keep.cVis!=null?keep.cVis:find(/visit|utilisateur|^users?$|m_uv/,/conv|achat|transaction|avec|ayant|rebond/);
+  var used=[d.cTest,d.cWeek,d.cEnd,d.cStart,d.cVar,d.cVis];
+  var isNum=function(i){var ok=0,tot=0;data.forEach(function(r){if((r[i]||'').trim()!==''){tot++;if(isFinite(toNum(r[i])))ok++;}});return tot>0&&ok/tot>=0.9;};
+  var mets=[],sums={};
+  H.forEach(function(h,i){if(used.indexOf(i)>=0||!isNum(i))return;var m=RE_SUM.exec(N[i]);
+    if(m){var base=h.slice(0,m[1].length).trim(),sq=/carres|2|sq/.test(m[2]);sums[base]=sums[base]||{};sums[base][sq?'ss':'s']=i;}
+    else mets.push({src:h,name:h,type:'binaire',col:i});});
+  Object.keys(sums).forEach(function(b){if(sums[b].s!=null&&sums[b].ss!=null)mets.push({src:b,name:b,type:'continue',col:sums[b].s,col2:sums[b].ss});});
+  var firstPrim=true;
+  d.metrics=mets.map(function(m,idx){var n=norm(m.name),ex=state.metrics.filter(function(x){return x.src===m.src;})[0];
+    var guard=/secur|garde|guardrail|rebond|bounce|erreur|service client/.test(n),down=/rebond|bounce|erreur|contact|retour|desabonn|sortie|abandon/.test(n);
+    var role=ex?ex.role:(guard?'garde-fou':(firstPrim&&m.type==='binaire'?'principale':'secondaire'));if(!ex&&role==='principale')firstPrim=false;
+    return {src:m.src,name:ex?ex.name:m.name,type:m.type,col:m.col,col2:m.col2,include:ex?true:(state.metrics.length?false:idx<MAX_METRICS),role:role,sens:ex?ex.sens:(down?'baisse':'hausse'),marge:ex?ex.marge:1,id:ex?ex.id:null};});
+  if(!state.metrics.length&&!d.metrics.some(function(m){return m.role==='principale';})&&d.metrics[0])d.metrics[0].role='principale';
+  var uniq=function(c){var s=[];data.forEach(function(r){var v=(r[c]||'').trim();if(v&&s.indexOf(v)<0)s.push(v);});return s;};
+  d.tests=d.cTest>=0?uniq(d.cTest):[];d.test=keep&&d.tests.indexOf(keep.test)>=0?keep.test:(d.tests[0]||'');
+  d.vars=d.cVar>=0?uniq(d.cVar):[];
+  var ctrl=d.vars.filter(function(v){return /contr|origin|reference|temoin|^a\b/.test(norm(v));})[0]||d.vars.slice().sort()[0]||'';
+  d.control=keep&&d.vars.indexOf(keep.control)>=0?keep.control:ctrl;
+  d.variant=keep&&d.vars.indexOf(keep.variant)>=0&&keep.variant!==d.control?keep.variant:(d.vars.filter(function(v){return v!==d.control;})[0]||'');
+  var rowsT=data.filter(function(r){return d.cTest<0||(r[d.cTest]||'').trim()===d.test;});
+  var wk=d.cWeek>=0?d.cWeek:d.cEnd;d.keys=[];
+  if(wk>=0)rowsT.forEach(function(r){var v=(r[wk]||'').trim();if(v&&d.keys.indexOf(v)<0)d.keys.push(v);});
+  d.mode=d.keys.length>1||(d.cWeek>=0&&d.keys.length===1&&!state.weeks.length)?'serie':'instantane';
+  if(d.mode==='serie')d.keys.sort(function(a,b){var x=toNum(a),y=toNum(b);return (isFinite(x)&&isFinite(y)&&d.cWeek>=0)?x-y:(a<b?-1:a>b?1:0);});
+  var nW=d.mode==='serie'?d.keys.length:state.weeks.length+1;
+  d.k=keep&&keep.k?keep.k:Math.max(nW,state.weeks.length?state.plan.k:Math.max(nW,2));
+  var sd=d.cStart>=0&&rowsT[0]?(rowsT[0][d.cStart]||'').trim():'';
+  d.startDate=keep&&keep.startDate?keep.startDate:(/^\d{4}-\d{2}-\d{2}/.test(sd)?sd.slice(0,10):(/^(\d{2})\/(\d{2})\/(\d{4})/.test(sd)?sd.replace(/^(\d{2})\/(\d{2})\/(\d{4}).*/,'$3-$2-$1'):state.plan.startDate));
+  d.name=keep?keep.name:(state.name||d.test||(fileName||'').replace(/\.[a-z]+$/i,''));
+  return d;
+}
+function buildWeeks(d){
+  var errs=[],inc=d.metrics.filter(function(m){return m.include;});
+  if(d.cVar<0)errs.push('Colonne « variation » introuvable : choisissez-la ci-dessous.');
+  if(d.cVis<0)errs.push('Colonne « visiteurs » introuvable : choisissez-la ci-dessous.');
+  if(!inc.length)errs.push('Sélectionnez au moins une métrique.');
+  if(inc.length>MAX_METRICS)errs.push('Maximum '+MAX_METRICS+' métriques ('+inc.length+' sélectionnées).');
+  if(inc.filter(function(m){return m.role==='principale';}).length!==1)errs.push('Il faut exactement une métrique principale.');
+  if(!d.control||!d.variant||d.control===d.variant)errs.push('Il faut deux variations distinctes (contrôle et variante).');
+  if(state.weeks.length&&d.mode==='instantane'){state.metrics.forEach(function(m){if(!inc.some(function(x){return x.src===m.src;}))errs.push('Métrique « '+m.name+' » absente du fichier (colonne « '+m.src+' »).');});}
+  if(errs.length)return {errors:errs};
+  inc.forEach(function(m){if(!m.id)m.id=uid();});
+  var rowsT=d.data.filter(function(r){return d.cTest<0||(r[d.cTest]||'').trim()===d.test;}),wk=d.cWeek>=0?d.cWeek:d.cEnd;
+  var keys=d.mode==='serie'?d.keys:[null],weeks=[];
+  keys.forEach(function(key,wi){
+    var lab='Semaine '+(d.mode==='serie'?(wi+1):(state.weeks.length+1)),W={};
+    [['A',d.control],['B',d.variant]].forEach(function(p){
+      var rs=rowsT.filter(function(r){return (r[d.cVar]||'').trim()===p[1]&&(key===null||(r[wk]||'').trim()===key);});
+      if(rs.length!==1){errs.push(lab+' : '+rs.length+' ligne(s) pour « '+p[1]+' » (1 attendue).');return;}
+      var r=rs[0],n=toNum(r[d.cVis]),o={n:n,m:{}};
+      if(!(n>0)||n!==Math.round(n))errs.push(lab+' : '+p[1]+' : visiteurs invalides (« '+r[d.cVis]+' »).');
+      inc.forEach(function(m){
+        if(m.type==='continue'){var s=toNum(r[m.col]),ss=toNum(r[m.col2]);if(!isFinite(s)||!isFinite(ss)||ss<0)errs.push(lab+' : '+p[1]+' : « '+m.name+' » invalide.');o.m[m.id]={s:s,ss:ss};}
+        else{var c=toNum(r[m.col]);if(!(c>=0)||c!==Math.round(c))errs.push(lab+' : '+p[1]+' : « '+m.name+' » invalide (« '+r[m.col]+' »).');else if(c>n)errs.push(lab+' : '+p[1]+' : « '+m.name+' » ('+c+') dépasse les visiteurs ('+n+').');o.m[m.id]={c:c};}
+      });W[p[0]]=o;});
+    if(W.A&&W.B)weeks.push(W);
+  });
+  if(errs.length)return {errors:errs.slice(0,8)};
+  if(d.cumulate&&d.mode==='serie'){for(var i=1;i<weeks.length;i++)['A','B'].forEach(function(v){var c=weeks[i][v],p=weeks[i-1][v];c.n+=p.n;inc.forEach(function(m){var x=c.m[m.id],y=p.m[m.id];if(m.type==='continue'){x.s+=y.s;x.ss+=y.ss;}else x.c+=y.c;});});}
+  var all=(d.mode==='serie'?[]:state.weeks).concat(weeks);
+  for(var j=1;j<all.length;j++)['A','B'].forEach(function(v){var c=all[j][v],p=all[j-1][v];
+    if(c.n<p.n)errs.push('Semaine '+(j+1)+' : les visiteurs cumulés baissent ('+p.n+' → '+c.n+'). Les données doivent être cumulées depuis le début du test.');
+    inc.forEach(function(m){if(m.type!=='continue'&&c.m[m.id]&&p.m[m.id]&&c.m[m.id].c<p.m[m.id].c)errs.push('Semaine '+(j+1)+' : « '+m.name+' » cumulé baisse.');});});
+  if(all.length>d.k)errs.push('Le fichier contient '+all.length+' semaines pour une durée prévue de '+d.k+'.');
+  if(errs.length)return {errors:errs.slice(0,8)};
+  return {weeks:all,metrics:inc.map(function(m){return {id:m.id,src:m.src,name:m.name.trim()||m.src,type:m.type,role:m.role,sens:m.sens,marge:m.marge};})};
+}
+function readFile(f){
+  var rd=new FileReader();rd.onload=function(){var t=rd.result;
+    if(t.indexOf('�')>=0){var r2=new FileReader();r2.onload=function(){openDraft(r2.result,f.name);};r2.readAsText(f,'windows-1252');}else openDraft(t,f.name);};
+  rd.readAsText(f,'utf-8');
+}
+function openDraft(text,name){
+  ui.error='';ui.notice='';var t=parseCSV(text);
+  if(/^PK/.test(text)){ui.error='Ce fichier est un classeur Excel. Enregistrez-le en CSV, puis déposez le CSV.';ui.tab='donnees';return render();}
+  if(t.length<2||t[0].length<3){ui.error='Fichier illisible : il faut une ligne d\'en-têtes puis au moins une ligne par variation.';ui.tab='donnees';return render();}
+  ui.rawTable=t;ui.draft=analyze(t,name,null);ui.tab='donnees';render();
+}
+function applyDraft(){
+  var d=ui.draft,res=buildWeeks(d);if(res.errors){d.errors=res.errors;return render();}
+  var replace=d.mode==='serie'||!state.weeks.length;
+  if(replace){state.metrics=res.metrics;state.labels={A:d.control,B:d.variant};}
+  state.weeks=res.weeks;state.name=(d.name||'').trim()||state.name;
+  if(replace){state.plan.k=d.k;state.plan.startDate=d.startDate;}
+  ui.draft=null;ui.rawTable=null;ui.week=null;ui.sel=null;ui.tab='resultats';ui.notice=res.weeks.length+' semaine(s) de données chargée(s).';
+  autosave();ensureBounds().then(render);render();
+}
+
+/* ---------- sauvegardes ---------- */
+function listSaved(){var a=[];for(var i=0;i<localStorage.length;i++){var k=localStorage.key(i);if(k.indexOf(NEW_PREFIX)===0){var sm=null;try{sm=JSON.parse(localStorage.getItem(k)).sum||null;}catch(e){}a.push({key:k,label:k.slice(NEW_PREFIX.length),sum:sm});}else if(k.indexOf(OLD_PREFIX)===0)a.push({key:k,label:k.slice(OLD_PREFIX.length)+' (ancien format)'});}return a.sort(function(x,y){return x.label<y.label?-1:1;});}
+function convertOld(o){
+  var s=freshState(),p=o.currentDesignParams||{};s.name=o.name||'';
+  var hasBeta=typeof p.beta==='number';
+  s.plan={k:p.k||parseInt(o.designK,10)||4,alpha:p.alpha||0.05,power:hasBeta?p.power:0.8,beta:hasBeta?p.beta:0.2,testType:p.testTypePrincipal||3,sfu:p.sfu||'KimDeMets',sfl:p.sfl||'HSD',startDate:p.testStartDate||o.testStartDate||todayISO()};
+  var sec=o.isSecondaryKpiPlanned===true;
+  s.metrics=[{id:'principal',src:'',name:'Objectif principal',type:'binaire',role:'principale',sens:'hausse',marge:1}];
+  if(sec)s.metrics.push({id:'securite',src:'',name:'Objectif de sécurité',type:'binaire',role:'garde-fou',sens:'hausse',marge:parseFloat(o.niMarginRel)||1});
+  s.weeks=(o.weeklyEnteredData||[]).map(function(w){var A={n:w.visitorsACumul,m:{principal:{c:w.conversionsACumul_P}}},B={n:w.visitorsBCumul,m:{principal:{c:w.conversionsBCumul_P}}};
+    if(sec){A.m.securite={c:w.conversionsASecondaryCumul||0};B.m.securite={c:w.conversionsBSecondaryCumul||0};}return {A:A,B:B};});
+  return s;
+}
+function loadSaved(key){
+  try{var o=JSON.parse(localStorage.getItem(key));state=key.indexOf(OLD_PREFIX)===0?convertOld(o):o;}catch(e){ui.error='Chargement impossible : '+e.message;return render();}
+  ui.week=null;ui.sel=null;ui.draft=null;ui.planDraft=null;ui.error='';ui.notice='Test « '+state.name+' » chargé.';ui.tab='resultats';
+  if(state.metrics.length)ensureBounds();render();
+}
+
+/* ---------- rendu ---------- */
+var ICON={
+  g:'<svg aria-hidden="true" class="ic" viewBox="0 0 32 32"><circle cx="16" cy="16" r="16" fill="#1D9E75"/><path d="M9.5 16.5l4.4 4.4L22.5 12" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  c:'<svg aria-hidden="true" class="ic" viewBox="0 0 32 32"><circle cx="16" cy="16" r="16" fill="#E46454"/><path d="M11 11l10 10M21 11L11 21" stroke="#fff" stroke-width="3" stroke-linecap="round"/></svg>',
+  w:'<svg aria-hidden="true" class="ic" viewBox="0 0 32 32"><circle cx="16" cy="16" r="14.5" fill="#fff" stroke="#c9402f" stroke-width="2.5"/><path d="M16 8.5v9" stroke="#c9402f" stroke-width="3" stroke-linecap="round"/><circle cx="16" cy="22.5" r="1.9" fill="#c9402f"/></svg>',
+  n:'<svg aria-hidden="true" class="ic" viewBox="0 0 32 32"><circle cx="16" cy="16" r="14.5" fill="#fff" stroke="#9FA1A1" stroke-width="2.5"/><path d="M10 16h12" stroke="#464849" stroke-width="3" stroke-linecap="round"/></svg>',
+  ok:'<svg aria-hidden="true" width="20" height="20" viewBox="0 0 20 20" style="flex:none"><circle cx="10" cy="10" r="9" fill="#E6F4F0" stroke="#028D6A"/><path d="M6 10.4l2.6 2.6L14 7.6" fill="none" stroke="#1D9E75" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  ko:'<svg aria-hidden="true" width="20" height="20" viewBox="0 0 20 20" style="flex:none"><circle cx="10" cy="10" r="9" fill="#FCF1EF" stroke="#c9402f"/><path d="M10 5.5v5.5" stroke="#c9402f" stroke-width="2.2" stroke-linecap="round"/><circle cx="10" cy="14" r="1.3" fill="#c9402f"/></svg>'
+};
+function axisFor(base){
+  if(!(base>0))return null;var S=[.001,.002,.005,.01,.02,.05,.1,.2,.5,1,2,5,10],st=S[S.length-1],i;
+  for(i=0;i<S.length;i++)if(base/S[i]<=5){st=S[i];break;}
+  var n=Math.max(2,Math.ceil(base/st-1e-9));return {M:n*st,step:st,n:n};
+}
+function axPos(v,ax){return 50+Math.max(-1,Math.min(1,v/ax.M))*46;}
+function axisHTML(ax){
+  if(!ax)return '';var h='',j,d=ax.step<.01?1:0;
+  for(j=-ax.n;j<=ax.n;j++)h+='<span class="'+(j&&Math.abs(j)!==ax.n?'x':'')+(ax.n>=4&&j%2?' y':'')+'" style="left:'+axPos(j*ax.step,ax).toFixed(2)+'%">'+(j?pct(j*ax.step,d):'0')+'</span>';
+  return '<div class="axis num">'+h+'</div>';
+}
+function ciBar(st,ax,tone){
+  if(!ax)return '';var g='',j,bar='';
+  for(j=-ax.n;j<=ax.n;j++){var X=axPos(j*ax.step,ax).toFixed(2);g+='<line x1="'+X+'" x2="'+X+'" y1="0" y2="40" stroke="'+(j?'#E6E9E9':'#9FA1A1')+'"'+(j?'':' stroke-dasharray="3 3"')+' vector-effect="non-scaling-stroke"/>';}
+  if(st&&st.lo!=null){var a=axPos(st.lo,ax),b=axPos(st.hi,ax),c=axPos(st.lift,ax).toFixed(2),F={g:'#8FD3BC',c:'#F2A99F',w:'#FBE4E0'}[tone]||'#D3D8DC',K={g:'#0E7C5D',c:'#8f2c20',w:'#c9402f'}[tone]||'#464849';
+    bar='<rect x="'+a.toFixed(2)+'" y="13" width="'+Math.max(.8,b-a).toFixed(2)+'" height="14" rx=".5" ry="3" fill="'+F+'"'+(tone==='w'?' stroke="#E46454" vector-effect="non-scaling-stroke"':'')+'/><line x1="'+c+'" x2="'+c+'" y1="10" y2="30" stroke="'+K+'" stroke-width="2" vector-effect="non-scaling-stroke"/>';}
+  return '<svg class="ci" role="img" aria-label="'+(st&&st.lo!=null?'Intervalle de '+pct(st.lo)+' à '+pct(st.hi):'Pas d\'intervalle')+'" viewBox="0 0 100 40" preserveAspectRatio="none">'+g+bar+'</svg>';
+}
+function smooth(P){
+  var n=P.length;if(!n)return '';var d='M'+P[0][0].toFixed(1)+' '+P[0][1].toFixed(1);if(n===1)return d;
+  var dx=[],s=[],m=[],i;for(i=0;i<n-1;i++){dx.push(P[i+1][0]-P[i][0]);s.push((P[i+1][1]-P[i][1])/dx[i]);}
+  m.push(s[0]);for(i=1;i<n-1;i++)m.push(s[i-1]*s[i]<=0?0:2*s[i-1]*s[i]/(s[i-1]+s[i]));m.push(s[n-2]);
+  for(i=0;i<n-1;i++)d+=' C'+(P[i][0]+dx[i]/3).toFixed(1)+' '+(P[i][1]+m[i]*dx[i]/3).toFixed(1)+' '+(P[i+1][0]-dx[i]/3).toFixed(1)+' '+(P[i+1][1]-m[i+1]*dx[i]/3).toFixed(1)+' '+P[i+1][0].toFixed(1)+' '+P[i+1][1].toFixed(1);
+  return d;
+}
+function seqChart(m,comp,cur,W){
+  var k=state.plan.k,mi=state.metrics.indexOf(m),prim=m.role==='principale',guard=m.role==='garde-fou',pctMode=ui.unit!=='z',small=W<560;
+  var H=Math.round(Math.max(230,Math.min(340,W*0.42))),L=small?34:46,R=small?10:22,T=14,B=30,i;
+  var last=-1;comp.weeks.forEach(function(w,j){if(w.rows[mi].st)last=j;});if(last<0)return '<p class="hint">Pas encore de données pour cette métrique.</p>';
+  var sl=comp.weeks[last].rows[mi].st,scale=[];
+  for(i=0;i<k;i++){var st=comp.weeks[i]&&comp.weeks[i].rows[mi].st;scale.push(!pctMode?1:(st&&st.mA?st.se/Math.abs(st.mA)*100:(sl.mA?sl.se/Math.abs(sl.mA)*100*Math.sqrt((last+1)/(i+1)):NaN)));}
+  var eff=[],up=[],fut=[],zs=[],zn=[];
+  var bend=prim&&state.bounds&&state.bounds.end!=null?state.bounds.end:k;
+  for(i=0;i<k;i++){var bi=Math.min(i,bend),e=effFor(m.role,bi);eff.push(e*scale[i]);up.push((guard?niFor(i):e)*scale[i]);var f=prim&&state.bounds?state.bounds.fut[bi]:null;fut.push(Number.isFinite(f)?f*scale[i]:null);
+    var s2=comp.weeks[i]&&comp.weeks[i].rows[mi].st;zs.push(s2&&s2.zAdj!=null?s2.zAdj*scale[i]:null);zn.push(guard&&s2&&s2.zNi!=null?s2.zNi*scale[i]:null);}
+  if(!eff.concat(up).every(function(v){return isFinite(v);}))return '<p class="hint">Bornes indisponibles.</p>';
+  var hasFut=fut.some(function(v){return v!=null;}),vals=[0].concat(up,eff.map(function(v){return -v;}),zs,zn).filter(function(v){return typeof v==='number'&&isFinite(v);});
+  var mx=Math.max.apply(null,vals.map(Math.abs))*1.12,lo=-mx,hi=mx;
+  var x=function(j){return k===1?L+(W-L-R)/2:L+j*(W-L-R)/(k-1);},y=function(v){return T+(hi-v)/(hi-lo)*(H-T-B);};
+  var pts=function(arr){var P=[];arr.forEach(function(v,j){if(typeof v==='number'&&isFinite(v))P.push([x(j),y(v)]);});return P;};
+  var pe=smooth(pts(up)),pn=smooth(pts(eff.map(function(v){return -v;}))),pf=hasFut?smooth(pts(fut)):'',pz=smooth(pts(zs)),xr=x(k-1),xl=x(0),yb=H-B;
+  var s='<svg viewBox="0 0 '+W+' '+H+'" width="'+W+'" height="'+H+'" role="img" aria-label="Trajectoire de '+esc(m.name)+' et bornes séquentielles"><rect width="'+W+'" height="'+H+'" fill="#FFFFFF"/>';
+  if(k>1){s+='<path d="'+pe+' L'+xr+' '+T+' L'+xl+' '+T+' Z" fill="#EEF8F5"/>';
+    s+='<path d="'+pn+' L'+xr+' '+yb+' L'+xl+' '+yb+' Z" fill="#FCEEEB"/>';}
+  s+='<line x1="'+L+'" x2="'+(W-R)+'" y1="'+y(0)+'" y2="'+y(0)+'" stroke="#9FA1A1" stroke-dasharray="2 4"/>';
+  var step=mx>40?20:mx>16?10:mx>8?5:mx>4?2:mx>1.6?1:0.5,dec=step<1?1:0;
+  for(var v=-Math.floor(mx/step)*step;v<=mx;v+=step)s+=(Math.abs(v)>1e-9?'<line x1="'+L+'" x2="'+(W-R)+'" y1="'+y(v)+'" y2="'+y(v)+'" stroke="#1A1D1F" stroke-opacity=".06"/>':'')+'<text x="'+(L-6)+'" y="'+(y(v)+4)+'" text-anchor="end" font-size="11" fill="#464849">'+(v>0&&pctMode?'+':'')+nf(v,dec)+(pctMode?' %':'')+'</text>';
+  var stp=Math.ceil(k/(small?6:12));for(i=0;i<k;i++)if((i%stp===0&&k-1-i>=stp*0.6)||i===k-1)s+='<text x="'+x(i)+'" y="'+(H-10)+'" text-anchor="middle" font-size="11" fill="#464849"'+(i===cur?' font-weight="700"':'')+'>S'+(i+1)+'</text>';
+  s+='<path d="'+pe+'" fill="none" stroke="#1D9E75" stroke-width="1.5" stroke-linecap="round"/><path d="'+pn+'" fill="none" stroke="#E46454" stroke-width="1.5" stroke-linecap="round"/>';
+  if(hasFut)s+='<path d="'+pf+'" fill="none" stroke="#6F7374" stroke-width="1.5" stroke-dasharray="3 8" stroke-linecap="round"/>';
+  if(guard)s+='<path d="'+smooth(pts(zn))+'" fill="none" stroke="#0082C3" stroke-width="1.5" stroke-dasharray="2 4" stroke-linecap="round"/>';
+  if(!small&&k>1){s+='<g font-size="11" font-weight="600"><text x="'+(xr-10)+'" y="'+(T+18)+'" text-anchor="end" fill="#0E7C5D">'+(guard?'Seuil de non-régression':'Gain démontré : on arrête')+'</text><text x="'+(xr-10)+'" y="'+(yb-10)+'" text-anchor="end" fill="#8f2c20">'+(guard?'Régression démontrée':'Effet négatif démontré : on arrête')+'</text>'+(hasFut?(function(){var j=Math.min(k-2,Math.floor(k*0.6));return '<text x="'+x(j)+'" y="'+(y(fut[j])+16)+'" text-anchor="middle" fill="#464849" font-weight="400">Futilité : sous cette ligne, plus assez de chances d\'aboutir, on arrête</text>';})():'')+'</g>';}
+  var dz=zs[cur];if(typeof dz==='number'&&isFinite(dz))s+='<circle cx="'+x(cur).toFixed(1)+'" cy="'+y(dz).toFixed(1)+'" r="11" fill="#0082C3" fill-opacity=".15"/>';
+  s+='<path d="'+pz+'" fill="none" stroke="#0082C3" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>';
+  zs.forEach(function(z,j){if(typeof z==='number'&&isFinite(z))s+=j===cur?'<circle cx="'+x(j).toFixed(1)+'" cy="'+y(z).toFixed(1)+'" r="6" fill="#0082C3" stroke="#fff" stroke-width="2"/>':'<circle cx="'+x(j).toFixed(1)+'" cy="'+y(z).toFixed(1)+'" r="3.5" fill="#fff" stroke="#0082C3" stroke-width="2"/>';});
+  s+='</svg>';
+  var lg='<span style="color:#0E7C5D;font-weight:600">Zone verte : '+(guard?'non-régression démontrée (courbe en tirets)':'gain démontré')+'</span> · <span style="color:#8f2c20;font-weight:600">zone rose : '+(guard?'régression démontrée':'effet négatif démontré')+'</span>'+(hasFut?' · <span style="font-weight:600">tirets gris : seuil de futilité</span> (en dessous, le test n\'a plus assez de chances d\'aboutir)':'')+' · entre les deux : on continue.'+(pctMode&&last<k-1?' Les bornes des semaines à venir sont estimées à trafic constant et s\'ajusteront au trafic réel.':'')+(m.sens==='baisse'?' Écart orienté : positif = favorable (baisse).':'');
+  return s+'<p class="hint" style="margin-top:6px">'+lg+'</p>';
+}
+/* ---------- partage : le test est compressé dans le lien (après #), rien n'est envoyé à un serveur ---------- */
+function b64u(bytes){var s='',i;for(i=0;i<bytes.length;i++)s+=String.fromCharCode(bytes[i]);return btoa(s).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');}
+function ub64(t){t=t.replace(/-/g,'+').replace(/_/g,'/');while(t.length%4)t+='=';var b=atob(t),a=new Uint8Array(b.length),i;for(i=0;i<b.length;i++)a[i]=b.charCodeAt(i);return a;}
+function sharePayload(){return JSON.stringify({v:1,n:state.name,p:state.plan,m:state.metrics,l:state.labels,w:state.weeks,d:todayISO()});}
+function encodeShare(){
+  var raw=new TextEncoder().encode(sharePayload());
+  if(typeof CompressionStream==='undefined')return Promise.resolve('j'+b64u(raw));
+  return new Response(new Blob([raw]).stream().pipeThrough(new CompressionStream('gzip'))).arrayBuffer().then(function(b){return 'z'+b64u(new Uint8Array(b));});
+}
+function decodeShare(t){
+  var bytes=ub64(t.slice(1));
+  if(t[0]==='j')return Promise.resolve(new TextDecoder().decode(bytes));
+  return new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'))).text();
+}
+function shareBase(){return location.href.split('#')[0];}
+function openShared(t){
+  return decodeShare(t).then(function(txt){var o=JSON.parse(txt);if(!o||!o.p||!Array.isArray(o.m)||!Array.isArray(o.w)||!o.m.length||!o.w.length)throw new Error('lien incomplet');
+    var st=freshState();st.name=String(o.n||'Test partagé');st.plan=Object.assign(st.plan,o.p);st.metrics=o.m;st.labels=o.l||st.labels;st.weeks=o.w;state=st;
+    ui.ro=true;ui.roDate=o.d||'';ui.tab='resultats';ui.error='';ui.notice='';return ensureBounds();
+  }).catch(function(e){ui.ro=false;ui.error='Ce lien de partage est illisible ou incomplet ('+e.message+').';render();});
+}
+function sharePanel(){
+  if(!ui.share)return '';
+  var u=ui.shareUrl||'',sub='Résultats du test « '+(state.name||'test A/B')+' »',body='Bonjour,\n\nVoici les résultats du test « '+(state.name||'test A/B')+' » (lecture seule, données du '+frDate(todayISO())+') :\n'+u+'\n';
+  return '<div class="card share" role="dialog" aria-label="Partager ce test"><div class="row" style="justify-content:space-between"><h3>Partager ce test</h3><button type="button" class="link" data-act="shareclose">Fermer</button></div>'
+    +'<p class="hint">Lecture seule. Le lien contient les résultats du test : rien n\'est enregistré sur le site. La personne voit la décision, les métriques et le graphique, sans pouvoir modifier.</p>'
+    +(u?'<div class="row" style="margin-top:10px"><input class="grow" readonly data-f="shareurl" value="'+esc(u)+'" aria-label="Lien de partage"><button type="button" class="pri" data-act="sharecopy">'+(ui.copied?'Lien copié':'Copier le lien')+'</button></div>'
+      +'<div class="row" style="margin-top:10px;align-items:flex-end"><div class="grow"><label>Ou l\'envoyer par email : adresse du destinataire</label><input type="email" data-f="shareto" value="'+esc(ui.shareTo||'')+'" placeholder="prenom.nom@entreprise.fr"></div><a class="btn" href="mailto:'+encodeURIComponent(ui.shareTo||'')+'?subject='+encodeURIComponent(sub)+'&body='+encodeURIComponent(body)+'">Ouvrir dans ma messagerie</a></div>'
+      +'<p class="hint" style="margin-top:8px">Le message s\'ouvre dans votre messagerie, déjà rédigé : vous le relisez et vous l\'envoyez vous-même. Photo des données du '+frDate(todayISO())+'. Après un nouvel import, générez un nouveau lien. Toute personne qui a le lien peut lire ce test.</p>':'<p class="hint" style="margin-top:10px">Préparation du lien…</p>')+'</div>';
+}
+function head(){
+  var saved=listSaved(),isSaved=false;try{isSaved=!!state.name&&localStorage.getItem(NEW_PREFIX+state.name)!==null&&state.weeks.length>0;}catch(e){}
+  if(ui.ro)return '<div class="robar"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 22 22" style="flex:none"><rect x="4" y="10" width="14" height="9" rx="2" fill="none" stroke="#005a88" stroke-width="2"/><path d="M7.5 10V7a3.5 3.5 0 017 0v3" fill="none" stroke="#005a88" stroke-width="2" stroke-linecap="round"/></svg><span><b>Lecture seule</b>'+(ui.roDate?' · données du '+frDate(ui.roDate):'')+' · test partagé par lien</span><button type="button" class="link" data-act="rocopy">Ouvrir une copie modifiable</button></div><div class="head"><h2 class="roname">'+esc(state.name)+'</h2></div>'
+    +(ui.error?'<div class="err" role="alert">'+esc(Tq(ui.error))+'</div>':'')+(ui.busy?'<div class="ok">Calcul des bornes en cours…</div>':'');
+  if(!state.weeks.length&&!state.metrics.length&&ui.tab==='resultats'&&!ui.draft)return (saved.length?'<div class="head home"><label class="hint" for="gst-load">Reprendre un test enregistré</label><select id="gst-load" data-act="load" aria-label="Tests enregistrés"><option value="">Mes tests ('+saved.length+')</option>'+saved.map(function(s){return '<option value="'+esc(s.key)+'">'+esc(s.label)+'</option>';}).join('')+'</select></div>':'')
+    +(ui.error?'<div class="err" role="alert">'+esc(Tq(ui.error))+'</div>':'')+(ui.notice?'<div class="ok">'+esc(Tq(ui.notice))+'</div>':'');
+  return '<div class="head"><input class="name" data-f="name" value="'+esc(state.name)+'" placeholder="Nom du test" aria-label="Nom du test">'
+    +'<select data-act="load" aria-label="Tests enregistrés"><option value="">Mes tests ('+saved.length+')</option>'+saved.map(function(s){return '<option value="'+esc(s.key)+'">'+esc(s.label)+'</option>';}).join('')+'</select>'
+    +'<button type="button" data-act="save"'+(state.weeks.length&&!isSaved?' class="pri"':'')+'>'+(isSaved?'Enregistré':'Enregistrer')+'</button>'+(state.weeks.length?'<button type="button" data-act="share"'+(isSaved?' class="pri"':'')+' aria-expanded="'+!!ui.share+'"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 16 16" style="vertical-align:-3px;margin-right:6px"><path d="M6.5 9.5l3-3M7 4.5l1-1a2.8 2.8 0 014 4l-1 1M9 11.5l-1 1a2.8 2.8 0 01-4-4l1-1" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>Partager</button>':'')+'<button type="button" class="link" data-act="new">Nouveau test</button></div>'
+    +sharePanel()
+    +'<div class="tabs" role="tablist">'+[['resultats','Résultats'],['donnees','Données et métriques'],['plan','Plan']].map(function(t){return '<button type="button" role="tab" aria-selected="'+(ui.tab===t[0])+'" class="'+(ui.tab===t[0]?'on':'')+'" data-act="tab" data-v="'+t[0]+'">'+t[1]+'</button>';}).join('')+'</div>'
+    +(ui.error?'<div class="err" role="alert">'+esc(Tq(ui.error))+'</div>':'')+(ui.notice?'<div class="ok">'+esc(Tq(ui.notice))+'</div>':'')+(ui.busy?'<div class="ok">Calcul des bornes en cours…</div>':'');
+}
+function dropzone(big,bare){return '<div class="drop'+(big?' big':'')+'" data-act="pick" tabindex="0" role="button"><svg aria-hidden="true" width="48" height="48" viewBox="0 0 48 48"><circle cx="24" cy="24" r="23" fill="#fff" stroke="#028D6A" stroke-width="1.5"/><path d="M24 33V15M16 23l8-8 8 8" fill="none" stroke="#1D9E75" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg><h3>Déposez votre export CSV ici</h3><p class="muted">Une ligne par variation, les métriques en colonnes.</p><p><button type="button" class="pri" data-act="pick">Choisir un fichier</button></p>'
+  +(bare?'':'<p class="row" style="justify-content:center"><button type="button" class="sec" data-act="template"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 16 16"><path d="M8 2v8M4.5 7L8 10.5 11.5 7M2.5 13.5h11" fill="none" stroke="#0E7C5D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Télécharger le modèle CSV</button><button type="button" data-act="example">Essayer avec un exemple</button></p>')+'</div><input type="file" accept=".csv,.txt,.tsv,text/csv" data-f="file" style="display:none">'
+  +'<div class="privacy"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 22 22" style="flex:none"><rect x="4" y="10" width="14" height="9" rx="2" fill="none" stroke="#1D9E75" stroke-width="2"/><path d="M7.5 10V7a3.5 3.5 0 017 0v3" fill="none" stroke="#1D9E75" stroke-width="2" stroke-linecap="round"/></svg><span><b>Vos chiffres ne quittent pas votre poste.</b> Rien n\'est enregistré sur le site : le calcul se fait dans votre navigateur, et vous pouvez sauvegarder le test en local.</span></div>';}
+function demoChart(){
+  var X=[40,94,148,203,257,311,366,420],U=[28,52,66,76,83,88,92,96],F=[176,160,147,136,125,115,105,96],Z=[126,118,108,100,78],p=function(Y){return smooth(Y.map(function(y,i){return [X[i],y];}));},pu=p(U),pl=p(U.map(function(y){return 260-y;})),t='';
+  X.forEach(function(x,i){t+='<text x="'+x+'" y="236" text-anchor="middle" font-size="11" fill="#464849"'+(i===4?' font-weight="700"':'')+'>S'+(i+1)+'</text>';});
+  return '<svg role="img" aria-label="Exemple : la courbe du test franchit le seuil de gain en semaine 5, le test s\'arrête" viewBox="0 0 440 244" style="display:block;width:100%;height:auto;background:#fff;border:1px solid var(--border);border-radius:12px">'
+    +'<path d="'+pu+' L420 12 L40 12 Z" fill="#E3F5EE"/><path d="'+pl+' L420 222 L40 222 Z" fill="#FCEEEB"/>'
+    +'<line x1="40" x2="420" y1="130" y2="130" stroke="#9FA1A1" stroke-dasharray="2 4"/>'
+    +'<path d="'+pu+'" fill="none" stroke="#1D9E75" stroke-width="1.5"/><path d="'+pl+'" fill="none" stroke="#E46454" stroke-width="1.5"/><path d="'+p(F)+'" fill="none" stroke="#6F7374" stroke-width="1.5" stroke-dasharray="3 8" stroke-linecap="round"/>'
+    +'<g font-size="11" font-weight="600"><text x="412" y="28" text-anchor="end" fill="#0E7C5D">Gain démontré : on arrête</text><text x="412" y="214" text-anchor="end" fill="#8f2c20">Effet négatif démontré : on arrête</text><text x="318" y="154" text-anchor="middle" fill="#464849" font-weight="400">Sous les tirets : futilité</text><text x="118" y="92" text-anchor="middle" fill="#464849" font-weight="400">Entre les deux : on continue</text></g>'
+    +'<circle cx="257" cy="78" r="12" fill="#0082C3" fill-opacity=".15"/><path d="'+p(Z)+'" fill="none" stroke="#0082C3" stroke-width="2.5" stroke-linecap="round"/>'
+    +Z.map(function(y,i){return i===4?'<circle cx="'+X[i]+'" cy="'+y+'" r="6" fill="#0082C3" stroke="#fff" stroke-width="2"/>':'<circle cx="'+X[i]+'" cy="'+y+'" r="3.5" fill="#fff" stroke="#0082C3" stroke-width="2"/>';}).join('')+t+'</svg>';
+}
+function testsList(){
+  var saved=listSaved();if(!saved.length)return '';
+  return '<div class="card tl"><div class="row" style="justify-content:space-between;padding:14px 18px"><h3>Mes tests <span class="hint">· '+saved.length+' enregistré'+(saved.length>1?'s':'')+' dans ce navigateur</span></h3></div>'
+    +saved.map(function(x){var m=x.sum,cls=m?(m.c==='win'?'sg':(m.c==='critical'||m.c==='stop')?'sc':''):'';
+      return '<button type="button" class="tlr" data-act="open" data-v="'+esc(x.key)+'"><span class="tln"><b>'+esc(x.label)+'</b><br><span class="hint">'+(m?'Semaine '+m.n+' sur '+m.k+(m.d?' · mis à jour le '+frDate(m.d):''):'Ouvrez-le pour afficher sa décision')+'</span></span>'
+        +'<span class="tll num">'+(m&&typeof m.lift==='number'?pct(m.lift):'')+'</span><span class="pill '+cls+'">'+(m?esc(m.t):'À ouvrir')+'</span></button>';}).join('')+'</div>';
+}
+function manualForm(){
+  var m=ui.man;
+  return '<div class="man"><p class="muted">Pour un test simple, avec une ou deux métriques : pas de fichier, vous tapez vos chiffres chaque semaine.</p>'
+    +'<div class="form2" style="margin-top:14px"><div><label>Nom du test</label><input data-man="name" value="'+esc(m.name)+'" placeholder="ex. Nouvelle fiche produit"></div><div><label>Durée prévue (semaines)</label><input type="number" min="1" max="50" data-man="k" value="'+m.k+'"></div></div>'
+    +m.ms.map(function(x,i){return '<div class="form2" style="margin-top:12px"><div><label>'+(i?'Métrique '+(i+1)+' (facultatif)':'Objectif principal')+'</label><input data-man="m'+i+'name" value="'+esc(x.name)+'" placeholder="'+(i?'ex. Visiteurs avec rebond':'ex. Visiteurs avec achat')+'"></div><div><label>Rôle</label>'+(i?'<select data-man="m'+i+'role"><option value="garde-fou"'+(x.role==='garde-fou'?' selected':'')+'>Garde-fou</option><option value="secondaire"'+(x.role==='secondaire'?' selected':'')+'>Secondaire</option></select>':'<input value="Principale : c\'est elle qui décide" disabled>')+'</div></div>';}).join('')
+    +'<p class="row" style="margin-top:18px"><button type="button" class="pri big" data-act="manstart">Commencer la saisie</button>'+(m.ms.length<5?'<button type="button" class="link" data-act="manadd">Ajouter une métrique</button>':'')+'</p></div>';
+}
+function viewHome(){
+  var tab=ui.howto||'piano',step=function(n,t){return '<div class="stp"><span class="nb">'+n+'</span><span>'+t+'</span></div>';};
+  var faq=function(id,q,body){var on=ui.faq===id;return '<div class="fq'+(on?' on':'')+'"><button type="button" class="fqh" data-act="faq" data-v="'+id+'" aria-expanded="'+on+'"><span>'+q+'</span><svg aria-hidden="true" width="18" height="18" viewBox="0 0 18 18"><path d="'+(on?'M4 11.5L9 6.5l5 5':'M4 6.5l5 5 5-5')+'" fill="none" stroke="#464849" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>'+(on?'<div class="fqb">'+body+'</div>':'')+'</div>';};
+  var tuto=tab==='manuel'?'':tab==='piano'?step(1,'<b>Ouvrez Data Query</b> et créez une requête sur le site du test.')+step(2,'<b>En lignes</b> : la propriété « création » du MV testing (<code>mv_creation</code>), filtrée sur votre test (<code>mv_test</code>).')+step(3,'<b>En colonnes</b> : Visiteurs, puis une métrique « visiteurs ayant… » par objectif suivi.')+step(4,'<b>Période</b> : du premier jour du test à hier, en une seule période.')+step(5,'<b>Exportez en CSV</b> et déposez le fichier ici. Refaites le même export chaque semaine.')
+    :tab==='ga4'?step(1,'<b>Ouvrez Explorer</b> et créez une exploration « Format libre ».')+step(2,'<b>En lignes</b> : la dimension qui porte la variation du test (celle que votre outil de test envoie à Analytics).')+step(3,'<b>En colonnes</b> : « Nom de l\'événement », limité aux événements que vous suivez.')+step(4,'<b>En valeurs</b> : « Nombre total d\'utilisateurs ». Chaque colonne donne les visiteurs ayant déclenché l\'événement ; <code>session_start</code> donne les visiteurs exposés.')+step(5,'<b>Période</b> : du premier jour du test à hier, puis exportez en CSV.')
+    :step(1,'<b>Créez un rapport par variation</b> : une ligne pour le contrôle, une pour la variante.')+step(2,'<b>Ajoutez le nombre de visiteurs</b> (ou d\'utilisateurs) exposés à chaque variation.')+step(3,'<b>Ajoutez une colonne par objectif</b> : le nombre de visiteurs ayant réalisé l\'action, pas le nombre d\'actions.')+step(4,'<b>Période</b> : du premier jour du test à hier, en une seule période.')+step(5,'<b>Exportez en CSV</b>, ou remplissez le modèle à la main.');
+  return '<div class="hero2"><div class="h-txt"><div class="kicker" style="color:#0E7C5D">Analyse séquentielle de test A/B</div><h2>Validez vos tests A/B <em>jusqu\'à 60 % plus vite</em></h2><p class="lead">Chaque semaine, vous déposez vos chiffres. L\'outil vous dit s\'il faut continuer, déployer ou arrêter, sans augmenter le risque d\'erreur.</p>'
+    +'<ul class="pts"><li>'+ICON.ok+'<span>Arrêt dès que c\'est prouvé : gagnant, perdant ou sans avenir</span></li><li>'+ICON.ok+'<span>Jusqu\'à '+MAX_METRICS+' métriques : un objectif, des garde-fous, des secondaires</span></li><li>'+ICON.ok+'<span>Vos chiffres restent dans votre navigateur</span></li></ul>'
+    +'<p class="row cta"><button type="button" class="pri big" data-act="example">Voir la démonstration</button><button type="button" class="big" data-act="goimport">Importer mes données</button></p><p class="hint" style="margin-top:10px">De 25 à 60 % de durée en moins en moyenne, selon la durée prévue (4 à 12 semaines) et l\'effet réel du test.</p></div><div class="h-viz">'+demoChart()+'</div></div>'
+    +'<div class="sec" id="gst-import"><h3 class="sech">Importez vos données</h3><p class="secl">Choisissez votre outil d\'analyse : on vous montre l\'export à préparer, puis vous déposez le fichier.</p>'
+    +'<div class="imp"><div class="imp-l"><div class="kicker">1 · D\'où viennent vos chiffres ?</div><div class="tools2" role="tablist">'+[['piano','Piano Analytics'],['ga4','Google Analytics 4'],['autre','Autre outil'],['manuel','Saisie manuelle']].map(function(t){return '<button type="button" role="tab" aria-selected="'+(tab===t[0])+'" class="'+(tab===t[0]?'on':'')+'" data-act="howto" data-v="'+t[0]+'">'+t[1]+'</button>';}).join('')+'</div>'
+    +(tab==='manuel'?manualForm():'<div class="tuto">'+tuto+'</div>')+'</div>'
+    +'<div class="imp-r">'+(tab==='manuel'
+      ?'<div class="kicker">2 · Chaque semaine, vous saisirez</div><div class="file solo"><div class="fileh"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 14 14"><path d="M3 1.5h5l3 3v8H3z M8 1.5v3h3" fill="none" stroke="#1D9E75" stroke-width="1.4" stroke-linejoin="round"/></svg>Semaine 1 · chiffres cumulés</div><table><thead><tr><th></th><th>A - Contrôle</th><th>B - Variante</th></tr></thead><tbody><tr><td>Visiteurs</td><td class="num">20 124</td><td class="num">20 139</td></tr><tr><td>Achats</td><td class="num">1 041</td><td class="num">1 082</td></tr></tbody></table></div><p class="cap">Des cumuls depuis le premier jour du test, en visiteurs ayant fait l\'action.</p><p class="lock"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 22 22" style="flex:none"><rect x="4" y="10" width="14" height="9" rx="2" fill="none" stroke="#1D9E75" stroke-width="2"/><path d="M7.5 10V7a3.5 3.5 0 017 0v3" fill="none" stroke="#1D9E75" stroke-width="2" stroke-linecap="round"/></svg>Vos chiffres ne quittent pas votre poste.</p>'
+      :'<div class="kicker">2 · Déposez le fichier</div><div class="drop dz2" data-act="pick" tabindex="0" role="button"><h3>Déposez votre export CSV ici</h3><p><button type="button" class="pri" data-act="pick">Choisir un fichier</button></p>'
+        +'<div class="file" aria-label="Exemple de fichier attendu"><div class="fileh"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 14 14"><path d="M3 1.5h5l3 3v8H3z M8 1.5v3h3" fill="none" stroke="#1D9E75" stroke-width="1.4" stroke-linejoin="round"/></svg>export-test.csv</div><table><thead><tr><th>Variation</th><th>Visiteurs</th><th>Achats</th><th class="hx">Rebonds</th></tr></thead><tbody><tr><td>A - Contrôle</td><td class="num">20 124</td><td class="num">1 041</td><td class="num hx">8 019</td></tr><tr><td>B - Variante</td><td class="num">20 139</td><td class="num">1 082</td><td class="num hx">8 105</td></tr></tbody></table></div>'
+        +'<p class="cap">Une ligne par variation, une colonne par métrique, en cumul depuis le premier jour du test.</p><p><button type="button" class="link" data-act="template">Télécharger le modèle CSV</button></p></div><input type="file" accept=".csv,.txt,.tsv,text/csv" data-f="file" style="display:none"><p class="lock"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 22 22" style="flex:none"><rect x="4" y="10" width="14" height="9" rx="2" fill="none" stroke="#1D9E75" stroke-width="2"/><path d="M7.5 10V7a3.5 3.5 0 017 0v3" fill="none" stroke="#1D9E75" stroke-width="2" stroke-linecap="round"/></svg>Vos chiffres ne quittent pas votre poste.</p>')+'</div>'
+    +'<div class="imp-3"><div><div class="kicker">3 · Lisez la décision</div><p>Chaque semaine, l\'outil répond par une seule décision. Vous revenez avec un nouvel export tant qu\'il dit de continuer.</p></div><div aria-hidden="true" class="mini"><span>Continuer</span><span class="on">Déployer</span><span>Arrêter</span></div></div></div>'
+    +'<p class="hint" style="margin-top:14px">Pas encore de données ? <button type="button" class="link" data-act="tab" data-v="plan">Calculez d\'abord la durée du test</button></p></div>'
+    +'<div class="sec"><h3 class="sech">Questions fréquentes</h3><div class="faq">'
+    +faq('pourquoi','Pourquoi ne pas simplement regarder mon test chaque semaine ?','<p>Lu chaque semaine pendant 8 semaines avec le seuil habituel, un test sans effet est déclaré gagnant dans près de 16 % des cas au lieu de 5 %. L\'analyse séquentielle fixe à l\'avance un seuil pour chaque semaine, plus exigeant au début. Vous regardez aussi souvent que prévu, le risque total reste celui que vous avez choisi.</p>')
+    +faq('donnees','Que deviennent mes données ?','<p>Rien n\'est envoyé ni enregistré sur le site : le calcul se fait dans votre navigateur. « Enregistrer » garde le test sur ce poste uniquement, pour le retrouver la semaine suivante.</p>')
+    +faq('partage','Comment partager un résultat ?','<p>Une fois le test chargé, le bouton « Partager » crée un lien de lecture seule. Le lien contient les résultats : la personne qui l\'ouvre voit la décision, les métriques et le graphique, sans rien pouvoir modifier.</p>')
+    +'</div></div>';
+}
+function lvl(role){var v=ciLevel(role)*100;return nf(v,Math.abs(v-Math.round(v))>1e-9?1:0);}
+function tipHTML(r,wk){
+  var m=r.metric,st=r.st,S=STATUS[r.status],cont=m.type==='continue',va=wk.A.m[m.id]||{},vb=wk.B.m[m.id]||{};
+  if(!st)return '<div class="hint">Pas encore de données pour cette métrique.</div>';
+  var fv=function(v){return cont?nf(v,2):nf(v*100,2)+' %';};
+  return '<div class="tt"><b>'+esc(m.name)+'</b><span class="pill '+S[1]+'">'+S[0]+'</span></div>'
+    +'<div class="td num"><b>'+pct(st.lift)+'</b>'+(st.lo!=null?' · intervalle à '+lvl(m.role)+' % : de '+pct(st.lo)+' à '+pct(st.hi):'')+'</div>'+((TONE[r.status]==='g'||TONE[r.status]==='c')&&st.lo!=null&&st.lo<0&&st.hi>0?'<div class="hint">L\'intervalle contient encore 0 : il est calculé avec une marge un peu plus stricte que le seuil de décision.</div>':'')
+    +'<table class="tv"><thead><tr><th></th><th>'+esc(state.labels.A)+'</th><th>'+esc(state.labels.B)+'</th></tr></thead><tbody>'
+    +'<tr><td>Visiteurs</td><td class="num">'+nf(wk.A.n)+'</td><td class="num">'+nf(wk.B.n)+'</td></tr>'
+    +'<tr><td>'+(cont?'Somme':'Conversions')+'</td><td class="num">'+nf(cont?va.s:va.c,0)+'</td><td class="num">'+nf(cont?vb.s:vb.c,0)+'</td></tr>'
+    +'<tr><td>'+(cont?'Moyenne par visiteur':'Taux')+'</td><td class="num">'+fv(st.mA)+'</td><td class="num">'+fv(st.mB)+'</td></tr></tbody></table>'
+    +'<div class="hint num">Z '+(st.zAdj!=null?nf(st.zAdj,2):'—')+' · borne '+nf(r.eff,2)+(m.role==='garde-fou'?' (régression) · Z de non-régression '+(st.zNi!=null?nf(st.zNi,2):'—')+' · borne '+nf(r.effNi,2)+' · marge '+nf(m.marge,1)+' %':'')+(m.sens==='baisse'?' · baisse favorable':'')+'</div>'
+    +(m.role==='garde-fou'&&nRole('garde-fou')>1?'<div class="hint" style="margin-top:4px">Avec plusieurs garde-fous, la régression est jugée sur une borne plus exigeante que celle de l\'intervalle : un intervalle entièrement défavorable ne suffit pas à la démontrer.</div>':'');
+}
+function rowHead(ax){return '<div class="mrw hd" aria-hidden="true"><span></span><span>Métrique</span><span class="c-a">'+esc(state.labels.A)+'</span><span class="c-b">'+esc(state.labels.B)+'</span><span class="c-lift">Écart</span><div class="c-ci">'+axisHTML(ax)+'</div><span class="c-st">Statut</span></div>';}
+function metricRow(r,wk,ax,sel,big){
+  var m=r.metric,st=r.st,S=STATUS[r.status],tone=TONE[r.status]||'',cont=m.type==='continue';
+  var fv=function(v){return st?(cont?nf(v,2):nf(v*100,2)+' %'):'—';},tags=[];
+  if(m.sens==='baisse')tags.push('baisse favorable');if(m.role==='garde-fou')tags.push('marge '+nf(m.marge,1)+' %');if(st&&cont)tags.push('métrique continue, à lire avec prudence');else if(st&&wk.A.m[m.id]&&wk.B.m[m.id]&&Math.min(wk.A.m[m.id].c,wk.B.m[m.id].c)<LOWC)tags.push('moins de '+LOWC+' conversions, résultat fragile');
+  return '<div class="mrw'+(big?' big':'')+(tone?' t-'+tone:'')+(m.id===sel?' sel':'')+'" data-act="sel" data-v="'+m.id+'" tabindex="0" role="button" aria-pressed="'+(m.id===sel)+'">'+ICON[tone||'n']
+    +'<div class="c-name"><div class="mn">'+esc(m.name)+'</div><div class="hint"><span class="mob num">'+fv(st&&st.mA)+' → '+fv(st&&st.mB)+(tags.length?' · ':'')+'</span>'+tags.join(' · ')+'</div></div>'
+    +'<div class="c-a num">'+fv(st&&st.mA)+'</div><div class="c-b num">'+fv(st&&st.mB)+'</div>'
+    +'<div class="c-lift"><span class="lift num">'+pct(st&&st.lift)+'</span></div>'
+    +'<div class="c-ci">'+ciBar(st,ax,tone)+'</div>'
+    +'<div class="c-st"><span class="pill '+S[1]+'">'+S[0]+'</span></div>'
+    +'<div class="tip" role="tooltip">'+tipHTML(r,wk)+'</div></div>';
+}
+function boundsStale(){var p=state.plan,ak='v44|'+planKey(p)+'|'+nRole('garde-fou')+'|'+nRole('secondaire')+'|'+infoKey();return state.metrics.length&&state.auxKey!==ak&&ui.bfail!==ak;}
+function viewResults(){
+  if(!state.weeks.length)return viewHome();
+  if(!ui.busy&&boundsStale())setTimeout(function(){if(!ui.busy&&boundsStale())ensureBounds();},0);
+  var comp=compute(),n=state.weeks.length,dw=comp.decisionWeek,cur=ui.week!=null&&ui.week<n?ui.week:(dw!=null?dw:n-1),W=comp.weeks[cur],wk=state.weeks[cur],k=state.plan.k,i;
+  var d=dw!=null?comp.weeks[dw].dec:W.dec,tone=d.cls==='win'?'g':(d.cls==='critical'||d.cls==='stop')?'c':'a';
+  var cnt=function(f){return W.rows.filter(f).length;},nG=cnt(function(r){return TONE[r.status]==='g';}),nC=cnt(function(r){return TONE[r.status]==='c';}),nW=cnt(function(r){return TONE[r.status]==='w';}),nN=W.rows.length-nG-nC-nW;
+  var dev=0,late=false;for(i=0;i<=cur;i++){var dv=(state.weeks[i].A.n+state.weeks[i].B.n)/(wk.A.n+wk.B.n)-(i+1)/(cur+1);if(Math.abs(dv)>dev){dev=Math.abs(dv);late=dv<0;}}var irr=dev>0.10,noinfo=k>1&&!infoVec();
+  var tot=wk.A.n+wk.B.n,chi=Math.pow(wk.A.n-tot/2,2)/(tot/2)*2,srm=chi>10.828;
+  var dico='<svg aria-hidden="true" width="44" height="44" viewBox="0 0 44 44" style="flex:none"><circle cx="22" cy="22" r="21" fill="#fff" stroke="'+(tone==='g'?'#028D6A':tone==='c'?'#c9402f':'#D79A2A')+'" stroke-width="2"/>'+(d.cls==='win'?'<path d="M13 22.5l6 6L31 16" fill="none" stroke="#1D9E75" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>':d.cls==='continue'?'<path d="M17 13l13 9-13 9z" fill="#8a5d0b"/>':tone==='c'?'<rect x="14" y="14" width="16" height="16" rx="2.5" fill="#c9402f"/>':'<rect x="15" y="13" width="5" height="18" rx="1.5" fill="#8a5d0b"/><rect x="24" y="13" width="5" height="18" rx="1.5" fill="#8a5d0b"/>')+'</svg>';
+  var pr=(dw!=null?comp.weeks[dw]:W).rows.filter(function(r){return r.metric.role==='principale';})[0],vkey='',ci0='',warnV='',wkd=state.weeks[dw!=null?dw:cur];
+  if(pr&&pr.st){var pc=pr.metric.type==='continue',pf=function(v){return pc?nf(v,2):nf(v*100,2)+' %';},pt=TONE[pr.status]||'';
+    vkey='<div class="vkey"><span class="vlift num'+(pt?' k-'+pt:'')+'">'+pct(pr.st.lift)+'</span><span class="vname"><b>'+esc(pr.metric.name)+'</b><span class="pill '+STATUS[pr.status][1]+'">'+STATUS[pr.status][0]+'</span><br><span class="hint num">'+pf(pr.st.mA)+' → '+pf(pr.st.mB)+(pr.st.lo!=null?' · intervalle à '+lvl('principale')+' % : de '+pct(pr.st.lo)+' à '+pct(pr.st.hi):'')+'</span></span></div>';
+    if((pt==='g'||pt==='c')&&pr.st.lo!=null&&pr.st.lo<0&&pr.st.hi>0)ci0='<p class="hint ci0">L\'intervalle contient encore 0 : ce n\'est pas une contradiction. La décision se lit sur le seuil de la semaine, qui est franchi. L\'intervalle est calculé à part, avec une marge un peu plus stricte.</p>';}
+  if(pr&&pr.st){var pm0=pr.metric,ca=wkd.A.m[pm0.id]||{},cb=wkd.B.m[pm0.id]||{};
+    if(pm0.type==='continue')warnV+='<p class="hint vw">'+ICON.ko+'<span><b>Métrique continue.</b> Le calcul est moins éprouvé que pour un taux : si quelques valeurs très élevées pèsent lourd (gros paniers), lisez ce résultat avec prudence.</span></p>';
+    else if(Math.min(ca.c,cb.c)<LOWC)warnV+='<p class="hint vw">'+ICON.ko+'<span><b>Volume faible.</b> Moins de '+LOWC+' conversions dans une variation ('+nf(ca.c)+' et '+nf(cb.c)+') : à ce volume, le risque d\'erreur annoncé n\'est pas garanti.</span></p>';
+    if(U()&&dw!=null&&(dw+1)%7!==0)warnV+='<p class="hint vw">'+ICON.ko+'<span><b>Décision en cours de \u0002.</b> '+(dw+1)+' jour'+(dw?'s':'')+' de test : tous les jours de la \u0002 ne sont pas représentés à parts égales. Si le comportement de vos visiteurs change le week-end, terminez la \u0002 avant de déployer.</span></p>';}
+  var h='<div class="verdict"><div class="v-main t-'+tone+'">'+dico+'<div><div class="kicker">Décision · '+(dw!=null?'acquise en semaine '+(dw+1)+' sur '+k:'semaine '+(cur+1)+' sur '+k)+'</div>'+vkey+'<h3>'+esc(d.title)+'</h3><p>'+esc(Tq(d.text))+'</p>'+ci0+warnV
+    +(dw!=null&&cur!==dw?'<p class="hint" style="margin-top:6px">Vous relisez la semaine '+(cur+1)+' : elle ne modifie pas la décision.</p>':'')
+    +'<div class="chips">'+(nG?'<span class="pill sg">'+nG+' démontrée'+(nG>1?'s':'')+' favorable'+(nG>1?'s':'')+'</span>':'')+(nC?'<span class="pill sc">'+nC+' démontrée'+(nC>1?'s':'')+' défavorable'+(nC>1?'s':'')+'</span>':'')+(nW?'<span class="pill w">'+nW+' garde-fou'+(nW>1?'s':'')+' à surveiller</span>':'')+(nN?'<span class="pill">'+nN+' non conclusive'+(nN>1?'s':'')+'</span>':'')+'</div></div></div>';
+  var seg='';for(i=0;i<k;i++)seg+='<span class="'+(i<n?(dw!=null&&i>dw?'post':'done'):'todo')+(i===dw?' dec':'')+'"></span>';
+  var lab='';if(k<=12)for(i=0;i<k;i++)lab+='<span'+(i===dw?' style="font-weight:700;color:#1A1D1F"':'')+'>S'+(i+1)+'</span>';
+  h+='<div class="v-side"><div class="row" style="justify-content:space-between;align-items:baseline"><span class="hint" style="font-weight:600">Progression</span><b class="big">'+n+' semaine'+(n>1?'s':'')+' sur '+k+'</b></div>'
+    +(k<=16?'<div class="segs" style="grid-template-columns:repeat('+k+',minmax(0,1fr))">'+seg+'</div>'+(lab?'<div class="seglab" style="grid-template-columns:repeat('+k+',minmax(0,1fr))">'+lab+'</div>':''):'<div class="bar"><i style="width:'+Math.min(100,n/k*100)+'%"></i></div>')
+    +'<span class="hint">'+(dw!=null?'<b style="color:#1A1D1F">Résultat acquis depuis la semaine '+(dw+1)+'.</b> '+(n>dw+1?'Le test devait s\'arrêter là : '+(n-dw-1>1?'les semaines '+(dw+2)+(n-dw-1>2?' à ':' et ')+n+' ont été importées':'la semaine '+n+' a été importée')+' après la décision (en hachuré). '+(n-dw-1>1?'Elles':'Elle')+' ne '+(n-dw-1>1?'peuvent':'peut')+' plus la modifier et '+(n-dw-1>1?'servent':'sert')+' seulement de lecture complémentaire.':''):'Semaines importées en vert.')+' Du '+frDate(state.plan.startDate)+' au '+frDate(addDays(state.plan.startDate,(U()?1:7)*n-1))+'.</span>'
+    +'<div class="chk" style="border-top:1px solid var(--line);padding-top:12px">'+(srm?ICON.ko:ICON.ok)+'<span><b>'+(srm?'Répartition déséquilibrée':'Répartition équilibrée')+'</b><br><span class="hint num">'+nf(wk.A.n)+' / '+nf(wk.B.n)+' visiteurs · '+(srm?'p < 0,001 : vérifiez le tracking':'pas de SRM')+'</span></span></div>'
+    +'<div class="chk">'+(irr||noinfo?ICON.ko:ICON.ok)+'<span><b>'+(noinfo?'Volumes incohérents':irr?'Trafic irrégulier':'Trafic régulier')+'</b><br><span class="hint num">'+(noinfo?'Un cumul de visiteurs est nul ou en baisse : les seuils sont calculés comme si chaque semaine apportait le même volume.':irr?'Les semaines n\'apportent pas le même volume (écart max '+nf(dev*100,0)+' points). Les seuils sont calculés sur le trafic réel de chaque semaine : le risque de faux positif est tenu.'+(late?(state.plan.traffic>0?' Le trafic arrive tard : la futilité est réglée sur le trafic prévu, ce qui limite les arrêts à tort, mais la puissance reste inférieure à celle du plan.':' Le trafic arrive tard : la futilité peut arrêter à tort un test gagnant. Renseignez le trafic prévu dans l\'onglet Plan pour limiter ce risque.'):''):nf(tot)+' visiteurs · volume stable d\'une semaine à l\'autre')+'</span></span></div></div></div>';
+  h+='<div class="tools"><button type="button" data-act="legend" aria-expanded="'+!!ui.legend+'"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 18 18"><circle cx="9" cy="9" r="8" fill="none" stroke="#464849" stroke-width="1.5"/><path d="M6.8 7a2.3 2.3 0 114 1.5c-.8.7-1.7 1-1.7 2.2" fill="none" stroke="#464849" stroke-width="1.6" stroke-linecap="round"/><circle cx="9" cy="13.3" r="1" fill="#464849"/></svg>Comment lire les statuts</button>'
+    +'<label class="hist">Historique <select data-act="weeksel" aria-label="Semaine affichée">'+comp.weeks.map(function(w,j){return '<option value="'+j+'"'+(j===cur?' selected':'')+'>Semaine '+(j+1)+(j===dw?' : décision':'')+'</option>';}).join('')+'</select></label></div>';
+  if(ui.legend)h+='<div class="card legend" style="margin-top:8px"><div><span class="pill sg">Démontré favorable</span> La borne séquentielle est franchie dans le bon sens : le résultat est acquis avec le risque d\'erreur choisi.</div><div><span class="pill sc">Démontré défavorable</span> La borne est franchie dans le mauvais sens.</div><div><span class="pill w">À surveiller</span> Garde-fou dont l\'écart défavorable passe le seuil d\'alerte (Z ≤ −1,90) sans que la régression soit démontrée. Simple signalement, pas un test : sans aucun effet réel, un garde-fou l\'affiche au moins une fois dans 7 % (4 semaines) à 12 % (12 semaines) des tests.</div><div><span class="pill">Non conclusif</span> Aucune borne franchie : rien n\'est démontré à ce stade.</div><div><b>Lecture d\'une ligne.</b> La barre est l\'intervalle de confiance de l\'écart, le trait son niveau observé ; l\'axe est le même pour toutes les métriques. Survolez une ligne (ou sélectionnez-la) pour ses volumes, son Z et sa borne.</div><div class="hint">Toutes les métriques sont lues avec des bornes séquentielles : celles du plan pour l\'objectif principal ; des bornes d\'efficacité seule pour les garde-fous, partagées entre eux pour la régression ; des bornes partagées entre les secondaires et lues dans les deux sens (correction de Bonferroni). Le risque de fausse alerte est tenu pour chaque famille, pas seulement par métrique.</div></div>';
+  var hw=W.rows.map(function(r){return r.st&&r.st.lo!=null?Math.max(Math.abs(r.st.lo),Math.abs(r.st.hi)):null;}).filter(function(v){return v!=null;}).sort(function(a,b){return a-b;});
+  var M=hw.length?Math.min(hw[hw.length-1],3*hw[Math.floor((hw.length-1)/2)]):0,ax=axisFor(M);
+  var sel=ui.sel&&state.metrics.some(function(m){return m.id===ui.sel;})?ui.sel:(state.metrics.filter(function(m){return m.role==='principale';})[0]||state.metrics[0]).id;
+  [['principale','Objectif principal','C\'est lui qui décide. Survolez ou sélectionnez une ligne pour le détail.'],['garde-fou','Garde-fous','Ils peuvent bloquer un déploiement'],['secondaire','Métriques secondaires','Lecture complémentaire, sans effet sur la décision']].forEach(function(g){
+    var rows=W.rows.filter(function(r){return r.metric.role===g[0];});if(!rows.length)return;
+    var sub=g[2];if(g[0]==='garde-fou'){var a=rows.filter(function(r){return r.status==='REGRESSION';}).length,b=rows.filter(function(r){return r.status==='WATCH';}).length;sub+=' · '+a+' régression'+(a>1?'s':'')+' démontrée'+(a>1?'s':'')+', '+b+' à surveiller';}
+    h+='<div class="grp"><h3>'+g[1]+'</h3><span class="hint">'+sub+'</span></div><div class="ml'+(g[0]==='principale'?' prim':'')+'">'+rowHead(ax)+rows.map(function(r){return metricRow(r,wk,ax,sel,g[0]==='principale');}).join('')+'</div>';
+  });
+  var m=state.metrics.filter(function(x){return x.id===sel;})[0],mi=state.metrics.indexOf(m);
+  h+='<div class="card detail"><div class="row" style="justify-content:space-between"><h3>Trajectoire : '+esc(m.name)+'</h3><span class="toggle" role="group" aria-label="Unité du graphique"><button type="button" data-act="unit" data-v="pct" aria-pressed="'+(ui.unit!=='z')+'" class="'+(ui.unit!=='z'?'on':'')+'">Écart en %</button><button type="button" data-act="unit" data-v="z" aria-pressed="'+(ui.unit==='z')+'" class="'+(ui.unit==='z'?'on':'')+'">Z</button></span></div>'
+    +'<p class="hint">Tant que la courbe bleue reste dans le couloir blanc, on continue. Dès qu\'elle en sort, le test s\'arrête. Cliquez une métrique pour afficher sa trajectoire.</p><div data-chart="'+m.id+'" data-cur="'+cur+'" style="margin-top:10px"></div>'
+    +'<div style="border-top:1px solid var(--line);margin-top:10px;padding-top:6px"><button type="button" class="link" data-act="detail" aria-expanded="'+!!ui.detail+'">'+(ui.detail?'▾ Masquer':'▸ Voir')+' le détail (volumes, Z et bornes semaine par semaine)</button></div>';
+  if(ui.detail)h+='<div class="fiche">'+tipHTML(W.rows[mi],wk)+'</div><div class="scroll" style="margin-top:10px"><table><thead><tr><th>Sem.</th><th>'+esc(state.labels.A)+'</th><th>'+esc(state.labels.B)+'</th><th>Écart</th><th>Z</th>'+(m.role==='garde-fou'?'<th>Z non-rég.</th><th>Borne non-rég.</th>':'')+'<th>'+(m.role==='garde-fou'?'Borne régression':'Borne eff.')+'</th>'+(m.role==='principale'?'<th>Borne fut.</th>':'')+'<th class="l">Statut</th></tr></thead><tbody>'
+    +comp.weeks.map(function(w,j){var r=w.rows[mi],st=r.st,cont=m.type==='continue',fv=function(v){return st?(cont?nf(v,2):nf(v*100,2)+' %'):'—';};
+      return '<tr class="'+(j===cur?'on':'')+'"><td>S'+(j+1)+'</td><td class="num">'+fv(st&&st.mA)+'</td><td class="num">'+fv(st&&st.mB)+'</td><td class="num">'+pct(st&&st.lift)+'</td><td class="num">'+(st&&st.zAdj!=null?nf(st.zAdj,3):'—')+'</td>'+(m.role==='garde-fou'?'<td class="num">'+(st&&st.zNi!=null?nf(st.zNi,3):'—')+'</td><td class="num">'+nf(r.effNi,3)+'</td>':'')+'<td class="num">'+nf(r.eff,3)+'</td>'+(m.role==='principale'?'<td class="num">'+(Number.isFinite(w.fut)?nf(w.fut,3):'—')+'</td>':'')+'<td class="l"><span class="pill '+STATUS[r.status][1]+'">'+STATUS[r.status][0]+'</span></td></tr>';}).join('')
+    +'</tbody></table></div><p class="hint" style="margin-top:8px">Intervalle à '+lvl(m.role)+' % sur l\'ensemble du test : calculé sur le rapport des deux groupes, avec la borne d\'efficacité seule de la semaine. Il peut, à la marge, inclure 0 alors que la borne du plan est franchie : c\'est la borne qui décide.</p>';
+  return h+'</div>';
+}
+function metricsCard(){
+  if(!state.metrics.length)return '';
+  var sel=function(v,opts){return opts.map(function(o){return '<option value="'+o[0]+'"'+(String(o[0])===String(v)?' selected':'')+'>'+o[1]+'</option>';}).join('');};
+  return '<div class="card pcard"><div class="phead"><div><h3>Métriques suivies <span class="hint">· '+state.metrics.length+' sur '+MAX_METRICS+'</span></h3><span class="hint">Une principale décide, les garde-fous peuvent bloquer, les secondaires informent.</span></div></div>'
+    +(state.metrics.length?'<div class="scroll"><div class="mtab"><div class="mt h"><span>Nom affiché</span><span>Type</span><span>Rôle</span><span>Sens favorable</span><span>Marge tolérée</span></div>'
+      +state.metrics.map(function(m,i){return '<div class="mt'+(m.role==='principale'?' on':'')+'"><input data-m="name" data-i="'+i+'" value="'+esc(m.name)+'" aria-label="Nom affiché"><span class="hint">'+(m.type==='continue'?'Moyenne':'Taux')+'</span>'
+        +'<select data-m="role" data-i="'+i+'" aria-label="Rôle">'+sel(m.role,[['principale','Principale'],['garde-fou','Garde-fou'],['secondaire','Secondaire']])+'</select>'
+        +'<select data-m="sens" data-i="'+i+'" aria-label="Sens favorable">'+sel(m.sens,[['hausse','Hausse'],['baisse','Baisse']])+'</select>'
+        +(m.role==='garde-fou'?'<input type="number" min="0.1" max="20" step="0.1" data-m="marge" data-i="'+i+'" value="'+m.marge+'" aria-label="Marge tolérée en %">':'<span class="hint">—</span>')+'</div>';}).join('')
+      +'</div></div><p class="hint" style="padding:12px 20px 0">Marge tolérée : dégradation relative maximale acceptée pour un garde-fou (en %). Changer un rôle après avoir vu les résultats fausse la lecture du test : l\'outil demande une confirmation.</p>'+margeWarn()
+      :'<p class="hint" style="padding:16px 20px 0">Les métriques sont créées à l\'import du fichier (onglet Données).</p>')+'</div>';
+}
+function viewData(){
+  var h='';
+  if(ui.draft){var d=ui.draft,opt=function(sel,none){return (none?'<option value="-1">—</option>':'')+d.H.map(function(x,i){return '<option value="'+i+'"'+(i===sel?' selected':'')+'>'+esc(x)+'</option>';}).join('');};
+    var locked=state.weeks.length&&d.mode==='instantane';
+    h+='<div class="card"><div class="kicker">Import · '+esc(d.file||'')+'</div><h3>Vérifiez la lecture du fichier</h3>'
+      +'<p class="muted" style="margin-top:4px">'+(d.mode==='serie'?d.keys.length+' semaine(s) détectée(s) : le fichier <b>remplace</b> les données du test.':'Instantané cumulé : ajouté comme <b>semaine '+(state.weeks.length+1)+'</b>.')+'</p>'
+      +(d.errors.length?'<div class="err" role="alert">'+d.errors.map(esc).join('<br>')+'</div>':'')
+      +'<div class="form"><div><label>Nom du test</label><input data-d="name" value="'+esc(d.name)+'"></div>'
+      +(d.tests.length>1?'<div><label>Test (colonne « '+esc(d.H[d.cTest])+' »)</label><select data-d="test">'+d.tests.map(function(t){return '<option'+(t===d.test?' selected':'')+'>'+esc(t)+'</option>';}).join('')+'</select></div>':'')
+      +'<div><label>Colonne variation</label><select data-d="cVar">'+opt(d.cVar,true)+'</select></div><div><label>Colonne visiteurs</label><select data-d="cVis">'+opt(d.cVis,true)+'</select></div>'
+      +'<div><label>Contrôle (A)</label><select data-d="control">'+d.vars.map(function(t){return '<option'+(t===d.control?' selected':'')+'>'+esc(t)+'</option>';}).join('')+'</select></div>'
+      +'<div><label>Variante (B)</label><select data-d="variant">'+d.vars.filter(function(t){return t!==d.control;}).map(function(t){return '<option'+(t===d.variant?' selected':'')+'>'+esc(t)+'</option>';}).join('')+'</select></div>'
+      +(locked?'':'<div><label>Durée prévue (semaines)</label><input type="number" min="1" max="50" data-d="k" value="'+d.k+'"></div><div><label>Date de début</label><input type="date" data-d="startDate" value="'+esc(d.startDate)+'"></div>')+'</div>'
+      +(d.mode==='serie'?'<p class="row" style="margin-top:10px"><input type="checkbox" id="gst-cum" data-d="cumulate"'+(d.cumulate?' checked':'')+'><label for="gst-cum" style="margin:0;font-weight:400;font-size:13px">Mon fichier donne les chiffres de chaque semaine séparément : les cumuler. <span class="hint">Déconseillé : un visiteur vu deux semaines est alors compté deux fois.</span></label></p>':'')
+      +'<h4 style="margin-top:16px">Métriques ('+d.metrics.filter(function(m){return m.include;}).length+' / '+MAX_METRICS+')</h4>'
+      +d.metrics.map(function(m,i){return '<div class="mrow"><input type="checkbox" data-dm="include" data-i="'+i+'"'+(m.include?' checked':'')+(locked?' disabled':'')+' aria-label="Inclure '+esc(m.name)+'"><div class="mname"><input data-dm="name" data-i="'+i+'" value="'+esc(m.name)+'" aria-label="Nom"'+(locked?' disabled':'')+'><span class="hint">'+(m.type==='continue'?'Continue (somme + somme des carrés)':'Binaire (visiteurs ayant fait l\'action)')+'</span></div>'
+        +'<select data-dm="role" data-i="'+i+'" aria-label="Rôle"'+(locked?' disabled':'')+'>'+[['principale','Principale'],['garde-fou','Garde-fou'],['secondaire','Secondaire']].map(function(o){return '<option value="'+o[0]+'"'+(m.role===o[0]?' selected':'')+(o[0]==='principale'&&m.type==='continue'?'':'')+'>'+o[1]+'</option>';}).join('')+'</select>'
+        +'<select data-dm="sens" data-i="'+i+'" aria-label="Sens favorable"'+(locked?' disabled':'')+'><option value="hausse"'+(m.sens==='hausse'?' selected':'')+'>Hausse favorable</option><option value="baisse"'+(m.sens==='baisse'?' selected':'')+'>Baisse favorable</option></select><span></span><span></span></div>';}).join('')
+      +(d.metrics.length?'':'<p class="err">Aucune colonne numérique de métrique détectée.</p>')
+      +'<p class="row" style="margin-top:14px"><button type="button" class="pri" data-act="apply">Importer et analyser</button><button type="button" data-act="cancel">Annuler</button></p></div>';
+    return h;}
+  h+='<div class="card"><div class="kicker">Import</div><h3>'+(state.weeks.length?'Ajouter la semaine '+(state.weeks.length+1)+' ou remplacer les données':'Importer les données du test')+'</h3><p class="muted" style="margin:4px 0 12px">Chaque fichier doit couvrir <b>du début du test à la fin de la semaine</b> (cumul). Un fichier sans colonne « Semaine » est ajouté comme semaine suivante ; un fichier avec plusieurs semaines remplace tout.</p>'+dropzone()+'</div>';
+  if(state.metrics.length){
+    h+='<div class="card"><div class="row" style="justify-content:space-between"><h3>Données cumulées</h3><span class="row"><button type="button" data-act="manual">'+(ui.manual?'Fermer la saisie':'Saisir une semaine à la main')+'</button><button type="button" data-act="export">Exporter en CSV</button>'+(state.weeks.length?'<button type="button" class="danger" data-act="delweek">Supprimer la semaine '+state.weeks.length+'</button>':'')+'</span></div>';
+    if(ui.manual){h+='<div class="scroll" style="margin-top:10px"><table><thead><tr><th>Semaine '+(state.weeks.length+1)+' (cumul)</th><th>'+esc(state.labels.A)+'</th><th>'+esc(state.labels.B)+'</th></tr></thead><tbody><tr><td>Visiteurs</td><td><input type="number" min="0" data-mw="A|n"></td><td><input type="number" min="0" data-mw="B|n"></td></tr>'
+      +state.metrics.map(function(m){return m.type==='continue'?'<tr><td>'+esc(m.name)+' : somme</td><td><input data-mw="A|'+m.id+'|s"></td><td><input data-mw="B|'+m.id+'|s"></td></tr><tr><td>'+esc(m.name)+' : somme des carrés</td><td><input data-mw="A|'+m.id+'|ss"></td><td><input data-mw="B|'+m.id+'|ss"></td></tr>':'<tr><td>'+esc(m.name)+'</td><td><input type="number" min="0" data-mw="A|'+m.id+'|c"></td><td><input type="number" min="0" data-mw="B|'+m.id+'|c"></td></tr>';}).join('')
+      +'</tbody></table></div><p style="margin-top:10px"><button type="button" class="pri" data-act="addweek">Ajouter la semaine '+(state.weeks.length+1)+'</button></p>';}
+    h+='<div class="scroll" style="margin-top:10px"><table><thead><tr><th>Sem.</th><th class="l">Variation</th><th>Visiteurs</th>'+state.metrics.map(function(m){return '<th>'+esc(m.name)+'</th>';}).join('')+'</tr></thead><tbody>'
+      +(state.weeks.length?state.weeks.map(function(w,i){return ['A','B'].map(function(v){return '<tr><td>'+(v==='A'?'S'+(i+1):'')+'</td><td class="l">'+esc(state.labels[v])+'</td><td class="num">'+nf(w[v].n)+'</td>'+state.metrics.map(function(m){var x=w[v].m[m.id];return '<td class="num">'+(x?(m.type==='continue'?nf(x.s,2):nf(x.c)):'—')+'</td>';}).join('')+'</tr>';}).join('');}).join(''):'<tr><td colspan="'+(3+state.metrics.length)+'" class="l">Aucune semaine saisie.</td></tr>')
+      +'</tbody></table></div></div>';}
+  var sub=state.metrics.length&&state.weeks.length?'<div class="toggle dsub" role="group" aria-label="Contenu affiché"><button type="button" data-act="dsub" data-v="donnees" aria-pressed="'+(ui.dsub!=='metriques')+'" class="'+(ui.dsub!=='metriques'?'on':'')+'">Données cumulées</button><button type="button" data-act="dsub" data-v="metriques" aria-pressed="'+(ui.dsub==='metriques')+'" class="'+(ui.dsub==='metriques'?'on':'')+'">Métriques suivies ('+state.metrics.length+')</button></div>':'';
+  return sub+(sub&&ui.dsub==='metriques'?metricsCard():h+(sub?'':metricsCard()));
+}
+function softRender(){var a=document.activeElement;if(a&&root.contains(a)&&a.tagName==='INPUT'&&a.type!=='radio'&&a.type!=='checkbox'){setTimeout(softRender,700);return;}render();}
+function needIF(p,k){
+  if(k===1)return 1;var q=Object.assign({},p,{k:k,beta:parseFloat((1-p.power).toFixed(4))}),key=planKey(q);
+  if(typeof ui.ifc[key]==='number')return ui.ifc[key];
+  if(ui.ifc[key]===undefined){ui.ifc[key]=null;fetchBounds(q).then(function(b){ui.ifc[key]=b.IF;}).catch(function(){ui.ifc[key]=false;}).then(function(){if(ui.tab==='plan')softRender();});}
+  return ui.ifc[key];
+}
+function mdeBase(){
+  var t=toNum(ui.mde.traffic),c=toNum(ui.mde.conv);
+  if(!(t>0)&&state.plan.traffic>0){t=state.plan.traffic;ui.mde.traffic=String(t);ui.mde.auto=false;}
+  if(!(t>0)&&state.weeks.length){var w=state.weeks[state.weeks.length-1],pm=state.metrics.filter(function(m){return m.role==='principale'&&m.type!=='continue';})[0];
+    if(pm&&w.A.m[pm.id]){t=Math.round((w.A.n+w.B.n)/state.weeks.length*(U()?7:1));c=Math.round((w.A.m[pm.id].c+w.B.m[pm.id].c)/state.weeks.length*(U()?7:1));ui.mde.traffic=String(t);ui.mde.conv=String(c);ui.mde.auto=true;}}
+  return (t>0&&c>0&&c<t)?{t:t,p:c/t}:null;
+}
+function mdeAt(p,base,w,f){var c=(normInv(1-p.alpha)+normInv(p.power))*(f||1),n=base.t*(p.unit==='jour'?w/7:w)/2,q=base.p,d=c*Math.sqrt(2*q*(1-q)/n)/q,i,q1;for(i=0;i<60;i++){q1=Math.min(0.999999,q*(1+d));d=c*Math.sqrt((q*(1-q)+q1*(1-q1))/n)/q;}return d;}
+function margeWarn(){
+  var n=state.weeks.length,k=state.plan.k;if(!n)return '';var w=state.weeks[n-1],IF=ui.ifc[planKey(state.plan)],out=[];
+  state.metrics.forEach(function(m){if(m.role!=='garde-fou')return;var st=stat(m,w.A,w.B,NaN);if(!st||!st.mA||!(st.seNi>0))return;
+    var need=(normInv(1-state.plan.alpha)+normInv(state.plan.power))*st.seNi/Math.abs(st.mA)*Math.sqrt(Math.min(1,n/k))*Math.sqrt(typeof IF==='number'?IF:1);
+    if(m.marge/100<need)out.push('« '+esc(m.name)+' » : marge de '+nf(m.marge,1)+' %, démontrable à partir de ≈ '+nf(need*100,1)+' %');});
+  return out.length?'<p class="hint" style="padding:10px 20px 0;color:#7a5410"><b>Marge trop serrée pour ce trafic.</b> '+out.join(' ; ')+'. En dessous de ce seuil, la non-régression ne sera presque jamais démontrée en '+k+' semaines, et un gain finira en « discussion requise ». La marge reste votre choix métier.</p>':'';
+}
+function viewPlan(){
+  var p=ui.planDraft||(ui.planDraft=JSON.parse(JSON.stringify(state.plan))),sel=function(v,opts){return opts.map(function(o){return '<option value="'+o[0]+'"'+(String(o[0])===String(v)?' selected':'')+'>'+o[1]+'</option>';}).join('');};
+  var dirty=planKey(p)!==planKey(state.plan)||p.startDate!==state.plan.startDate||(p.traffic||0)!==(state.plan.traffic||0)||(p.unit||'semaine')!==(state.plan.unit||'semaine'),base=mdeBase();
+  var h='<div class="card pcard"><div class="phead"><div><h3>Durée du test et effet détectable</h3><span class="hint">Réglez la durée, lisez tout de suite ce que le test pourra démontrer.</span></div></div><div class="psplit"><div class="pform">'
+    +'<div class="form2"><div><label>Trafic par semaine (A + B)</label><input inputmode="numeric" data-mde="traffic" value="'+esc(ui.mde.traffic)+'" placeholder="ex. 20 000"></div><div><label>Conversions par semaine</label><input inputmode="numeric" data-mde="conv" value="'+esc(ui.mde.conv)+'" placeholder="ex. 1 000"></div></div>'
+    +'<span class="hint">'+(ui.mde.auto?'Pré-rempli depuis vos données importées (métrique principale). ':'')+(state.plan.traffic>0?'Trafic prévu enregistré dans le plan : '+nf(state.plan.traffic)+' visiteurs par semaine. Il sert aussi à régler la futilité.':'Saisissez le trafic prévu puis appliquez le plan : il sert aussi à régler la futilité si le trafic réel est irrégulier.')+'</span>'
+    +'<div class="rythme"><label>Lecture des résultats</label><select data-p="unit"'+(state.weeks.length?' disabled':'')+'>'+sel(p.unit||'semaine',[['semaine','Chaque \u0002 (recommandé)'],['jour','Chaque jour']])+'</select><span class="hint">'+(state.weeks.length?'Le rythme se choisit avant le premier import.':p.unit==='jour'?'Vous importez un cumul par jour et l\'outil peut conclure chaque jour. En contrepartie, l\'effet minimal détectable augmente, et une décision peut tomber sur une \u0002 incomplète.':'Passez à « chaque jour » pour pouvoir conclure quelques jours plus tôt, au prix d\'un effet minimal détectable plus élevé.')+'</span></div>'
+    +'<div class="form2"><div><label>Durée prévue (semaines)</label><input type="number" min="1" max="50" data-p="k" value="'+p.k+'"></div><div><label>Date de début</label><input type="date" data-p="startDate" value="'+esc(p.startDate)+'"></div>'
+    +'<div><label>Confiance</label><select data-p="alpha">'+sel(p.alpha,[[0.2,'80 %'],[0.15,'85 %'],[0.1,'90 %'],[0.05,'95 %'],[0.01,'99 %']])+'</select></div><div><label>Puissance</label><select data-p="power">'+sel(p.power,[[0.6,'60 %'],[0.7,'70 %'],[0.8,'80 %'],[0.85,'85 %'],[0.9,'90 %'],[0.95,'95 %']])+'</select></div></div>'
+    +'<div><label>Quand le test peut-il s\'arrêter avant la fin ?</label>'
+    +'<label class="opt'+(p.testType===3?' on':'')+'"><input type="radio" name="gst-tt" data-p="testType" value="3"'+(p.testType===3?' checked':'')+'><span><b>Dès que le résultat est joué</b> · recommandé<br><span class="hint">Le test s\'arrête s\'il gagne, ou s\'il n\'a plus de chances de gagner.</span><span class="pc"><span class="pro">Vous libérez le trafic des tests sans avenir</span><span class="con">L\'arrêt demandé par l\'outil doit être respecté</span></span></span></label>'
+    +'<label class="opt'+(p.testType===1?' on':'')+'"><input type="radio" name="gst-tt" data-p="testType" value="1"'+(p.testType===1?' checked':'')+'><span><b>Seulement s\'il gagne</b><br><span class="hint">Sinon le test va au bout de la durée prévue.</span><span class="pc"><span class="pro">Toutes les données, même sur un test neutre</span><span class="con">Un test sans avenir occupe le trafic jusqu\'à la fin</span></span></span></label></div>'
+    +(ui.adv?'<div class="form2"><div><label>Dépense du risque α (efficacité)</label><select data-p="sfu">'+sel(p.sfu,[['KimDeMets','Kim-DeMets (ρ = 3)'],['OF','O\'Brien-Fleming']])+'</select></div><div><label>Dépense du risque β (futilité)</label><select data-p="sfl">'+sel(p.sfl,[['HSD','HSD (γ = −2)'],['KimDeMets','Kim-DeMets (ρ = 3)'],['OF','O\'Brien-Fleming']])+'</select></div></div>':'')
+    +'<p class="row"><button type="button" class="pri" data-act="applyplan"'+(dirty?'':' disabled')+'>Appliquer le plan</button><button type="button" class="link" data-act="adv">'+(ui.adv?'Masquer les':'Afficher les')+' réglages avancés</button></p></div><div class="pmde">';
+  h+='<div class="kicker" style="color:#0E7C5D">Ce que ce plan peut démontrer</div>';
+  if(!base)h+='<p>Renseignez le trafic et les conversions par semaine pour connaître le plus petit effet que ce test pourra démontrer.</p>';
+  else{
+    var IF=needIF(p,p.k),fix=mdeAt(p,base,p.k),seq=typeof IF==='number'?mdeAt(p,base,p.k,Math.sqrt(IF)):null,val=seq||fix;
+    h+='<div class="mdebig"><span class="num">'+nf(val*100,2)+' %</span><span><b>Effet minimal détectable</b><br>en '+p.k+' semaine'+(p.k>1?'s':'')+' de test'+(seq?'':' <span class="hint">('+(IF===false?'horizon fixe, calcul séquentiel indisponible':'calcul séquentiel en cours…')+')</span>')+'</span></div>'
+      +'<p>Si la variante fait passer le taux de <b>'+nf(base.p*100,2)+' % à '+nf(base.p*(1+val)*100,2)+' %</b> ou plus, ce test a <b>'+nf(p.power*100,0)+' % de chances</b> de le démontrer. En dessous, il finira le plus souvent non concluant.</p>'
+      +(seq&&IF>1.0005?'<p class="hint">Dont '+pct(seq/fix-1,1)+' dus au suivi chaque semaine : le même test lu une seule fois à la fin détecterait '+nf(fix*100,2)+' %.</p>':'');
+    var ks=(p.unit==='jour'?[7,14,21,28,35,42,p.k]:[2,4,6,8,10,12,p.k]).filter(function(v,i,a){return v>=1&&v<=50&&a.indexOf(v)===i;}).sort(function(a,b){return a-b;}),rows=ks.map(function(w){var f=needIF(p,w),v=mdeAt(p,base,w,typeof f==='number'?Math.sqrt(f):1);return {w:w,ok:typeof f==='number',v:v};}),mxv=Math.max.apply(null,rows.map(function(r){return r.v;}));
+    h+='<div class="mdetab"><div class="mh">Et avec une autre durée ?</div>'+rows.map(function(r){return '<button type="button" class="mr2'+(r.w===p.k?' on':'')+'" data-act="pickk" data-v="'+r.w+'" role="radio" aria-checked="'+(r.w===p.k)+'"><span class="rd"></span><span>'+r.w+' semaine'+(r.w>1?'s':'')+'</span><span class="b"><i style="width:'+Math.max(4,r.v/mxv*100)+'%"></i></span><b class="num">'+(r.ok?'':'≈ ')+nf(r.v*100,2)+' %</b></button>';}).join('')+'</div><span class="hint">« ≈ » : valeur à horizon fixe, remplacée dès que le calcul séquentiel répond. Choisissez une durée pour la retenir, puis appliquez le plan.</span>';
+  }
+  h+='</div></div></div>';
+  return h;
+}
+function render(){
+  var a=document.activeElement,fsel='';
+  if(a&&root.contains(a)&&a!==root)['data-f','data-d','data-dm','data-p','data-m','data-mde','data-i','data-act','data-v'].forEach(function(k){if(a.hasAttribute(k))fsel+='['+k+'="'+a.getAttribute(k)+'"]';});
+  root.innerHTML=finalize(head()+(ui.ro?viewResults():ui.tab==='donnees'?viewData():ui.tab==='plan'?viewPlan():viewResults())+(state.weeks.length&&(ui.ro||ui.tab==='resultats')?'<p class="help">Un doute sur la lecture de ce résultat ? <a href="https://fwoptimisation.com/fwo-consultant-cro-contact/" target="_blank" rel="noopener">Parlez-en à Mathieu Fauveaux, consultant CRO</a></p>':'')+'<div class="foot"><span>Analyse séquentielle par groupes · calcul dans le navigateur · '+VERSION+'</span><a href="https://fwoptimisation.com/fwo-consultant-cro-contact/" target="_blank" rel="noopener">Contacter FWOptimisation</a><span class="logo"><b>FWO</b>ptimisation</span></div>',(ui.tab==='plan'&&ui.planDraft&&!ui.ro?ui.planDraft.unit:state.plan.unit)==='jour');
+  drawCharts();
+  if(fsel){var el=null;try{el=root.querySelector(fsel);}catch(e){}if(el&&!el.disabled)el.focus({preventScroll:true});}
+}
+function drawCharts(){
+  var el=root.querySelector('[data-chart]');if(!el||!state.bounds)return;
+  var m=state.metrics.filter(function(x){return x.id===el.getAttribute('data-chart');})[0];if(!m)return;
+  el.innerHTML=finalize(seqChart(m,compute(),+el.getAttribute('data-cur'),Math.max(260,Math.floor(el.clientWidth))),U());
+}
+var rz;window.addEventListener('resize',function(){clearTimeout(rz);rz=setTimeout(drawCharts,150);});
+
+/* ---------- événements ---------- */
+function act(name,v,el){
+  ui.notice='';
+  if(name==='tab'){ui.tab=v;ui.error='';if(v!=='plan')ui.planDraft=null;}
+  else if(name==='pick'){var fi=root.querySelector('[data-f=file]');if(fi)fi.click();return;}
+  else if(name==='example'){openDraft(EXEMPLE,'exemple-7-metriques.csv');if(ui.draft){ui.draft.k=8;ui.draft.name='Exemple : 7 métriques';render();}return;}
+  else if(name==='template'){return download('modele-import-sequentiel.csv',toCSV([['Semaine','Date de début','Date de fin','Variation','Visiteurs','Visiteurs convertis (principal)','Visiteurs avec rebond','CA (€) [somme]','CA (€) [somme carrés]'],['1','2026-01-05','2026-01-11','A - Contrôle','','','','',''],['1','2026-01-05','2026-01-11','B - Variante','','','','','']]));}
+  else if(name==='export'){var rows=[['Semaine','Variation','Visiteurs'].concat([].concat.apply([],state.metrics.map(function(m){return m.type==='continue'?[m.name+' [somme]',m.name+' [somme carrés]']:[m.name];})))];
+    state.weeks.forEach(function(w,i){['A','B'].forEach(function(s){rows.push([i+1,state.labels[s],w[s].n].concat([].concat.apply([],state.metrics.map(function(m){var x=w[s].m[m.id]||{};return m.type==='continue'?[String(x.s).replace('.',','),String(x.ss).replace('.',',')]:[x.c];}))));});});
+    return download((state.name||'test')+'-donnees.csv',toCSV(rows));}
+  else if(name==='apply'){return applyDraft();}
+  else if(name==='cancel'){ui.draft=null;}
+  else if(name==='week'){ui.week=+v;}
+  else if(name==='legend'){ui.legend=!ui.legend;}
+  else if(name==='detail'){ui.detail=!ui.detail;}
+  else if(name==='unit'){ui.unit=v;}
+  else if(name==='howto'){ui.howto=v;}
+  else if(name==='goimport'){var gi=root.querySelector('#gst-import');if(gi)gi.scrollIntoView({behavior:'smooth',block:'start'});return;}
+  else if(name==='dsub'){ui.dsub=v;}
+  else if(name==='manadd'){if(ui.man.ms.length<5)ui.man.ms.push({name:'',role:'garde-fou'});}
+  else if(name==='manstart'){var mm=ui.man,kk=parseInt(mm.k,10),list=mm.ms.filter(function(x,i){return i===0||x.name.trim();});
+    if(!mm.ms[0].name.trim()){ui.error='Donnez un nom à l\'objectif principal.';return render();}
+    if(!(kk>=1&&kk<=50)){ui.error='Durée invalide (1 à 50 semaines).';return render();}
+    state=freshState();state.name=mm.name.trim()||'Test saisi à la main';state.plan.k=kk;state.plan.beta=parseFloat((1-state.plan.power).toFixed(4));
+    state.metrics=list.map(function(x,i){var nm=x.name.trim();return {id:uid(),src:'',name:nm,type:'binaire',role:i?x.role:'principale',sens:/rebond|sortie|abandon|erreur|retour|contact|désabonn/i.test(nm)?'baisse':'hausse',marge:1};});
+    ui.week=null;ui.sel=null;ui.draft=null;ui.planDraft=null;ui.error='';ui.notice='Test créé. Saisissez les chiffres cumulés de la semaine 1.';ui.tab='donnees';ui.manual=true;autosave();}
+  else if(name==='faq'){ui.faq=ui.faq===v?'':v;}
+  else if(name==='open'){return loadSaved(v);}
+  else if(name==='share'){ui.share=!ui.share;ui.copied=false;if(ui.share){ui.shareUrl='';encodeShare().then(function(t){ui.shareUrl=shareBase()+'#t='+t;render();}).catch(function(e){ui.share=false;ui.error='Lien de partage impossible : '+e.message;render();});}}
+  else if(name==='shareclose'){ui.share=false;}
+  else if(name==='sharecopy'){var done=function(){ui.copied=true;render();};if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(ui.shareUrl).then(done,function(){var i=root.querySelector('[data-f=shareurl]');if(i){i.select();try{document.execCommand('copy');}catch(e){}}done();});}else{var i2=root.querySelector('[data-f=shareurl]');if(i2){i2.select();try{document.execCommand('copy');}catch(e){}}done();}return;}
+  else if(name==='rocopy'){ui.ro=false;ui.roDate='';try{history.replaceState(null,'',shareBase());}catch(e){}ui.notice='Copie modifiable ouverte. Enregistrez-la pour la retrouver dans vos tests.';}
+  else if(name==='sel'){ui.sel=v;}
+  else if(name==='manual'){ui.manual=!ui.manual;}
+  else if(name==='adv'){ui.adv=!ui.adv;}
+  else if(name==='pickk'){if(ui.planDraft)ui.planDraft.k=+v;}
+  else if(name==='delweek'){if(!confirm(T('Supprimer les données de la semaine '+state.weeks.length+' ?')))return;state.weeks.pop();ui.week=null;autosave();}
+  else if(name==='addweek'){return addManual();}
+  else if(name==='save'){if(!state.name.trim()){ui.error='Donnez un nom au test avant de l\'enregistrer.';}else{autosave();if(!ui.error)ui.notice='Test « '+state.name+' » enregistré dans ce navigateur.';}}
+  else if(name==='new'){if(state.weeks.length&&!confirm('Démarrer un nouveau test ? Les données non enregistrées seront perdues.'))return;state=freshState();ui.week=null;ui.sel=null;ui.draft=null;ui.planDraft=null;ui.error='';ui.tab='resultats';}
+  else if(name==='applyplan'){var p=ui.planDraft;if(!(p.k>=1&&p.k<=50)){ui.error='Durée invalide (1 à 50 semaines).';return render();}
+    if(p.k<state.weeks.length){ui.error='La durée ('+p.k+') est inférieure au nombre de semaines déjà saisies ('+state.weeks.length+').';return render();}
+    if(state.weeks.length&&planKey(p)!==planKey(state.plan)&&!confirm('Modifier le plan recalcule les bornes sur les données déjà saisies. À réserver à la correction d\'une erreur de paramétrage. Continuer ?'))return;
+    p.beta=parseFloat((1-p.power).toFixed(4));state.plan=p;ui.planDraft=null;ui.error='';ui.notice='Plan appliqué.';autosave();ensureBounds();}
+  render();
+}
+function addManual(){
+  var W={A:{n:NaN,m:{}},B:{n:NaN,m:{}}},errs=[];
+  root.querySelectorAll('[data-mw]').forEach(function(i){var k=i.getAttribute('data-mw').split('|'),v=toNum(i.value);if(k[1]==='n')W[k[0]].n=v;else{(W[k[0]].m[k[1]]=W[k[0]].m[k[1]]||{})[k[2]]=v;}});
+  var prev=state.weeks[state.weeks.length-1];
+  ['A','B'].forEach(function(s){var o=W[s];if(!(o.n>0)||o.n!==Math.round(o.n))errs.push(state.labels[s]+' : visiteurs invalides.');if(prev&&o.n<prev[s].n)errs.push(state.labels[s]+' : visiteurs cumulés inférieurs à la semaine précédente.');
+    state.metrics.forEach(function(m){var x=o.m[m.id]||{};if(m.type==='continue'){if(!isFinite(x.s)||!isFinite(x.ss))errs.push(state.labels[s]+' : « '+m.name+' » : valeurs manquantes.');}
+      else if(!(x.c>=0)||x.c!==Math.round(x.c))errs.push(state.labels[s]+' : « '+m.name+' » : valeur invalide.');else if(x.c>o.n)errs.push(state.labels[s]+' : « '+m.name+' » dépasse les visiteurs.');else if(prev&&x.c<prev[s].m[m.id].c)errs.push(state.labels[s]+' : « '+m.name+' » : cumul inférieur à la semaine précédente.');});});
+  if(state.weeks.length>=state.plan.k)errs.push('Durée prévue atteinte ('+state.plan.k+' semaines).');
+  if(errs.length){ui.error=errs.slice(0,6).join(' ');return render();}
+  state.weeks.push(W);ui.manual=false;ui.week=null;ui.error='';ui.tab='resultats';autosave();ensureBounds();render();
+}
+root.addEventListener('click',function(e){var t=e.target.closest('[data-act]');if(!t||!root.contains(t)||t.tagName==='SELECT'||e.target.closest('select'))return;if(t.disabled)return;e.stopPropagation();act(t.getAttribute('data-act'),t.getAttribute('data-v'),t);});
+root.addEventListener('keydown',function(e){if((e.key==='Enter'||e.key===' ')&&e.target.matches('[data-act][tabindex]')){e.preventDefault();act(e.target.getAttribute('data-act'),e.target.getAttribute('data-v'),e.target);}});
+function later(){setTimeout(render,0);}
+root.addEventListener('change',function(e){
+  var t=e.target,d=ui.draft;
+  if(t.matches('[data-f=file]')){if(t.files[0])readFile(t.files[0]);return;}
+  if(t.matches('[data-f=name]')){state.name=t.value.trim();return;}
+  if(t.matches('[data-act=load]')){if(t.value)loadSaved(t.value);return;}
+  if(t.matches('[data-act=weeksel]')){ui.week=+t.value;return later();}
+  if(t.hasAttribute('data-d')&&d){var f=t.getAttribute('data-d');
+    if(f==='cumulate')d.cumulate=t.checked;else if(f==='name')d.name=t.value;else if(f==='k')d.k=parseInt(t.value,10)||d.k;else if(f==='startDate')d.startDate=t.value;
+    else{var keep={name:d.name,k:d.k,startDate:d.startDate,cVar:d.cVar,cVis:d.cVis,test:d.test,control:d.control,variant:d.variant},old=d.metrics,cum=d.cumulate;
+      if(f==='cVar'||f==='cVis'){keep[f]=parseInt(t.value,10);if(f==='cVar'){keep.control=null;keep.variant=null;}}else keep[f]=t.value;
+      if(f==='test'){keep.k=null;keep.startDate=null;keep.name=d.name===d.test?t.value:d.name;}
+      ui.draft=analyze(ui.rawTable,d.file,keep);ui.draft.cumulate=cum;
+      ui.draft.metrics.forEach(function(m){var o=old.filter(function(x){return x.src===m.src;})[0];if(o){m.include=o.include;m.role=o.role;m.sens=o.sens;m.name=o.name;}});}
+    return later();}
+  if(t.hasAttribute('data-dm')&&d){var m=d.metrics[+t.getAttribute('data-i')],g=t.getAttribute('data-dm');
+    if(g==='include')m.include=t.checked;else m[g]=t.value;
+    if(g==='role'&&t.value==='principale')d.metrics.forEach(function(x){if(x!==m&&x.role==='principale')x.role='secondaire';});
+    return later();}
+  if(t.hasAttribute('data-p')&&ui.planDraft){var k=t.getAttribute('data-p');if(k==='unit'&&t.value!==(ui.planDraft.unit||'semaine')){ui.planDraft.k=t.value==='jour'?Math.min(50,ui.planDraft.k*7):Math.max(1,Math.round(ui.planDraft.k/7));}ui.planDraft[k]=(k==='startDate'||k==='sfu'||k==='sfl'||k==='unit')?t.value:(k==='k'||k==='testType'?parseInt(t.value,10):parseFloat(t.value));return later();}
+  if(t.hasAttribute('data-m')){var mm=state.metrics[+t.getAttribute('data-i')],q=t.getAttribute('data-m');
+    if(q==='role'&&state.weeks.length&&!confirm('Changer le rôle d\'une métrique après avoir vu les résultats fausse la lecture du test. À réserver à la correction d\'une erreur. Continuer ?'))return later();
+    mm[q]=q==='marge'?(parseFloat(t.value)>0?parseFloat(t.value):1):(q==='name'?(t.value.trim()||mm.name):t.value);
+    if(q==='role'&&t.value==='principale')state.metrics.forEach(function(x){if(x!==mm&&x.role==='principale')x.role='secondaire';});
+    autosave();if(q==='role')ensureBounds();return later();}
+  if(t.hasAttribute('data-man')){var mk=t.getAttribute('data-man'),mx=/^m(\d)(name|role)$/.exec(mk);if(mx)ui.man.ms[+mx[1]][mx[2]]=t.value;else ui.man[mk]=t.value;return;}
+  if(t.getAttribute('data-f')==='shareto'){ui.shareTo=t.value.trim();return later();}
+  if(t.hasAttribute('data-mde')){ui.mde[t.getAttribute('data-mde')]=t.value;ui.mde.auto=false;if(t.getAttribute('data-mde')==='traffic'&&ui.planDraft){var tv=toNum(t.value);ui.planDraft.traffic=tv>0?tv:0;}return later();}
+});
+root.addEventListener('dragover',function(e){var z=e.target.closest('.drop');if(z){e.preventDefault();z.classList.add('over');}});
+root.addEventListener('dragleave',function(e){var z=e.target.closest('.drop');if(z)z.classList.remove('over');});
+root.addEventListener('drop',function(e){var z=e.target.closest('.drop');if(!z)return;e.preventDefault();z.classList.remove('over');var f=e.dataTransfer&&e.dataTransfer.files[0];if(f)readFile(f);});
+window.GST={getState:function(){return state;},compute:compute,openCSV:openDraft,design:function(p){return GS.design(p);},actual:function(p,i,f){return GS.actual(p,i,f);},api:apiBounds,share:encodeShare};
+var hm=/[#&]t=([zj][A-Za-z0-9_-]+)/.exec(location.hash||'');
+render();
+if(hm)openShared(hm[1]);
+})();
+</script>
