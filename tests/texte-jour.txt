@@ -1,0 +1,273 @@
+--- PLAN
+Mes tests (1)
+Promo semaine 12
+Enregistrer
+Nouveau test
+Résultats
+Données et métriques
+Plan
+Durée du test et effet détectable
+Réglez la durée, lisez tout de suite ce que le test pourra démontrer.
+Trafic par semaine (A + B)
+Conversions par semaine
+Saisissez le trafic prévu puis appliquez le plan : il sert aussi à régler la futilité si le trafic réel est irrégulier.
+Lecture des résultats
+Chaque semaine (recommandé)
+Chaque jour
+Vous importez un cumul par jour et l'outil peut conclure chaque jour à partir du jour 7. En contrepartie, l'effet minimal détectable augmente, et une décision peut tomber sur une semaine incomplète.
+Durée prévue (jours)
+Date de début
+Confiance
+80 %
+85 %
+90 %
+95 %
+99 %
+Puissance
+60 %
+70 %
+80 %
+85 %
+90 %
+95 %
+Quand le test peut-il s'arrêter avant la fin ?
+Dès que le résultat est joué · recommandé
+Le test s'arrête s'il gagne, ou s'il n'a plus de chances de gagner.
+Vous libérez le trafic des tests sans avenir
+L'arrêt demandé par l'outil doit être respecté
+Seulement s'il gagne
+Sinon le test va au bout de la durée prévue.
+Toutes les données, même sur un test neutre
+Un test sans avenir occupe le trafic jusqu'à la fin
+
+Appliquer le plan
+Afficher les réglages avancés
+
+CE QUE CE PLAN PEUT DÉMONTRER
+5,77 %
+Effet minimal détectable
+en 28 jours de test
+
+Si la variante fait passer le taux de 5,00 % à 5,29 % ou plus, ce test a 80 % de chances de le démontrer. En dessous, il finira le plus souvent non concluant.
+
+Dont +5,1 % dus au suivi chaque jour : le même test lu une seule fois à la fin détecterait 5,49 %.
+
+Et avec une autre durée ?
+7 jours
+11,12 %
+14 jours
+8,14 %
+21 jours
+6,66 %
+28 jours
+5,77 %
+35 jours
+5,16 %
+42 jours
+4,71 %
+« ≈ » : valeur à horizon fixe, remplacée dès que le calcul séquentiel répond. Choisissez une durée pour la retenir, puis appliquez le plan.
+Analyse séquentielle par groupes · calcul dans le navigateur · v56.5
+FWOptimisation
+--- JOUR 1
+Mes tests (1)
+Promo semaine 12
+Enregistré
+Partager
+Nouveau test
+Résultats
+Données et métriques
+Plan
+DÉCISION · JOUR 1 SUR 28
++20,00 %
+Visiteurs avec achat
+Non conclusif
+5,00 % → 6,00 % · intervalle à 90 % : de -43,89 % à +156,66 %
+Continuer
+
+Pas de décision avant le jour 7 : il faut une semaine complète pour que chaque jour compte. Les chiffres affichés d'ici là sont indicatifs.
+
+2 non conclusives
+
+Comment lire les statuts
+
+Progression
+1 jour sur 28
+Jours importés en vert. Du 17/11/2026 au 17/11/2026.
+Répartition équilibrée
+600 / 600 visiteurs · pas de SRM
+Trafic régulier
+1 200 visiteurs · volume stable d'un jour à l'autre
+Historique
+Jour 1
+Objectif principal
+C'est lui qui décide. Survolez ou sélectionnez une ligne pour le détail.
+-80 %
+0
++80 %
+Visiteurs avec achat
+5,00 % → 6,00 %
++20,00 %
+Non conclusif
+Garde-fous
+Ils peuvent bloquer un déploiement · 0 régression démontrée, 0 à surveiller
+-80 %
+0
++80 %
+Rebond semaine
+40,00 % → 39,67 % · baisse favorable · marge 1,0 %
+-0,83 %
+Non conclusif
+Trajectoire : Visiteurs avec achat
+Écart en %
+Z
+
+Tant que la courbe bleue reste dans le couloir blanc, on continue. Dès qu'elle en sort, le test s'arrête. Cliquez une métrique pour afficher sa trajectoire.
+
+-80 %
+-60 %
+-40 %
+-20 %
+0 %
++20 %
++40 %
++60 %
++80 %
+J1
+J6
+J11
+J16
+J21
+J28
+décision possible dès J7
+
+Zone verte : gain démontré · zone rose : effet négatif démontré · tirets gris : seuil de futilité (en dessous, le test n'a plus assez de chances d'aboutir) · entre les deux : on continue. Les bornes des jours à venir sont estimées à trafic constant et s'ajusteront au trafic réel.
+
+▸ Voir le détail (volumes, Z et bornes jour par jour)
+
+Un doute sur la lecture de ce résultat ? Parlez-en à Mathieu Fauveaux, consultant CRO
+
+Analyse séquentielle par groupes · calcul dans le navigateur · v56.5
+FWOptimisation
+--- DONNEES
+Mes tests (1)
+Promo semaine 12
+Enregistré
+Partager
+Nouveau test
+Résultats
+Données et métriques
+Plan
+Données cumulées
+Métriques suivies (2)
+IMPORT
+Ajouter le jour 2 ou remplacer les données
+
+Chaque fichier doit couvrir du début du test à la fin du jour (cumul). Un fichier sans colonne « Jour » est ajouté comme jour suivante ; un fichier avec plusieurs jours remplace tout.
+
+Déposez votre export CSV ici
+
+Une ligne par variation, les métriques en colonnes.
+
+Choisir un fichier
+
+Télécharger le modèle CSV
+Essayer avec un exemple
+
+Vos chiffres ne quittent pas votre poste. Rien n'est enregistré sur le site : le calcul se fait dans votre navigateur, et vous pouvez sauvegarder le test en local.
+Données cumulées
+Saisir un jour à la main
+Exporter en CSV
+Supprimer le jour 1
+JOUR	VARIATION	VISITEURS	VISITEURS AVEC ACHAT	REBOND SEMAINE
+J1	Contrôle	600	30	240
+	Variante	600	36	238
+Analyse séquentielle par groupes · calcul dans le navigateur · v56.5
+FWOptimisation
+--- JOUR 3
+Mes tests (1)
+Promo semaine 12
+Enregistré
+Partager
+Nouveau test
+Résultats
+Données et métriques
+Plan
+DÉCISION · ACQUISE AU JOUR 7 SUR 28
++47,37 %
+Visiteurs avec achat
+Gain démontré
+5,00 % → 7,37 % · intervalle à 90 % : de +34,82 % à +61,08 %
+Arrêter : discussion requise
+
+Gain démontré sur l'objectif principal, mais la non-régression n'est pas démontrée pour « Rebond semaine » (aucune régression détectée non plus).
+
+1 démontrée favorable
+1 non conclusive
+
+Comment lire les statuts
+
+Progression
+8 jours sur 28
+Résultat acquis depuis le jour 7. Le test devait s'arrêter là : le jour 8 a été importé après la décision (en hachuré). Il ne peut plus la modifier et sert seulement de lecture complémentaire. Du 17/11/2026 au 24/11/2026.
+Répartition équilibrée
+39 900 / 39 900 visiteurs · pas de SRM
+Trafic irrégulier
+Les jours n'apportent pas le même volume (écart max 14 points). Les seuils sont calculés sur le trafic réel de chaque jour : le risque de faux positif est tenu. Le trafic arrive tard : la futilité est réglée sur le trafic prévu, ce qui limite les arrêts à tort, mais la puissance reste inférieure à celle du plan.
+Historique
+Jour 1
+Jour 2
+Jour 3
+Jour 4
+Jour 5
+Jour 6
+Jour 7 : décision
+Jour 8
+Objectif principal
+C'est lui qui décide. Survolez ou sélectionnez une ligne pour le détail.
+-10 %
+0
++10 %
+Visiteurs avec achat
+5,00 % → 7,37 %
++47,37 %
+Gain démontré
+Garde-fous
+Ils peuvent bloquer un déploiement · 0 régression démontrée, 0 à surveiller
+-10 %
+0
++10 %
+Rebond semaine
+40,00 % → 39,82 % · baisse favorable · marge 1,0 %
+-0,44 %
+Non conclusif
+Trajectoire : Visiteurs avec achat
+Écart en %
+Z
+
+Tant que la courbe bleue reste dans le couloir blanc, on continue. Dès qu'elle en sort, le test s'arrête. Cliquez une métrique pour afficher sa trajectoire.
+
+-80 %
+-60 %
+-40 %
+-20 %
+0 %
++20 %
++40 %
++60 %
++80 %
+J1
+J6
+J11
+J16
+J21
+J28
+décision possible dès J7
+
+Zone verte : gain démontré · zone rose : effet négatif démontré · tirets gris : seuil de futilité (en dessous, le test n'a plus assez de chances d'aboutir) · entre les deux : on continue. Les bornes des jours à venir sont estimées à trafic constant et s'ajusteront au trafic réel.
+
+▸ Voir le détail (volumes, Z et bornes jour par jour)
+
+Un doute sur la lecture de ce résultat ? Parlez-en à Mathieu Fauveaux, consultant CRO
+
+Analyse séquentielle par groupes · calcul dans le navigateur · v56.5
+FWOptimisation

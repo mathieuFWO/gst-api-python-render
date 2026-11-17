@@ -1,0 +1,2 @@
+const L=require('./lib.js');const GS=L.v5.GS;
+for(const tt of [1,3])for(const sfu of ['KimDeMets','OF']){const q={k:3,alpha:0.05,beta:0.2,power:0.8,testType:tt,sfu,sfl:'HSD',_t:[1/4,5/4,6/4]};try{const d=GS.actual(q,[100,500,600]);const r=L.exact([100,500,600],0,d.eff,d.fut,false);console.log(tt,sfu,JSON.stringify(d.eff),'alpha exact',JSON.stringify(r).slice(0,120))}catch(e){console.log(tt,sfu,'ERR',e.message)}}
