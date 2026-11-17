@@ -2,7 +2,7 @@
 /**
  * Plugin Name: FWO - Comptes du calculateur séquentiel
  * Description: Comptes, tableau de bord et partage par invitation pour le calculateur d'analyse séquentielle. Connexion par lien envoyé par email, sans mot de passe.
- * Version: 0.3.1
+ * Version: 0.3.2
  * Author: FWOptimisation
  * Requires at least: 6.0
  * Requires PHP: 7.4
@@ -190,10 +190,18 @@ function fwo_gst_clean_state($s) {
         return $r;
     };
     $weeks = [];
-    foreach (array_slice(is_array($s['weeks'] ?? null) ? $s['weeks'] : [], 0, 60) as $w) { if (is_array($w)) { $weeks[] = ['A' => $arm($w['A'] ?? null), 'B' => $arm($w['B'] ?? null)]; } }
+    foreach (array_slice(is_array($s['weeks'] ?? null) ? $s['weeks'] : [], 0, 60) as $w) { if (is_array($w)) {
+        $row = ['A' => $arm($w['A'] ?? null), 'B' => $arm($w['B'] ?? null)];
+        // 0.3.2 : date de fin des données et semaine calendaire de la lecture
+        if (isset($w['end']) && is_string($w['end']) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $w['end'])) { $row['end'] = $w['end']; }
+        if (isset($w['wk']) && is_numeric($w['wk'])) { $wk = (int) round((float) $w['wk']); if ($wk >= 1 && $wk <= 60) { $row['wk'] = $wk; } }
+        $weeks[] = $row; } }
+    // 0.3.2 : colonnes choisies à l'import (noms d'en-têtes et libellés, texte seul)
+    $map = null;
+    if (is_array($s['map'] ?? null)) { $map = []; foreach (['test' => 160, 'vr' => 160, 'vis' => 160, 'tv' => 300, 'c' => 160, 'v' => 160] as $k => $len) { $map[$k] = mb_substr(sanitize_text_field((string) ($s['map'][$k] ?? '')), 0, $len); } }
     $L = is_array($s['labels'] ?? null) ? $s['labels'] : [];
     return ['plan' => $plan, 'metrics' => $metrics,
-        'labels' => ['A' => mb_substr(sanitize_text_field((string) ($L['A'] ?? 'Contrôle')), 0, 60), 'B' => mb_substr(sanitize_text_field((string) ($L['B'] ?? 'Variante')), 0, 60)], 'weeks' => $weeks];
+        'labels' => ['A' => mb_substr(sanitize_text_field((string) ($L['A'] ?? 'Contrôle')), 0, 60), 'B' => mb_substr(sanitize_text_field((string) ($L['B'] ?? 'Variante')), 0, 60)], 'weeks' => $weeks] + ($map ? ['map' => $map] : []);
 }
 
 /** Valide et normalise le corps d'un test. Renvoie WP_Error ou [nom, état JSON, résumé JSON]. */
