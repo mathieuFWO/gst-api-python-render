@@ -12,7 +12,7 @@ for(const w of [360,1280]){const ctx=await b.newContext({viewport:{width:w,heigh
   await p.click('[data-act=example]');await p.waitForTimeout(600);
   ok(`[${w}] démonstration : résultats affichés directement, sans écran de vérification`,(await p.locator('.dv').count())===0&&/Exemple chargé/.test(await p.textContent('#gst-app'))&&(await p.locator('.verdict,.vname,.kpis').count())>0);
   await rows('résultats');
-  ok(`[${w}] pied : plus de lien de contact, version affichée`,(await p.locator('.foot a').count())===0&&/v56\.5/.test(await p.textContent('.foot')));
+  ok(`[${w}] pied : plus de lien de contact, version affichée`,(await p.locator('.foot a').count())===0&&/v56\.6/.test(await p.textContent('.foot')));
   await p.locator('[data-act=tab][data-v=donnees]').click();await p.waitForTimeout(300);await rows('données');
   const al=await p.evaluate(()=>{const r=document.querySelector('#gst-app .drop p.row');return [...r.querySelectorAll('button')].map(e=>{const q=e.getBoundingClientRect();return [Math.round(q.top),Math.round(q.height)];});});
   ok(`[${w}] zone de dépôt : « Télécharger le modèle » et « Essayer avec un exemple » de même hauteur`+(w===1280?' et sur la même ligne':''),al.length===2&&al[0][1]===al[1][1]&&(w===360||al[0][0]===al[1][0]),al);
