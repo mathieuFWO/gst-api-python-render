@@ -2,7 +2,7 @@
 /**
  * Plugin Name: FWO - Comptes du calculateur séquentiel
  * Description: Comptes, tableau de bord et partage par invitation pour le calculateur d'analyse séquentielle. Connexion par lien envoyé par email, sans mot de passe.
- * Version: 0.2.0
+ * Version: 0.3.0
  * Author: FWOptimisation
  * Requires at least: 6.0
  * Requires PHP: 7.4
@@ -36,6 +36,7 @@ register_activation_hook(__FILE__, function () { add_role(FWO_GST_ROLE, 'Compte 
 add_action('init', function () { if (!get_role(FWO_GST_ROLE)) { add_role(FWO_GST_ROLE, 'Compte calculateur', []); } }, 5);
 
 function fwo_gst_is_member($user = null) {
+    if ($user === false) { return false; }
     $u = $user ? $user : wp_get_current_user();
     return $u && $u->exists() && in_array(FWO_GST_ROLE, (array) $u->roles, true);
 }
@@ -47,13 +48,13 @@ add_action('admin_init', function () {
     if (wp_doing_ajax()) {
         $action = isset($_REQUEST['action']) ? sanitize_key(wp_unslash($_REQUEST['action'])) : '';
         if ($action === 'rest-nonce') { return; }
-        wp_die('Interdit.', '', ['response' => 403]);
+        wp_set_current_user(0); return; // pour le reste du site (formulaires), ce compte est traité comme un visiteur anonyme
     }
     wp_safe_redirect(fwo_gst_tool_url()); exit;
 }, 1);
 add_filter('rest_pre_dispatch', function ($res, $server, $req) {
     if (fwo_gst_is_member() && strpos($req->get_route(), '/' . FWO_GST_NS . '/') !== 0) {
-        return new WP_Error('rest_forbidden', 'Interdit.', ['status' => 403]);
+        wp_set_current_user(0); // hors des routes de l'outil, ce compte est traité comme un visiteur anonyme
     }
     return $res;
 }, 10, 3);
@@ -70,7 +71,8 @@ add_filter('allow_password_reset', function ($ok, $id) { return fwo_gst_is_membe
 /** Adresse du visiteur ; en IPv6 on retient le préfixe /64 pour qu'un même abonné ne dispose pas de milliards de clés. */
 function fwo_gst_ip() {
     $ip = isset($_SERVER['REMOTE_ADDR']) ? sanitize_text_field(wp_unslash($_SERVER['REMOTE_ADDR'])) : '0';
-    return strpos($ip, ':') !== false ? implode(':', array_slice(explode(':', $ip), 0, 4)) : $ip;
+    $bin = @inet_pton($ip);
+    return ($bin !== false && strlen($bin) === 16) ? bin2hex(substr($bin, 0, 8)) : $ip;
 }
 
 /** Envoi d'email sous plafond global : le site ne doit pas pouvoir servir de relais. */
@@ -81,12 +83,14 @@ function fwo_gst_mail($to, $subject, $body) {
 
 /** Limite de débit : $max essais par fenêtre de $ttl secondes pour une clé. */
 function fwo_gst_throttle($key, $max, $ttl) {
-    $k = 'fwo_gst_rl_' . md5($key); $n = (int) get_transient($k);
-    if ($n >= $max) { return false; }
-    set_transient($k, $n + 1, $ttl); return true;
+    $k = 'fwo_gst_rl_' . md5($key); $v = get_transient($k); $now = time();
+    if (!is_array($v) || !isset($v['n'], $v['exp']) || $v['exp'] <= $now) { $v = ['n' => 0, 'exp' => $now + $ttl]; } // fenêtre fixe : l'échéance ne recule pas à chaque appel
+    if ($v['n'] >= $max) { return false; }
+    $v['n']++; set_transient($k, $v, max(1, $v['exp'] - $now)); return true;
 }
 
-function fwo_gst_auth() { return is_user_logged_in(); }
+/** Les routes de l'outil sont réservées aux comptes calculateur et aux administrateurs du site. */
+function fwo_gst_auth() { return fwo_gst_is_member() || current_user_can('manage_options'); }
 
 function fwo_gst_user_payload() {
     if (!is_user_logged_in()) { return null; }
@@ -143,13 +147,13 @@ function fwo_gst_clean_state($s) {
         'k' => (int) min(50, max(1, round(fwo_gst_num($p['k'] ?? null, 4)))), 'alpha' => ($a > 0 && $a < 0.5) ? $a : 0.05, 'power' => $pw, 'beta' => round(1 - $pw, 4),
         'testType' => ((int) fwo_gst_num($p['testType'] ?? null, 3)) === 1 ? 1 : 3, 'sfu' => (($p['sfu'] ?? '') === 'OF') ? 'OF' : 'KimDeMets',
         'sfl' => in_array($p['sfl'] ?? '', ['HSD', 'KimDeMets', 'OF'], true) ? $p['sfl'] : 'HSD',
-        'startDate' => (is_string($p['startDate'] ?? null) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $p['startDate'])) ? $p['startDate'] : gmdate('Y-m-d'),
+        'startDate' => (is_string($p['startDate'] ?? null) && preg_match('/^\d{4}-\d{2}-\d{2}\z/', $p['startDate'])) ? $p['startDate'] : gmdate('Y-m-d'),
         'unit' => (($p['unit'] ?? '') === 'jour') ? 'jour' : 'semaine',
     ];
     if ($tr > 0) { $plan['traffic'] = $tr; }
     $metrics = []; $ids = [];
     foreach (array_slice(is_array($s['metrics'] ?? null) ? $s['metrics'] : [], 0, 15) as $m) {
-        if (!is_array($m) || !is_string($m['id'] ?? null) || !preg_match('/^[A-Za-z0-9_-]{1,40}$/', $m['id']) || isset($ids[$m['id']])) { continue; }
+        if (!is_array($m) || !is_string($m['id'] ?? null) || !preg_match('/^[A-Za-z0-9_-]{1,40}\z/', $m['id']) || isset($ids[$m['id']])) { continue; }
         $ids[$m['id']] = true;
         $metrics[] = ['id' => $m['id'], 'src' => mb_substr(sanitize_text_field((string) ($m['src'] ?? '')), 0, 160), 'name' => mb_substr(sanitize_text_field((string) ($m['name'] ?? '')), 0, 120),
             'type' => (($m['type'] ?? '') === 'continue') ? 'continue' : 'binaire', 'role' => in_array($m['role'] ?? '', ['principale', 'garde-fou', 'secondaire'], true) ? $m['role'] : 'secondaire',
@@ -183,7 +187,7 @@ function fwo_gst_payload(WP_REST_Request $r) {
     $js = wp_json_encode($state);
     if ($js === false || strlen($js) > FWO_GST_MAX_BYTES) { return new WP_Error('fwo_gst_size', 'Test trop volumineux.', ['status' => 413]); }
     $keep = [];
-    if (is_array($sum)) { foreach (['t', 'c', 'm', 'd', 'u'] as $k) { if (isset($sum[$k])) { $keep[$k] = sanitize_text_field((string) $sum[$k]); } }
+    if (is_array($sum)) { foreach (['t', 'c', 'm', 'd', 'u'] as $k) { if (isset($sum[$k])) { $keep[$k] = mb_substr(sanitize_text_field((string) $sum[$k]), 0, 160); } }
         foreach (['n', 'k', 'dw'] as $k) { if (isset($sum[$k]) && is_numeric($sum[$k])) { $keep[$k] = (int) $sum[$k]; } }
         if (isset($sum['lift']) && is_numeric($sum['lift'])) { $keep['lift'] = (float) $sum['lift']; } }
     return [mb_substr($name, 0, 120), $js, wp_json_encode($keep)];
@@ -208,7 +212,7 @@ add_action('rest_api_init', function () {
         }
         $token = wp_generate_password(48, false);
         $test = absint($r->get_param('test'));
-        set_transient('fwo_gst_tk_' . hash('sha256', $token), ['email' => $email, 'test' => $test], FWO_GST_TTL);
+        set_transient('fwo_gst_tk_' . hash('sha256', $token), ['email' => $email, 'test' => $test, 'exp' => time() + FWO_GST_TTL], FWO_GST_TTL);
         $link = add_query_arg('token', rawurlencode($token), rest_url(FWO_GST_NS . '/login'));
         fwo_gst_mail($email, 'Votre lien de connexion au calculateur séquentiel',
             "Bonjour,\n\nOuvrez ce lien puis confirmez pour accéder à votre espace (valable 15 minutes, utilisable une seule fois) :\n" . $link . "\n\nSi vous n'êtes pas à l'origine de cette demande, ignorez ce message.\n\nFWOptimisation");
@@ -222,7 +226,7 @@ add_action('rest_api_init', function () {
         $key = 'fwo_gst_tk_' . hash('sha256', $token); $d = get_transient($key);
         nocache_headers();
         if (!fwo_gst_throttle('lg' . fwo_gst_ip(), 30, FWO_GST_TTL) || !is_array($d) || empty($d['email'])) { wp_safe_redirect($back . '#lien-expire'); exit; }
-        $page = function ($body) { header('Content-Type: text/html; charset=utf-8'); header('X-Robots-Tag: noindex, nofollow'); header('Referrer-Policy: no-referrer');
+        $page = function ($body) { header('Content-Type: text/html; charset=utf-8'); header('X-Robots-Tag: noindex, nofollow'); header('X-Frame-Options: DENY'); header('Referrer-Policy: no-referrer');
             echo '<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Connexion au calculateur</title>'
                . '<style>body{font-family:system-ui,sans-serif;background:#F8FBFA;color:#1A1D1F;margin:0;padding:24px 16px}main{max-width:460px;margin:8vh auto 0;background:#fff;border:1px solid #D9D9D9;border-radius:12px;padding:24px}h1{font-size:22px;margin:0 0 12px}p{line-height:1.5}button{background:#028D6A;color:#fff;border:0;border-radius:8px;padding:14px 20px;font-size:16px;font-weight:600;cursor:pointer;width:100%}a{color:#0E7C5D}</style></head><body><main>'
                . $body . '</main></body></html>'; exit; };
@@ -231,7 +235,7 @@ add_action('rest_api_init', function () {
             $page('<h1>Vous êtes connecté au site</h1><p>Ce lien ouvre un compte du calculateur, mais ce navigateur est connecté avec un compte du site. Déconnectez-vous d\'abord, ou ouvrez le lien dans une fenêtre de navigation privée.</p><p><a href="' . esc_url($back) . '">Revenir au calculateur</a></p>');
         }
         if ($r->get_method() !== 'POST') {
-            $c = wp_generate_password(40, false, false); $d['c'] = hash('sha256', $c); set_transient($key, $d, FWO_GST_TTL);
+            $c = wp_generate_password(40, false, false); $d['c'] = hash('sha256', $c); set_transient($key, $d, max(1, (int) ($d['exp'] ?? 0) - time())); // la visite ne prolonge pas le lien
             setcookie('fwo_gst_c', $c, ['expires' => time() + FWO_GST_TTL, 'path' => '/', 'secure' => is_ssl(), 'httponly' => true, 'samesite' => 'Strict']);
             $page('<h1>Ouvrir votre espace</h1><p>Vous allez être connecté avec l\'adresse <strong>' . esc_html($d['email']) . '</strong>.</p><p>Si ce n\'est pas votre adresse, fermez cette page.</p>'
                 . '<form method="post" action="' . esc_url(rest_url(FWO_GST_NS . '/login')) . '"><input type="hidden" name="token" value="' . esc_attr($token) . '"><button type="submit">Ouvrir mon espace</button></form>');
