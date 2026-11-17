@@ -97,7 +97,7 @@ sfu_func <- NULL
 sfu_standard_name <- NULL
 
 if (sfu_name_req == "pocock") {
-    sfu_func <- gsDesign::sfLDPocock # v39.1 : sfPocock n'existe pas (HTTP 500)
+    sfu_func <- gsDesign::sfPocock
     sfu_standard_name <- "Pocock"
 } else if (sfu_name_req == "of" || sfu_name_req == "obrienfleming") {
     sfu_func <- gsDesign::sfLDOF # O'Brien-Fleming like
@@ -136,7 +136,7 @@ if (test_type %in% c(3, 4, 5, 6)) {
         sfl_param_val <- 1 # Pente de 1 pour dépense linéaire
         sfl_standard_name <- "Linear"
      } else if (sfl_name_req == "pocock") { # Pocock pour futilité
-         sfl_func <- gsDesign::sfLDPocock # v39.1 : sfPocock n'existe pas (HTTP 500)
+         sfl_func <- gsDesign::sfPocock
          sfl_standard_name <- "Pocock"
      } else if (sfl_name_req == "of" || sfl_name_req == "obrienfleming") { # OF pour futilité
           sfl_func <- gsDesign::sfLDOF
@@ -173,7 +173,7 @@ design_result <- NULL
 design_error <- NULL
 design <- tryCatch({
     # Appel gsDesign en utilisant les fonctions et paramètres déterminés
-    # Note: sfupar et sflpar sont ignorés si la fonction correspondante ne prend pas de paramètre (ex: sfLDPocock, sfLDOF)
+    # Note: sfupar et sflpar sont ignorés si la fonction correspondante ne prend pas de paramètre (ex: sfPocock, sfLDOF)
     gsDesign(k = k, test.type = test_type, alpha = alpha, beta = beta, timing = timing,
              sfu = sfu_func, sfupar = sfu_param_val,
              sfl = sfl_func, sflpar = sfl_param_val) # sfl/sflpar seront ignorés par gsDesign si test.type=1 ou 2
@@ -263,10 +263,6 @@ results <- list(
     message = "Calcul des bornes et/ou Z-score terminé.",
     observedZ = ifelse(is.na(observed_z), NA, round(observed_z, 5)), # Retourne NA si non calculé/erreur, sinon arrondi
     observedZMessage = observed_z_message, # Message sur le statut du calcul Z
-    # --- Champs ADDITIFS (G5) consommés par la Phase 3b ---
-    # inflationFactor = dernier élément de design$n.I (scalaire).
-    # Critère d'acceptation (canonique A) : valeur attendue dans [1.00 ; 1.30].
-    inflationFactor = get_numeric_or_na(design$n.I[[k]]),
     parameters = list(
         k = k,
         alpha = alpha,
@@ -293,10 +289,8 @@ for (i in seq_len(k)) {
     alpha_cum <- NA_real_
     beta_cum <- NA_real_
 
-    # infoFraction = design$n.I[[i]] : STRICTEMENT identique à la production (G5/G6).
-    # Porte le facteur d'inflation (n.I = timing * inflationFactor avec n.fix=1).
-    # La vraie fraction i/k est exposée séparément via le champ additif `timing`.
-    info_frac <- get_numeric_or_na(design$n.I[[i]])
+    # Extraire les valeurs si elles existent dans l'objet design
+    info_frac <- get_numeric_or_na(design$n.I[[i]]) # Fraction d'information cumulée
 
     if (!is.null(design$upper) && length(design$upper$bound) >= i) {
         eff_z <- get_numeric_or_na(design$upper$bound[[i]]) # Borne Z d'efficacité
@@ -316,8 +310,7 @@ for (i in seq_len(k)) {
 
     results$boundaries[[i]] <- list(
         stage = i,
-        infoFraction = info_frac,   # = design$n.I[[i]] (inchangé vs prod, G6)
-        timing = timing[i],         # champ ADDITIF (G5) : vraie fraction i/k, dernière = 1.0
+        infoFraction = info_frac,
         efficacyZ = eff_z,
         futilityZ = fut_z,
         alphaSpentCumulative = alpha_cum,
