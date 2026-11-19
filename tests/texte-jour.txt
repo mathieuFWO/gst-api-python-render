@@ -65,7 +65,7 @@ Et avec une autre durée ?
 42 jours
 4,71 %
 « ≈ » : valeur à horizon fixe, remplacée dès que le calcul séquentiel répond. Choisissez une durée pour la retenir, puis appliquez le plan.
-Analyse séquentielle par groupes · calcul dans le navigateur · v56.18
+Analyse séquentielle par groupes · calcul dans le navigateur · v56.19
 FWOptimisation
 --- JOUR 1
 Mes tests (1)
@@ -76,26 +76,32 @@ Nouveau test
 Résultats
 Données et métriques
 Plan
-DÉCISION · JOUR 1 SUR 28
-+20,00 %
+DÉCISION DU TEST
+En attente
+OBJECTIF PRINCIPAL
 Visiteurs avec achat
 Non conclusif
-5,00 % → 6,00 % · intervalle à 90 % : de -43,89 % à +156,66 %
++20,00 %
+Écart relatif observé
+
+Contrôle 5,00 % · Variante 6,00 %
+
 Continuer
-
 Pas de décision avant le jour 7 : il faut une semaine complète pour que chaque jour compte. Les chiffres affichés d'ici là sont indicatifs.
+Écart observé
+Rebond semaine
+-0,83 %
+Qualité des données
 
-2 non conclusives
+Aucune alerte sur les deux contrôles au jour 1
 
-Comment lire les statuts
-
-Progression
-1 jour sur 28
-Jours importés en vert. Du 18/11/2026 au 18/11/2026.
-Répartition équilibrée
-600 / 600 visiteurs · pas de SRM
+Répartition A/B équilibrée (SRM)
+Contrôle 50,00 % · Variante 50,00 %
 Trafic régulier
-1 200 visiteurs · volume stable d'un jour à l'autre
+1 200 visiteurs, volume stable d'un jour à l'autre.
+Du 19/11/2026 au 19/11/2026
+1 200 visiteurs
+Comment lire les statuts
 Historique
 Jour 1
 Objectif principal
@@ -145,7 +151,7 @@ Zone verte : gain démontré · zone rose : effet négatif démontré · tirets 
 
 Un doute sur la lecture de ce résultat ? Parlez-en à Mathieu Fauveaux, consultant CRO
 
-Analyse séquentielle par groupes · calcul dans le navigateur · v56.18
+Analyse séquentielle par groupes · calcul dans le navigateur · v56.19
 FWOptimisation
 --- DONNEES
 Mes tests (1)
@@ -180,7 +186,7 @@ Supprimer le jour 1
 JOUR	VARIATION	VISITEURS	VISITEURS AVEC ACHAT	REBOND SEMAINE
 J1	Contrôle	600	30	240
 	Variante	600	36	238
-Analyse séquentielle par groupes · calcul dans le navigateur · v56.18
+Analyse séquentielle par groupes · calcul dans le navigateur · v56.19
 FWOptimisation
 --- JOUR 3
 Mes tests (1)
@@ -191,27 +197,39 @@ Nouveau test
 Résultats
 Données et métriques
 Plan
-DÉCISION · ACQUISE AU JOUR 7 SUR 28
-+47,37 %
+DÉCISION DU TEST
+Arrêter le test
+
+Seuil d'arrêt atteint au jour 7 sur les 28 prévus.
+
+Jour 8 importé après la décision
+
+OBJECTIF PRINCIPAL
 Visiteurs avec achat
 Gain démontré
-5,00 % → 7,37 % · intervalle à 90 % : de +34,82 % à +61,08 %
-Arrêter : discussion requise
++47,37 %
+Gain relatif observé
 
-Gain démontré sur l'objectif principal, mais la non-régression n'est pas démontrée pour « Rebond semaine » (aucune régression détectée non plus).
+Contrôle 5,00 % · Variante 7,37 %
 
-1 démontrée favorable
-1 non conclusive
+Déploiement à discuter
+Les données ne permettent pas d'écarter une dégradation de plus de 1 % en relatif pour « Rebond semaine ».
+Écart observé
+Rebond semaine
+-0,44 %
+Temps gagné
+Un arrêt au jour 7 économise environ 18,4 jours par rapport à un test à horizon fixe équivalent.
+Qualité des données
 
-Comment lire les statuts
+1 alerte sur les deux contrôles au jour 7
 
-Progression
-8 jours sur 28
-Résultat acquis depuis le jour 7. Le test devait s'arrêter là : le jour 8 a été importé après la décision (en hachuré). Il ne peut plus la modifier et sert seulement de lecture complémentaire. Du 18/11/2026 au 25/11/2026.
-Répartition équilibrée
-39 900 / 39 900 visiteurs · pas de SRM
+Répartition A/B équilibrée (SRM)
+Contrôle 50,00 % · Variante 50,00 %
 Trafic irrégulier
 Les jours n'apportent pas le même volume (écart max 14 points). Les seuils sont calculés sur le trafic réel de chaque jour : le risque de faux positif est tenu. Le trafic arrive tard : la futilité est réglée sur le trafic prévu, ce qui limite les arrêts à tort, mais la puissance reste inférieure à celle du plan.
+Du 19/11/2026 au 26/11/2026
+79 800 visiteurs
+Comment lire les statuts
 Historique
 Jour 1
 Jour 2
@@ -268,5 +286,5 @@ Zone verte : gain démontré · zone rose : effet négatif démontré · tirets 
 
 Un doute sur la lecture de ce résultat ? Parlez-en à Mathieu Fauveaux, consultant CRO
 
-Analyse séquentielle par groupes · calcul dans le navigateur · v56.18
+Analyse séquentielle par groupes · calcul dans le navigateur · v56.19
 FWOptimisation
