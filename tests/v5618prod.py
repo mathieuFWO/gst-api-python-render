@@ -70,4 +70,8 @@ rep("#gst-app .dec3{","""#gst-app pre.sql{counter-reset:l;max-height:440px;backg
 # l'introduction ne s'affiche que sur l'écran de choix
 a=s.index("""'<p class="secl">Choisissez votre outil d\\'analyse""");b=s.index("</p>'",a)+len("</p>'")
 s=s[:a]+"(ui.pick||ui.start?'':"+s[a:b]+")"+s[b:]
+
+# tableau de bord : fond vert léger sur la ligne d'un test gagnant prêt à déployer
+rep("""return '<div class="dr" data-act="dashopen" data-v="'+t.id+'\"""","""return '<div class="dr'+(tone==='g'?' win':'')+'" data-act="dashopen" data-v="'+t.id+'\"""")
+rep("#gst-app .dec3{","#gst-app .dash .dr.win{background:#F1FAF7}#gst-app .dash .dr.win:hover{background:#E6F4F0}\n#gst-app .dec3{")
 open('repo/calculateur-sequentiel-v56-18.html','w',newline='').write(s);print(len(s))
