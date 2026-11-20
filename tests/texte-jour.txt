@@ -65,7 +65,7 @@ Et avec une autre durée ?
 42 jours
 4,71 %
 « ≈ » : valeur à horizon fixe, remplacée dès que le calcul séquentiel répond. Choisissez une durée pour la retenir, puis appliquez le plan.
-Analyse séquentielle par groupes · calcul dans le navigateur · v56.22
+Analyse séquentielle par groupes · calcul dans le navigateur · v56.25
 FWOptimisation
 --- JOUR 1
 Mes tests (1)
@@ -102,10 +102,11 @@ Trafic sous le plan
 Aucun jour atypique détectée
 Volumes suivis. Le taux de l'objectif est comparé à partir de 3 jours.
 
-Du 19/11/2026 au 19/11/2026 · 1 200 visiteurs
+Du 20/11/2026 au 20/11/2026 · 1 200 visiteurs
 
 Voir le détail des contrôles 
 Comment lire les statuts
+Exporter le rapport (.pptx)
 Historique
 Jour 1
 Objectif principal
@@ -155,7 +156,7 @@ Zone verte : gain démontré · zone rose : effet négatif démontré · tirets 
 
 Un doute sur la lecture de ce résultat ? Parlez-en à Mathieu Fauveaux, consultant CRO
 
-Analyse séquentielle par groupes · calcul dans le navigateur · v56.22
+Analyse séquentielle par groupes · calcul dans le navigateur · v56.25
 FWOptimisation
 --- DONNEES
 Mes tests (1)
@@ -190,7 +191,7 @@ Supprimer le jour 1
 JOUR	VARIATION	VISITEURS	VISITEURS AVEC ACHAT	REBOND SEMAINE
 J1	Contrôle	600	30	240
 	Variante	600	36	238
-Analyse séquentielle par groupes · calcul dans le navigateur · v56.22
+Analyse séquentielle par groupes · calcul dans le navigateur · v56.25
 FWOptimisation
 --- JOUR 3
 Mes tests (1)
@@ -234,10 +235,11 @@ Trafic conforme au plan
 Trafic irrégulier
 Les jours n'apportent pas le même volume (écart max 14 points). Les seuils sont calculés sur le trafic réel de chaque jour : le risque de faux positif est tenu. Le trafic arrive tard : la futilité est réglée sur le trafic prévu, ce qui limite les arrêts à tort, mais la puissance reste inférieure à celle du plan.
 
-Du 19/11/2026 au 26/11/2026 · 79 800 visiteurs
+Du 20/11/2026 au 27/11/2026 · 79 800 visiteurs
 
 Voir le détail des contrôles 
 Comment lire les statuts
+Exporter le rapport (.pptx)
 Historique
 Jour 1
 Jour 2
@@ -294,5 +296,5 @@ Zone verte : gain démontré · zone rose : effet négatif démontré · tirets 
 
 Un doute sur la lecture de ce résultat ? Parlez-en à Mathieu Fauveaux, consultant CRO
 
-Analyse séquentielle par groupes · calcul dans le navigateur · v56.22
+Analyse séquentielle par groupes · calcul dans le navigateur · v56.25
 FWOptimisation
