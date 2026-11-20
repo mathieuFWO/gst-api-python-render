@@ -2,7 +2,7 @@
 /**
  * Plugin Name: FWO - Comptes du calculateur séquentiel
  * Description: Comptes, tableau de bord et partage par invitation pour le calculateur d'analyse séquentielle. Connexion par lien envoyé par email, sans mot de passe.
- * Version: 0.4.0
+ * Version: 0.4.1
  * Author: FWOptimisation
  * Requires at least: 6.0
  * Requires PHP: 7.4
@@ -199,10 +199,15 @@ function fwo_gst_clean_state($s) {
         // 0.3.2 : date de fin des données et semaine calendaire de la lecture
         if (isset($w['end']) && is_string($w['end']) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $w['end'])) { $row['end'] = $w['end']; }
         if (isset($w['wk']) && is_numeric($w['wk'])) { $wk = (int) round((float) $w['wk']); if ($wk >= 1 && $wk <= 60) { $row['wk'] = $wk; } }
+        // 0.4.1 : détail par valeur d'une dimension (12 valeurs au plus, libellé en texte seul)
+        if (is_array($w['seg'] ?? null)) { $seg = []; foreach (array_slice($w['seg'], 0, 12) as $x) { if (!is_array($x)) { continue; }
+            $l = mb_substr(sanitize_text_field((string) ($x['l'] ?? '')), 0, 60); if ($l === '') { continue; }
+            $seg[] = ['l' => $l, 'A' => $arm($x['A'] ?? null), 'B' => $arm($x['B'] ?? null)]; }
+            if (count($seg) > 1) { $row['seg'] = $seg; } }
         $weeks[] = $row; } }
     // 0.3.2 : colonnes choisies à l'import (noms d'en-têtes et libellés, texte seul)
     $map = null;
-    if (is_array($s['map'] ?? null)) { $map = []; foreach (['test' => 160, 'vr' => 160, 'vis' => 160, 'tv' => 300, 'c' => 160, 'v' => 160] as $k => $len) { $map[$k] = mb_substr(sanitize_text_field((string) ($s['map'][$k] ?? '')), 0, $len); } }
+    if (is_array($s['map'] ?? null)) { $map = []; foreach (['test' => 160, 'vr' => 160, 'vis' => 160, 'tv' => 300, 'c' => 160, 'v' => 160, 'sc' => 160] as $k => $len) { $map[$k] = mb_substr(sanitize_text_field((string) ($s['map'][$k] ?? '')), 0, $len); } }
     $L = is_array($s['labels'] ?? null) ? $s['labels'] : [];
     return ['plan' => $plan, 'metrics' => $metrics,
         'labels' => ['A' => mb_substr(sanitize_text_field((string) ($L['A'] ?? 'Contrôle')), 0, 60), 'B' => mb_substr(sanitize_text_field((string) ($L['B'] ?? 'Variante')), 0, 60)], 'weeks' => $weeks] + ($map ? ['map' => $map] : []);
@@ -302,7 +307,7 @@ function fwo_gst_payload(WP_REST_Request $r) {
 
 add_action('rest_api_init', function () {
     register_rest_route(FWO_GST_NS, '/me', ['methods' => 'GET', 'permission_callback' => '__return_true', 'callback' => function () {
-        return ['enabled' => true, 'user' => fwo_gst_user_payload(), 'v' => '0.4.0'];
+        return ['enabled' => true, 'user' => fwo_gst_user_payload(), 'v' => '0.4.1'];
     }]);
     // 0.4.0 : nom de l'organisation (texte seul), demandé à la première connexion.
     register_rest_route(FWO_GST_NS, '/me', ['methods' => 'POST', 'permission_callback' => 'fwo_gst_auth', 'callback' => function (WP_REST_Request $r) {
