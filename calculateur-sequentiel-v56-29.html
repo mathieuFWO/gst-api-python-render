@@ -1116,6 +1116,7 @@ function seqChart(m,comp,cur,W){
   var pts=function(arr){var P=[];arr.forEach(function(v,j){if(typeof v==='number'&&isFinite(v))P.push([x(j),y(v)]);});return P;};
   var pe=smooth(pts(up)),pn=smooth(pts(eff.map(function(v){return -v;}))),pf=hasFut?smooth(pts(fut)):'',pz=smooth(pts(zs)),xr=x(k-1),xl=x(0),yb=H-B;
   var s='<svg viewBox="0 0 '+W+' '+H+'" width="'+W+'" height="'+H+'" role="img" aria-label="Trajectoire de '+esc(m.name)+' et bornes séquentielles"><rect width="'+W+'" height="'+H+'" fill="#FFFFFF"/>';
+  if(k>1&&hasFut&&small)s+='<path class="futz" d="'+pf+' L'+xr+' '+yb+' L'+xl+' '+yb+' Z" fill="#EEF0F0"/>';
   if(k>1){s+='<path d="'+pe+' L'+xr+' '+T+' L'+xl+' '+T+' Z" fill="#EEF8F5"/>';
     s+='<path d="'+pn+' L'+xr+' '+yb+' L'+xl+' '+yb+' Z" fill="#FCEEEB"/>';}
   s+='<line x1="'+L+'" x2="'+(W-R)+'" y1="'+y(0)+'" y2="'+y(0)+'" stroke="#9FA1A1" stroke-dasharray="2 4"/>';
@@ -1125,6 +1126,7 @@ function seqChart(m,comp,cur,W){
   s+='<path d="'+pe+'" fill="none" stroke="#1D9E75" stroke-width="1.5" stroke-linecap="round"/><path d="'+pn+'" fill="none" stroke="#E46454" stroke-width="1.5" stroke-linecap="round"/>';
   if(hasFut)s+='<path d="'+pf+'" fill="none" stroke="#6F7374" stroke-width="1.5" stroke-dasharray="3 8" stroke-linecap="round"/>';
   if(guard)s+='<path d="'+smooth(pts(zn))+'" fill="none" stroke="#0082C3" stroke-width="1.5" stroke-dasharray="2 4" stroke-linecap="round"/>';
+  if(small&&k>1&&hasFut){var jf=Math.min(k-2,Math.floor(k*0.6)),yf=y(fut[jf])+15;if(yf<y(-eff[jf])-4)s+='<text class="futl" x="'+x(jf)+'" y="'+yf+'" text-anchor="middle" font-size="10.5" fill="#464849">Futilité : on arrête</text>';}
   if(!small&&k>1){s+='<g font-size="11" font-weight="600"><text x="'+(xr-10)+'" y="'+(T+18)+'" text-anchor="end" fill="#0E7C5D">'+(guard?'Seuil de non-régression':'Gain démontré : on arrête')+'</text><text x="'+(xr-10)+'" y="'+(yb-10)+'" text-anchor="end" fill="#8f2c20">'+(guard?'Régression démontrée':'Effet négatif démontré : on arrête')+'</text>'+(hasFut?(function(){var j=Math.min(k-2,Math.floor(k*0.6));return '<text x="'+x(j)+'" y="'+(y(fut[j])+16)+'" text-anchor="middle" fill="#464849" font-weight="400">Futilité : sous cette ligne, plus assez de chances d\'aboutir, on arrête</text>';})():'')+'</g>';}
   var dz=zs[cur];if(typeof dz==='number'&&isFinite(dz))s+='<circle cx="'+x(cur).toFixed(1)+'" cy="'+y(dz).toFixed(1)+'" r="11" fill="#0082C3" fill-opacity=".15"/>';
   s+='<path d="'+pz+'" fill="none" stroke="#0082C3" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>';
@@ -1728,7 +1730,7 @@ function viewResults(){
     h+='</div>';}
   var m=state.metrics.filter(function(x){return x.id===sel;})[0],mi=state.metrics.indexOf(m);
   h+='<div class="card detail"><div class="row" style="justify-content:space-between"><h3>Trajectoire : '+esc(m.name)+'</h3><span class="toggle" role="group" aria-label="Unité du graphique"><button type="button" data-act="unit" data-v="pct" aria-pressed="'+(ui.unit!=='z')+'" class="'+(ui.unit!=='z'?'on':'')+'">Écart en %</button><button type="button" data-act="unit" data-v="z" aria-pressed="'+(ui.unit==='z')+'" class="'+(ui.unit==='z'?'on':'')+'">Z</button></span></div>'
-    +'<p class="hint">Tant que la courbe bleue reste dans le couloir blanc, on continue. Dès qu\'elle en sort, le test s\'arrête. Cliquez une métrique pour afficher sa trajectoire.</p><div data-chart="'+m.id+'" data-cur="'+cur+'" style="margin-top:10px"></div>'
+    +'<p class="hint">'+(m.role==='principale'&&state.bounds&&state.bounds.fut&&state.bounds.fut.some(function(v){return Number.isFinite(v);})?'Tant que la courbe bleue reste entre la ligne verte et les tirets gris, on continue. Au-dessus de la ligne verte ou sous les tirets, le test s\'arrête.':'Tant que la courbe bleue reste dans le couloir blanc, on continue. Dès qu\'elle en sort, le test s\'arrête.')+' Cliquez une métrique pour afficher sa trajectoire.</p><div data-chart="'+m.id+'" data-cur="'+cur+'" style="margin-top:10px"></div>'
     +'<div style="border-top:1px solid var(--line);margin-top:10px;padding-top:6px"><button type="button" class="link" data-act="detail" aria-expanded="'+!!ui.detail+'">'+(ui.detail?'▾ Masquer':'▸ Voir')+' le détail (volumes, Z et bornes semaine par semaine)</button></div>';
   if(ui.detail)h+='<div class="fiche">'+tipHTML(W.rows[mi],wk)+'</div><div class="scroll" style="margin-top:10px"><table><thead><tr><th>Sem.</th><th>'+esc(state.labels.A)+'</th><th>'+esc(state.labels.B)+'</th><th>Écart</th><th>Z</th>'+(m.role==='garde-fou'?'<th>Z non-rég.</th><th>Borne non-rég.</th>':'')+'<th>'+(m.role==='garde-fou'?'Borne régression':'Borne eff.')+'</th>'+(m.role==='principale'?'<th>Borne fut.</th>':'')+'<th class="l">Statut</th></tr></thead><tbody>'
     +comp.weeks.map(function(w,j){var r=w.rows[mi],st=r.st,cont=m.type==='continue',fv=function(v){return st?(cont?nf(v,2):nf(v*100,2)+' %'):'—';};

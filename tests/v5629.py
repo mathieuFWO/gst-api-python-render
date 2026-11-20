@@ -26,3 +26,13 @@ rep("""#gst-app button.pv-add{display:block;""","""#gst-app button.pv-sk{positio
 assert s.count('v56.28')==1
 s=s.replace('v56.28','v56.29')
 open('repo/calculateur-sequentiel-v56-29.html','w',newline='').write(s);print(len(s))
+# Graphique : sur mobile, la zone sous les tirets de futilité est légèrement grisée et nommée ; la phrase d'explication dit où l'on continue.
+s=open('repo/calculateur-sequentiel-v56-29.html',newline='').read()
+rep("""  if(k>1){s+='<path d="'+pe+' L'+xr+' '+T+' L'+xl+' '+T+' Z" fill="#EEF8F5"/>';""",
+"""  if(k>1&&hasFut&&small)s+='<path class="futz" d="'+pf+' L'+xr+' '+yb+' L'+xl+' '+yb+' Z" fill="#EEF0F0"/>';
+  if(k>1){s+='<path d="'+pe+' L'+xr+' '+T+' L'+xl+' '+T+' Z" fill="#EEF8F5"/>';""")
+rep("""  if(!small&&k>1){s+='<g font-size="11" font-weight="600">""","""  if(small&&k>1&&hasFut){var jf=Math.min(k-2,Math.floor(k*0.6)),yf=y(fut[jf])+15;if(yf<y(-eff[jf])-4)s+='<text class="futl" x="'+x(jf)+'" y="'+yf+'" text-anchor="middle" font-size="10.5" fill="#464849">Futilité : on arrête</text>';}
+  if(!small&&k>1){s+='<g font-size="11" font-weight="600">""")
+rep("""'<p class="hint">Tant que la courbe bleue reste dans le couloir blanc, on continue. Dès qu\\'elle en sort, le test s\\'arrête.""",
+"""'<p class="hint">'+(m.role==='principale'&&state.bounds&&state.bounds.fut&&state.bounds.fut.some(function(v){return Number.isFinite(v);})?'Tant que la courbe bleue reste entre la ligne verte et les tirets gris, on continue. Au-dessus de la ligne verte ou sous les tirets, le test s\\'arrête.':'Tant que la courbe bleue reste dans le couloir blanc, on continue. Dès qu\\'elle en sort, le test s\\'arrête.')+'""")
+open('repo/calculateur-sequentiel-v56-29.html','w',newline='').write(s);print(len(s))
