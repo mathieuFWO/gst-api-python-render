@@ -2,7 +2,7 @@
 /**
  * Plugin Name: FWO - Comptes du calculateur séquentiel
  * Description: Comptes, tableau de bord et partage par invitation pour le calculateur d'analyse séquentielle. Connexion par lien envoyé par email, sans mot de passe.
- * Version: 0.4.1
+ * Version: 0.4.2
  * Author: FWOptimisation
  * Requires at least: 6.0
  * Requires PHP: 7.4
@@ -199,11 +199,15 @@ function fwo_gst_clean_state($s) {
         // 0.3.2 : date de fin des données et semaine calendaire de la lecture
         if (isset($w['end']) && is_string($w['end']) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $w['end'])) { $row['end'] = $w['end']; }
         if (isset($w['wk']) && is_numeric($w['wk'])) { $wk = (int) round((float) $w['wk']); if ($wk >= 1 && $wk <= 60) { $row['wk'] = $wk; } }
-        // 0.4.1 : détail par valeur d'une dimension (12 valeurs au plus, libellé en texte seul)
-        if (is_array($w['seg'] ?? null)) { $seg = []; foreach (array_slice($w['seg'], 0, 12) as $x) { if (!is_array($x)) { continue; }
+        // 0.4.2 : détail par dimension (3 dimensions, 12 valeurs chacune, libellés en texte seul). « seg » : format de la v56.28, relu comme une dimension.
+        $segs = function ($list) use ($arm) { $seg = []; foreach (array_slice(is_array($list) ? $list : [], 0, 12) as $x) { if (!is_array($x)) { continue; }
             $l = mb_substr(sanitize_text_field((string) ($x['l'] ?? '')), 0, 60); if ($l === '') { continue; }
-            $seg[] = ['l' => $l, 'A' => $arm($x['A'] ?? null), 'B' => $arm($x['B'] ?? null)]; }
-            if (count($seg) > 1) { $row['seg'] = $seg; } }
+            $seg[] = ['l' => $l, 'A' => $arm($x['A'] ?? null), 'B' => $arm($x['B'] ?? null)]; } return $seg; };
+        $dims = [];
+        if (is_array($w['dims'] ?? null)) { foreach (array_slice($w['dims'], 0, 3) as $dm) { if (!is_array($dm)) { continue; } $v = $segs($dm['v'] ?? null);
+            if (count($v) > 1) { $n = mb_substr(sanitize_text_field((string) ($dm['n'] ?? '')), 0, 160); $dims[] = ['n' => $n !== '' ? $n : 'Dimension', 'v' => $v]; } } }
+        elseif (is_array($w['seg'] ?? null)) { $v = $segs($w['seg']); if (count($v) > 1) { $n = mb_substr(sanitize_text_field((string) (is_array($s['map'] ?? null) ? ($s['map']['sc'] ?? '') : '')), 0, 160); $dims[] = ['n' => $n !== '' ? $n : 'Dimension', 'v' => $v]; } }
+        if ($dims) { $row['dims'] = $dims; }
         $weeks[] = $row; } }
     // 0.3.2 : colonnes choisies à l'import (noms d'en-têtes et libellés, texte seul)
     $map = null;
@@ -307,7 +311,7 @@ function fwo_gst_payload(WP_REST_Request $r) {
 
 add_action('rest_api_init', function () {
     register_rest_route(FWO_GST_NS, '/me', ['methods' => 'GET', 'permission_callback' => '__return_true', 'callback' => function () {
-        return ['enabled' => true, 'user' => fwo_gst_user_payload(), 'v' => '0.4.1'];
+        return ['enabled' => true, 'user' => fwo_gst_user_payload(), 'v' => '0.4.2'];
     }]);
     // 0.4.0 : nom de l'organisation (texte seul), demandé à la première connexion.
     register_rest_route(FWO_GST_NS, '/me', ['methods' => 'POST', 'permission_callback' => 'fwo_gst_auth', 'callback' => function (WP_REST_Request $r) {
